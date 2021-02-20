@@ -71,7 +71,9 @@ class TrollyBoard(object):
         lists = self._trello.boards.get_list(self._board_id)
 
         if not self._config:
-            self._config = {'lists': {}, 'map': OrderedDict(), 'default_list': None, card_idx: 0}
+            self._config = {'lists': {}, 'map': OrderedDict(), 'default_list': None, 'card_idx': 0}
+            self._config['card_map'] = {}
+            self._config['card_rev_map'] = {}
 
         # XXX this shouldn't be needed; but the search ignores closed lists
         curr_lists = set([item['id'] for item in lists])
@@ -108,6 +110,10 @@ class TrollyBoard(object):
             self._config['lists'][name] = val
             self._config['map'][item['id']] = name
 
+        # Rebuild our reversemap just in case
+        rev_map = {val: key for key, val in self._config['card_map'].items()}
+        self._config['card_rev_map'] = rev_map
+
     def _list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['map']:
             raise KeyError('No such list: ' + list_alias)
@@ -116,17 +122,19 @@ class TrollyBoard(object):
         return list_alias  # must be the ID
 
     def card_index_to_id(self, index):
-        if 'card_map' not in self._config:
+        if 'card_rev_map' not in self._config:
             return None
         if 'card_idx' not in self._config:
             return None
-        if index not in self._config['card_map']:
+        if index not in self._config['card_rev_map']:
             return None
-        return self._config['card_map'][index]
+        return self._config['card_rev_map'][index]
 
     def _index_cards(self, cards):
         if 'card_map' not in self._config:
             self._config['card_map'] = {}
+        if 'card_rev_map' not in self._config:
+            self._config['card_rev_map'] = {}
         if 'card_idx' not in self._config:
             self._config['card_idx'] = 0
 
@@ -134,11 +142,25 @@ class TrollyBoard(object):
             # Nondecreasing Integer map for cards
             if card['id'] not in self._config['card_map']:
                 self._config['card_idx'] = self._config['card_idx'] + 1
-                self._config['card_map'][card['id']] = self._config['card_idx']
+                cid = card['id']
+                idx = self._config['card_idx']
 
-    def index_cards(self, list_alias=None):
+                # Store forward and reverse maps
+                self._config['card_map'][cid] = idx
+                self._config['card_rev_map'][idx] = cid
+
+    def gc_cards(self):
+        cards = self._trello.boards.get_card_filter('closed', self._board_id)
+        for card in cards:
+            cid = card['id']
+            if cid not in self._config['card_map']:
+                continue
+            del self._config['card_rev_map'][self._config['card_map'][cid]]
+            del self._config['card_map'][cid]
+
+    def index_cards(self, list_alias=None, gc=False):
         if list_alias is None:
-            cards = self._trello.boards.get_card(self._board_id)
+            cards = self._trello.boards.get_card_filter('open', self._board_id)
         else:
             cards = self._trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
@@ -160,15 +182,12 @@ class TrollyBoard(object):
         if list_alias not in self._config['lists'] and list_alias not in self._config['card_map']:
             raise KeyError('No such list: ' + list_alias)
 
-        # Reverse our map
-        rev_map = {value: key for key, value in self._config['card_map'].items()}
-
         if not isinstance(card_indices, list):
             card_indices = [card_indices]
         fails = []
         moves = []
         for idx in card_indices:
-            card_id = rev_map[idx]
+            card_id = self._config['card_rev_map'][idx]
             if not card_id:
                 fails.append(idx)
             else:
