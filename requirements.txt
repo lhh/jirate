@@ -1,0 +1,3 @@
+requests>=2.0.0
+trollo>=0.1.9
+PyYAML
