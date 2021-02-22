@@ -4,10 +4,7 @@ import re
 # import yaml
 import os
 
-try:
-    from trollo import TrelloApi
-except ImportError:
-    from trello import TrelloApi
+from trollo import TrelloApi
 
 import board
 

@@ -207,7 +207,6 @@ class TrollyBoard(object):
             self._config['default_list'] = list_alias
         else:
             raise Exception('Code path error')
-        self.save_config()
 
     def rename_list(self, list_alias, new_name):
         if list_alias not in self._config['lists'] and list_alias not in self._config['map']:
@@ -243,7 +242,7 @@ class TrollyBoard(object):
         return copy.copy(self._config)
 
     def set_user_data(self, key, userdata):
-        if key in ('default_list', 'lists', 'map', 'card_map'):
+        if key in ('default_list', 'lists', 'map', 'card_map', 'card_rev_map', 'card_idx'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config['userdata']
         self.save_config()
