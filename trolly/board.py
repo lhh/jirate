@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import bz2
 import copy
 import json
 # import yaml
@@ -15,6 +16,8 @@ def nym(s):
     return z
 
 
+# WARNING WARNING WARNING - upon first creation, there's a race between the time
+# trello searching finds the card.  It's 10~30 seconds.
 def get_config_card(trello, board_id):
     results = trello.search.run(_TROLLY_CONFIG_CARD, idBoards=board_id, modelTypes='cards')
     if results['cards']:
@@ -25,23 +28,38 @@ def get_config_card(trello, board_id):
 
 
 def _get_board_config(trello, config_card):
-    # print('Parsing config card: ', config_card)
     try:
         ret = json.loads(config_card['desc'])
-        return ret
     except json.decoder.JSONDecodeError:
         return None
+
+    # Not an attachment
+    if 'attached' not in ret or not ret['attached']:
+        return ret
+
+    attachments = trello.cards.get_attachments(config_card['id'])
+    config_id = None
+    for suspect in attachments:
+        if not suspect['isUpload']:
+            continue
+        if suspect['name'] != 'trolly-config.bz2':
+            continue
+        config_id = suspect['id']
+        break
+
+    if not config_id:
+        return None
+    try:
+        config_attachment = trello.cards.get_attachment(config_card['id'], config_id, max_size=(1024 * 1024 * 4))
+    except json.decoder.JSONDecodeError:
+        return None
+
+    config_data = json.loads(bz2.decompress(config_attachment['data']).decode('utf-8'))
+    return config_data
 
 
 def get_board_config(trello, board_id):
     return _get_board_config(trello, get_config_card(trello, board_id))
-
-
-def set_board_config(trello, board_id, config_data):
-    config_card = get_config_card(trello, board_id)
-    if not config_card:
-        trello.cards.new
-    trello.cards.update(config_card['id'], desc=json.dump(config_data), )
 
 
 class TrollyBoard(object):
@@ -71,7 +89,7 @@ class TrollyBoard(object):
         lists = self._trello.boards.get_list(self._board_id)
 
         if not self._config:
-            self._config = {'lists': {}, 'map': OrderedDict(), 'default_list': None, 'card_idx': 0}
+            self._config = {'lists': {}, 'map': {}, 'default_list': None, 'card_idx': 0}
             self._config['card_map'] = {}
             self._config['card_rev_map'] = {}
 
@@ -228,15 +246,48 @@ class TrollyBoard(object):
         return copy.copy(self._config['lists'])
 
     def save_config(self):
-        config_str = json.dumps(self._config, indent=2)
-
+        # Create our config card if not present
         if not self._config_card:
             # print('Creating config card')
             list_id = list(self._config['map'].keys())[0]
             card = self._trello.cards.new(_TROLLY_CONFIG_CARD, list_id)
             self._config_card = card['id']
 
-        self._trello.cards.update(self._config_card, desc=config_str)
+        # Store config as text in description if <=15kb, otherwise store as
+        # attachment
+        config_str = json.dumps(self._config, indent=2)
+        if len(config_str) <= 15360:  # Trello limit is 16k for descriptions
+            if 'attached' in self._config:
+                # Sadly, need to do two dumps
+                del self._config['attached']
+                config_str = json.dumps(self._config, indent=2)
+            self._trello.cards.update(self._config_card, desc=config_str)
+            return
+
+        if 'attached' not in self._config:
+            new_desc = json.dumps({'attached': True})
+            self._trello.cards.update(self._config_card, desc=new_desc)
+            self._config['attached'] = True
+            config_str = json.dumps(self._config, indent=2)
+
+        config_info = config_str.encode('utf-8')
+
+        attachments = self._trello.cards.get_attachments(self._config_card)
+        old_config = None
+        for suspect in attachments:
+            if not suspect['isUpload']:
+                continue
+            if suspect['name'] != 'trolly-config.bz2':
+                continue
+            old_config = suspect['id']
+            break
+
+        # Upload new attachment, then purge the old one, just in case we
+        # crash - better to have two (one slightly out of date) than none
+        self._trello.cards.new_file_attachment(self._config_card, 'trolly-config.bz2',
+                                               bindata=bz2.compress(config_info))
+        if old_config:
+            self._trello.cards.delete_attachment(old_config, self._config_card)
 
     def config(self):
         return copy.copy(self._config)
