@@ -160,20 +160,19 @@ class TrollyBoard(object):
                 self._config['card_map'][cid] = idx
                 self._config['card_rev_map'][idx] = cid
 
+    # Prune all invisible or closed cards from our tables
+    # Originally, this would look for cards which are closed, but due to how
+    # Trello's filters work, it's quicker to simply scrap our tables and
+    # reindex them.
     def gc_cards(self):
-        # XXX incomplete; Trello's filter based on open/closed only checks
-        # card states. Unarchived cards in archived lists are considered open.
-        cards = self._trello.boards.get_card_filter('closed', self._board_id)
-        for card in cards:
-            cid = card['id']
-            if cid not in self._config['card_map']:
-                continue
-            del self._config['card_rev_map'][self._config['card_map'][cid]]
-            del self._config['card_map'][cid]
+        cards = self._trello.boards.get_card_filter('visible', self._board_id)
+        self._config['card_rev_map'] = {}
+        self._config['card_map'] = {}
+        self._index_cards(cards)
 
     def index_cards(self, list_alias=None, gc=False):
         if list_alias is None:
-            cards = self._trello.boards.get_card_filter('open', self._board_id)
+            cards = self._trello.boards.get_card_filter('visible', self._board_id)
         else:
             cards = self._trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
