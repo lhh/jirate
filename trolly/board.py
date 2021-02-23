@@ -167,7 +167,7 @@ class TrollyBoard(object):
     #
     # board_cleanup = 'list': prune all cards not on a current in-use list
     #               = 'all': prune all archived cards and cards as above
-    def gc_cards(self, board_cleanup=None):
+    def gc_cards(self, board_cleanup=None, dry_run=False):
         if board_cleanup not in (None, 'all', 'list'):
             raise ValueError('Invalid value for board_cleanup: ' + board_cleanup)
         cards = self._trello.boards.get_card_filter('visible', self._board_id)
@@ -176,17 +176,22 @@ class TrollyBoard(object):
         self._index_cards(cards)
 
         if board_cleanup is None:
-            return
+            return None
 
         # Completely nuke everything that is not on a visible list. This cannot
         # be undone and is destructive.  However, for long-lived boards,
         # old cards pile up and slow things down.
+        ret = {}
         all_cards = self._trello.boards.get_card_filter('all', self._board_id)
         for card in all_cards:
             # We just indexed these
             if ((board_cleanup == 'all' and card['id'] in self._config['card_map']) or (board_cleanup == 'list' and card['idList'] in self._config['list_map'])):
                 continue
-            self._trello.cards.delete(card['id'])
+            item = {'id': card['id'], 'name': card['name']}
+            ret[card['idShort']] = item
+            if not dry_run:
+                self._trello.cards.delete(card['id'])
+        return ret
 
     def index_cards(self, list_alias=None):
         if list_alias is None:
