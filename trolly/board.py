@@ -181,7 +181,7 @@ class TrollyBoard(object):
             cards = self._trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
 
-    def list_cards(self, list_alias):
+    def list(self, list_alias):
         cards = self._trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
 
@@ -193,7 +193,7 @@ class TrollyBoard(object):
             ret[self._config['card_map'][card['id']]] = val
         return ret
 
-    def move_cards(self, card_indices, list_alias):
+    def move(self, card_indices, list_alias):
         list_id = self._list_to_id(list_alias)
         if list_alias not in self._config['lists'] and list_alias not in self._config['card_map']:
             raise KeyError('No such list: ' + list_alias)
@@ -214,7 +214,7 @@ class TrollyBoard(object):
         for card in moves:
             self._trello.cards.update(card, idList=list_id)
 
-    def default_list(self, list_alias):
+    def set_default_list(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
         if list_alias in self._config['lists']:
@@ -224,7 +224,7 @@ class TrollyBoard(object):
         else:
             raise Exception('Code path error')
 
-    def rename_list(self, list_alias, new_name):
+    def rename(self, list_alias, new_name):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
 
@@ -240,7 +240,7 @@ class TrollyBoard(object):
         del self._config['lists'][list_name]
         self._config['lists'][new_name] = val
 
-    def get_lists(self):
+    def lists(self):
         return copy.copy(self._config['lists'])
 
     def new(self, name, description=None, start_list=None):
@@ -249,7 +249,8 @@ class TrollyBoard(object):
         list_id = self._list_to_id(start_list)
         self._trello.cards.new(name, list_id, description)
 
-    def archive(self, card_id):
+    def close(self, card_idx):
+        card_id = self._config['card_rev_map'][card_idx]
         self._trello.cards.update_closed(card_id, True)
 
     def save_config(self):
