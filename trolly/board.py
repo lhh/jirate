@@ -140,8 +140,6 @@ class TrollyBoard(object):
     def card_index_to_id(self, index):
         if 'card_rev_map' not in self._config:
             return None
-        if 'card_idx' not in self._config:
-            return None
         if index not in self._config['card_rev_map']:
             return None
         return self._config['card_rev_map'][index]
@@ -151,21 +149,20 @@ class TrollyBoard(object):
             self._config['card_map'] = {}
         if 'card_rev_map' not in self._config:
             self._config['card_rev_map'] = {}
-        if 'card_idx' not in self._config:
-            self._config['card_idx'] = 0
 
         for card in cards:
             # Nondecreasing Integer map for cards
             if card['id'] not in self._config['card_map']:
-                self._config['card_idx'] = self._config['card_idx'] + 1
                 cid = card['id']
-                idx = self._config['card_idx']
+                idx = card['idShort']
 
                 # Store forward and reverse maps
                 self._config['card_map'][cid] = idx
                 self._config['card_rev_map'][idx] = cid
 
     def gc_cards(self):
+        # XXX incomplete; Trello's filter based on open/closed only checks
+        # card states. Unarchived cards in archived lists are considered open.
         cards = self._trello.boards.get_card_filter('closed', self._board_id)
         for card in cards:
             cid = card['id']
@@ -301,7 +298,7 @@ class TrollyBoard(object):
         return copy.copy(self._config)
 
     def set_user_data(self, key, userdata):
-        if key in ('default_list', 'lists', 'list_map', 'card_map', 'card_rev_map', 'card_idx'):
+        if key in ('default_list', 'lists', 'list_map', 'card_map', 'card_rev_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config['userdata']
         self.save_config()
