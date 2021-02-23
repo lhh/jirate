@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
+import os
 import re
 # import yaml
-import os
-
-from trollo import TrelloApi
 
 import board
+
+from trollo import TrelloApi
 
 
 def extract_bugzillas(card):
