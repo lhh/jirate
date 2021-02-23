@@ -164,34 +164,57 @@ class TrollyBoard(object):
     # Originally, this would look for cards which are closed, but due to how
     # Trello's filters work, it's quicker to simply scrap our tables and
     # reindex them.
-    def gc_cards(self):
+    #
+    # board_cleanup = 'list': prune all cards not on a current in-use list
+    #               = 'all': prune all archived cards and cards as above
+    def gc_cards(self, board_cleanup=None):
+        if board_cleanup not in (None, 'all', 'list'):
+            raise ValueError('Invalid value for board_cleanup: ' + board_cleanup)
         cards = self._trello.boards.get_card_filter('visible', self._board_id)
         self._config['card_rev_map'] = {}
         self._config['card_map'] = {}
         self._index_cards(cards)
 
-    def index_cards(self, list_alias=None, gc=False):
+        if board_cleanup is None:
+            return
+
+        # Completely nuke everything that is not on a visible list. This cannot
+        # be undone and is destructive.  However, for long-lived boards,
+        # old cards pile up and slow things down.
+        all_cards = self._trello.boards.get_card_filter('all', self._board_id)
+        for card in all_cards:
+            # We just indexed these
+            if ((board_cleanup == 'all' and card['id'] in self._config['card_map']) or (board_cleanup == 'list' and card['idList'] in self._config['list_map'])):
+                continue
+            self._trello.cards.delete(card['id'])
+
+    def index_cards(self, list_alias=None):
         if list_alias is None:
             cards = self._trello.boards.get_card_filter('visible', self._board_id)
         else:
             cards = self._trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
+        return cards
 
-    def list(self, list_alias):
-        cards = self._trello.lists.get_card(self._list_to_id(list_alias))
-        self._index_cards(cards)
+    def list(self, list_alias=None):
+        cards = self.index_cards(list_alias)
 
         ret = {}
         for card in cards:
+            if card['closed']:
+                continue
+            if card['idList'] not in self._config['list_map']:
+                continue
             val = {}
             val['id'] = card['id']
             val['name'] = card['name']
+            val['list'] = self._config['list_map'][card['idList']]
             ret[self._config['card_map'][card['id']]] = val
         return ret
 
     def move(self, card_indices, list_alias):
         list_id = self._list_to_id(list_alias)
-        if list_alias not in self._config['lists'] and list_alias not in self._config['card_map']:
+        if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
 
         if not isinstance(card_indices, list):
@@ -205,10 +228,12 @@ class TrollyBoard(object):
             else:
                 moves.append(card_id)
 
+        # Do nothing unless we can move all the cards
         if fails:
             raise ValueError('No such card(s): ' + str(fails))
         for card in moves:
             self._trello.cards.update(card, idList=list_id)
+        return moves
 
     def set_default_list(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
@@ -243,11 +268,31 @@ class TrollyBoard(object):
         if start_list is None:
             start_list = self._config['default_list']
         list_id = self._list_to_id(start_list)
-        self._trello.cards.new(name, list_id, description)
+        return self._trello.cards.new(name, list_id, description)
 
     def close(self, card_idx):
         card_id = self._config['card_rev_map'][card_idx]
-        self._trello.cards.update_closed(card_id, True)
+        return self._trello.cards.update_closed(card_id, True)
+
+    def reopen(self, card_idx):
+        if card_idx in self._config['card_rev_map']:
+            card_id = self._config['card_rev_map'][card_idx]
+            card = self._trello.cards.update_closed(card_id, False)
+            return card
+
+        # Search our board
+        cards = self._trello.boards.get_card_filter('all', self._board_id)
+        for card in cards:
+            if card['idShort'] != card_idx:
+                continue
+            # Reopen card
+            if card['closed']:
+                self._trello.cards.update_closed(card['id'], False)
+            # Send to our default list if it was in an archived list
+            if card['idList'] not in self._config['list_map']:
+                self._trello.cards.update(card['id'],
+                                          idList=self._config['default_list'])
+            return card
 
     def save_config(self):
         # Create our config card if not present
