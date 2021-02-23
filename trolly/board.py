@@ -81,7 +81,6 @@ class TrollyBoard(object):
             self._config = None
 
         self.refresh()
-        self.save_config()
 
     def refresh(self):
         lists = self._trello.boards.get_list(self._board_id)
@@ -186,6 +185,8 @@ class TrollyBoard(object):
         for card in all_cards:
             # We just indexed these
             if ((board_cleanup == 'all' and card['id'] in self._config['card_map']) or (board_cleanup == 'list' and card['idList'] in self._config['list_map'])):
+                continue
+            if card['id'] == self._config_card:
                 continue
             item = {'id': card['id'], 'name': card['name']}
             ret[card['idShort']] = item
@@ -306,6 +307,8 @@ class TrollyBoard(object):
             list_id = list(self._config['list_map'].keys())[0]
             card = self._trello.cards.new(_TROLLY_CONFIG_CARD, list_id)
             self._config_card = card['id']
+            # Hide our config card
+            self._trello.cards.update_closed(card['id'], True)
 
         # Store config as text in description if <=15kb, otherwise store as
         # attachment
