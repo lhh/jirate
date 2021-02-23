@@ -3,8 +3,6 @@
 import bz2
 import copy
 import json
-# import yaml
-from collections import OrderedDict
 
 
 _TROLLY_CONFIG_CARD = 'META:TROLLY_CONFIG'
@@ -89,34 +87,34 @@ class TrollyBoard(object):
         lists = self._trello.boards.get_list(self._board_id)
 
         if not self._config:
-            self._config = {'lists': {}, 'map': {}, 'default_list': None, 'card_idx': 0}
+            self._config = {'lists': {}, 'list_map': {}, 'default_list': None, 'card_idx': 0}
             self._config['card_map'] = {}
             self._config['card_rev_map'] = {}
 
         # XXX this shouldn't be needed; but the search ignores closed lists
         curr_lists = set([item['id'] for item in lists])
-        config_lists = set(self._config['map'].keys())
+        config_lists = set(self._config['list_map'].keys())
         to_remove = list(config_lists - curr_lists)
 
         # If we closed a list, unlink it
         for listid in to_remove:
             # purge from our lists
-            if listid in self._config['map']:
+            if listid in self._config['list_map']:
                 # print('Unlinking list', listid)
-                del self._config['lists'][self._config['map'][listid]]
-                del self._config['map'][listid]
+                del self._config['lists'][self._config['list_map'][listid]]
+                del self._config['list_map'][listid]
 
         for item in lists:
             # XXX consistency checks for the configuration?
             # print('checking', item['id'])
 
-            if not self._config['default_list'] or self._config['default_list'] not in self._config['map']:
+            if not self._config['default_list'] or self._config['default_list'] not in self._config['list_map']:
                 # print('Resetting default start list to', item['id'])
                 self._config['default_list'] = item['id']
 
             # Update in case we renamed list on the UI side
-            if item['id'] in self._config['map']:
-                self._config['lists'][self._config['map'][item['id']]]['name'] = item['name']
+            if item['id'] in self._config['list_map']:
+                self._config['lists'][self._config['list_map'][item['id']]]['name'] = item['name']
                 continue
 
             val = {}
@@ -126,14 +124,14 @@ class TrollyBoard(object):
             while name in self._config['lists']:
                 name = name + '_'
             self._config['lists'][name] = val
-            self._config['map'][item['id']] = name
+            self._config['list_map'][item['id']] = name
 
         # Rebuild our reversemap just in case
         rev_map = {val: key for key, val in self._config['card_map'].items()}
         self._config['card_rev_map'] = rev_map
 
     def _list_to_id(self, list_alias):
-        if list_alias not in self._config['lists'] and list_alias not in self._config['map']:
+        if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
         if list_alias in self._config['lists']:
             return self._config['lists'][list_alias]['id']
@@ -217,27 +215,27 @@ class TrollyBoard(object):
             self._trello.cards.update(card, idList=list_id)
 
     def default_list(self, list_alias):
-        if list_alias not in self._config['lists'] and list_alias not in self._config['map']:
+        if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
         if list_alias in self._config['lists']:
             self._config['default_list'] = self._config['lists'][list_alias]['id']
-        elif list_alias in self._config['map']:
+        elif list_alias in self._config['list_map']:
             self._config['default_list'] = list_alias
         else:
             raise Exception('Code path error')
 
     def rename_list(self, list_alias, new_name):
-        if list_alias not in self._config['lists'] and list_alias not in self._config['map']:
+        if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
 
         if list_alias in self._config['lists']:
             list_id = self._config['lists'][list_alias]['id']
             list_name = list_alias
-        elif list_alias in self._config['map']:
-            list_name = self._config['map'][list_alias]
+        elif list_alias in self._config['list_map']:
+            list_name = self._config['list_map'][list_alias]
             list_id = list_alias
 
-        self._config['map'][list_id] = new_name
+        self._config['list_map'][list_id] = new_name
         val = self._config['lists'][list_name]
         del self._config['lists'][list_name]
         self._config['lists'][new_name] = val
@@ -245,11 +243,20 @@ class TrollyBoard(object):
     def get_lists(self):
         return copy.copy(self._config['lists'])
 
+    def new(self, name, description=None, start_list=None):
+        if start_list is None:
+            start_list = self._config['default_list']
+        list_id = self._list_to_id(start_list)
+        self._trello.cards.new(name, list_id, description)
+
+    def archive(self, card_id):
+        self._trello.cards.update_closed(card_id, True)
+
     def save_config(self):
         # Create our config card if not present
         if not self._config_card:
             # print('Creating config card')
-            list_id = list(self._config['map'].keys())[0]
+            list_id = list(self._config['list_map'].keys())[0]
             card = self._trello.cards.new(_TROLLY_CONFIG_CARD, list_id)
             self._config_card = card['id']
 
@@ -293,7 +300,7 @@ class TrollyBoard(object):
         return copy.copy(self._config)
 
     def set_user_data(self, key, userdata):
-        if key in ('default_list', 'lists', 'map', 'card_map', 'card_rev_map', 'card_idx'):
+        if key in ('default_list', 'lists', 'list_map', 'card_map', 'card_rev_map', 'card_idx'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config['userdata']
         self.save_config()
