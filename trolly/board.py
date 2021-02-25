@@ -77,6 +77,7 @@ class TrollyBoard(object):
             self._config_card = config_card['id']
             self._config = _get_board_config(trello, config_card)
         else:
+            print('warning: no configuration')
             self._config_card = None
             self._config = None
 
@@ -136,7 +137,7 @@ class TrollyBoard(object):
             return self._config['lists'][list_alias]['id']
         return list_alias  # must be the ID
 
-    def card_index_to_id(self, index):
+    def card_id(self, index):
         if 'card_rev_map' not in self._config:
             return None
         if index not in self._config['card_rev_map']:
@@ -153,7 +154,7 @@ class TrollyBoard(object):
             # Nondecreasing Integer map for cards
             if card['id'] not in self._config['card_map']:
                 cid = card['id']
-                idx = card['idShort']
+                idx = int(card['idShort'])
 
                 # Store forward and reverse maps
                 self._config['card_map'][cid] = idx
@@ -219,7 +220,7 @@ class TrollyBoard(object):
         return ret
 
     def card(self, card_index):
-        card_id = None
+        card_id = int(card_index)
         if card_index not in self._config['card_rev_map'] and card_index not in self._config['card_map']:
             self.index_cards()
 
@@ -242,6 +243,7 @@ class TrollyBoard(object):
         fails = []
         moves = []
         for idx in card_indices:
+            idx = int(idx)
             card_id = self._config['card_rev_map'][idx]
             if not card_id:
                 fails.append(idx)
@@ -255,7 +257,9 @@ class TrollyBoard(object):
             self._trello.cards.update(card, idList=list_id)
         return moves
 
-    def set_default_list(self, list_alias):
+    def default_list(self, list_alias=None):
+        if list_alias is None:
+            return self._config['default_list']
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
         if list_alias in self._config['lists']:
@@ -291,10 +295,12 @@ class TrollyBoard(object):
         return self._trello.cards.new(name, list_id, description)
 
     def close(self, card_idx):
+        card_idx = int(card_idx)
         card_id = self._config['card_rev_map'][card_idx]
         return self._trello.cards.update_closed(card_id, True)
 
     def reopen(self, card_idx):
+        card_idx = int(card_idx)
         if card_idx in self._config['card_rev_map']:
             card_id = self._config['card_rev_map'][card_idx]
             card = self._trello.cards.update_closed(card_id, False)
@@ -303,7 +309,7 @@ class TrollyBoard(object):
         # Search our board
         cards = self._trello.boards.get_card_filter('all', self._board_id)
         for card in cards:
-            if card['idShort'] != card_idx:
+            if int(card['idShort']) != card_idx:
                 continue
             # Reopen card
             if card['closed']:
