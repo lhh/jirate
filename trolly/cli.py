@@ -67,7 +67,7 @@ def close(board, argv):
 
 
 def reopen(board, argv):
-    if board.close(argv[0]):
+    if board.reopen(argv[0]):
         return 0
     return 1
 
@@ -91,6 +91,16 @@ def list_cards(board, argv):
             print('  ', item[0], item[1])
 
 
+def list_lists(board, argv):
+    default = board.default_list()
+    lists = board.lists()
+    for lname in lists:
+        if lists[lname]['id'] == default:
+            print(' *', lname, lists[lname]['name'])
+        else:
+            print('  ', lname, lists[lname]['name'])
+
+
 def new_card(board, argv):
     # todo argparse here
     desc = ' '.join(argv)
@@ -100,11 +110,13 @@ def new_card(board, argv):
 
 def refresh(board, argv):
     board.refresh()
+    board.index_cards()
     board.save_config()
 
 
 commands = {
-    'list': list_cards,
+    'ls': list_cards,
+    'll': list_lists,
     'move': move,
     'close': close,
     'new': new_card,
