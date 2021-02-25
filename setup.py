@@ -59,6 +59,8 @@ setuptools.setup(
     packages=['trolly'],
     url='http://github.com/lhh/trolly',
     data_files=[("", ["LICENSE.txt"])],
+    entry_points= {
+        'console_scripts': ['trolly = trolly.cli:main']},
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Developers',
                  'Natural Language :: English',
