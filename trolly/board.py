@@ -144,6 +144,15 @@ class TrollyBoard(object):
             return None
         return self._config['card_rev_map'][index]
 
+    def _index_card(self, card):
+        if card['id'] not in self._config['card_map']:
+            cid = card['id']
+            idx = int(card['idShort'])
+
+            # Store forward and reverse maps
+            self._config['card_map'][cid] = idx
+            self._config['card_rev_map'][idx] = cid
+
     def _index_cards(self, cards):
         if 'card_map' not in self._config:
             self._config['card_map'] = {}
@@ -151,14 +160,7 @@ class TrollyBoard(object):
             self._config['card_rev_map'] = {}
 
         for card in cards:
-            # Nondecreasing Integer map for cards
-            if card['id'] not in self._config['card_map']:
-                cid = card['id']
-                idx = int(card['idShort'])
-
-                # Store forward and reverse maps
-                self._config['card_map'][cid] = idx
-                self._config['card_rev_map'][idx] = cid
+            self._index_card(card)
 
     # Prune all invisible or closed cards from our tables
     # Originally, this would look for cards which are closed, but due to how
@@ -292,7 +294,9 @@ class TrollyBoard(object):
         if start_list is None:
             start_list = self._config['default_list']
         list_id = self._list_to_id(start_list)
-        return self._trello.cards.new(name, list_id, description)
+        ret = self._trello.cards.new(name, list_id, description)
+        self._index_card(ret)
+        return ret
 
     def close(self, card_idx):
         card_idx = int(card_idx)
