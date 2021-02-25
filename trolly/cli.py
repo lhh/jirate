@@ -89,6 +89,7 @@ def list_cards(board, argv):
         print(key)
         for item in lists[key]:
             print('  ', item[0], item[1])
+    return 0
 
 
 def list_lists(board, argv):
@@ -99,6 +100,7 @@ def list_lists(board, argv):
             print(' *', lname, lists[lname]['name'])
         else:
             print('  ', lname, lists[lname]['name'])
+    return 0
 
 
 def new_card(board, argv):
@@ -106,12 +108,14 @@ def new_card(board, argv):
     desc = ' '.join(argv)
     card = board.new(desc)
     print(card['idShort'], card['name'])
+    return 0
 
 
 def refresh(board, argv):
     board.refresh()
     board.index_cards()
     board.save_config()
+    return 0
 
 
 commands = {
