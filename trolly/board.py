@@ -245,7 +245,10 @@ class TrollyBoard(object):
         fails = []
         moves = []
         for idx in card_indices:
-            idx = int(idx)
+            try:
+                idx = int(idx)
+            except ValueError:
+                raise KeyError('No such card: ' + idx)
             card_id = self._config['card_rev_map'][idx]
             if not card_id:
                 fails.append(idx)
@@ -270,6 +273,7 @@ class TrollyBoard(object):
             self._config['default_list'] = list_alias
         else:
             raise Exception('Code path error')
+        return self._config['default_list']
 
     def rename(self, list_alias, new_name):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:

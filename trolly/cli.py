@@ -110,6 +110,12 @@ def list_lists(board, argv):
     return (0, False)
 
 
+def set_default(board, argv):
+    default = board.default_list()
+    new_default = board.default_list(argv[0])
+    return (0, (default != new_default))
+
+
 def new_card(board, argv):
     # todo argparse here
     desc = ' '.join(argv)
@@ -127,6 +133,7 @@ def refresh(board, argv):
 commands = {
     'ls': list_cards,
     'll': list_lists,
+    'default': set_default,
     'mv': move,
     'close': close,
     'new': new_card,
@@ -146,6 +153,7 @@ def parse(board):
     cmd = argv.pop(0)
     ret, save = commands[cmd](board, argv)
     if save:
+        # print('Saving...')
         board.save_config()
     sys.exit(ret)
 
