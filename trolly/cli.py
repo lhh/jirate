@@ -54,22 +54,29 @@ def move(board, argv):
         raise ValueError('move requires at least 2 arguments')
 
     target = argv.pop()
+    if len(argv) == 1:
+        try:
+            board.rename(argv[0], target)
+            return (0, True)
+        except KeyError:
+            pass
+
     if board.move(argv, target):
         print('Moved', argv, 'to', target)
-        return 0
-    return 1
+        return (0, False)
+    return (1, False)
 
 
 def close(board, argv):
     if board.close(argv[0]):
-        return 0
-    return 1
+        return (0, False)
+    return (1, False)
 
 
 def reopen(board, argv):
     if board.reopen(argv[0]):
-        return 0
-    return 1
+        return (0, False)
+    return (1, False)
 
 
 def list_cards(board, argv):
@@ -89,7 +96,7 @@ def list_cards(board, argv):
         print(key)
         for item in lists[key]:
             print('  ', item[0], item[1])
-    return 0
+    return (0, True)
 
 
 def list_lists(board, argv):
@@ -100,7 +107,7 @@ def list_lists(board, argv):
             print(' *', lname, lists[lname]['name'])
         else:
             print('  ', lname, lists[lname]['name'])
-    return 0
+    return (0, False)
 
 
 def new_card(board, argv):
@@ -108,20 +115,19 @@ def new_card(board, argv):
     desc = ' '.join(argv)
     card = board.new(desc)
     print(card['idShort'], card['name'])
-    return 0
+    return (0, False)
 
 
 def refresh(board, argv):
     board.refresh()
     board.index_cards()
-    board.save_config()
-    return 0
+    return (0, True)
 
 
 commands = {
     'ls': list_cards,
     'll': list_lists,
-    'move': move,
+    'mv': move,
     'close': close,
     'new': new_card,
     'reopen': reopen,
@@ -138,7 +144,10 @@ def parse(board):
         print('No command specified')
         sys.exit(0)
     cmd = argv.pop(0)
-    sys.exit(commands[cmd](board, argv))
+    ret, save = commands[cmd](board, argv)
+    if save:
+        board.save_config()
+    sys.exit(ret)
 
 
 def get_board():
