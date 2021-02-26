@@ -62,7 +62,7 @@ def get_board_config(trello, board_id):
 
 class TrollyBoard(object):
     def __init__(self, trello, url):
-        self._trello = trello
+        self.trello = trello
 
         if url.startswith('http'):
             board_id = url.rsplit('/', 1)
@@ -84,7 +84,7 @@ class TrollyBoard(object):
         self.refresh()
 
     def refresh(self):
-        lists = self._trello.boards.get_list(self._board_id)
+        lists = self.trello.boards.get_list(self._board_id)
 
         if not self._config:
             self._config = {'lists': {}, 'list_map': {}, 'default_list': None, 'card_idx': 0}
@@ -172,7 +172,7 @@ class TrollyBoard(object):
     def gc_cards(self, board_cleanup=None, dry_run=False):
         if board_cleanup not in (None, 'all', 'list'):
             raise ValueError('Invalid value for board_cleanup: ' + board_cleanup)
-        cards = self._trello.boards.get_card_filter('visible', self._board_id)
+        cards = self.trello.boards.get_card_filter('visible', self._board_id)
         self._config['card_rev_map'] = {}
         self._config['card_map'] = {}
         self._index_cards(cards)
@@ -184,7 +184,7 @@ class TrollyBoard(object):
         # be undone and is destructive.  However, for long-lived boards,
         # old cards pile up and slow things down.
         ret = {}
-        all_cards = self._trello.boards.get_card_filter('all', self._board_id)
+        all_cards = self.trello.boards.get_card_filter('all', self._board_id)
         for card in all_cards:
             # We just indexed these
             if ((board_cleanup == 'all' and card['id'] in self._config['card_map']) or (board_cleanup == 'list' and card['idList'] in self._config['list_map'])):
@@ -194,14 +194,14 @@ class TrollyBoard(object):
             item = {'id': card['id'], 'name': card['name']}
             ret[card['idShort']] = item
             if not dry_run:
-                self._trello.cards.delete(card['id'])
+                self.trello.cards.delete(card['id'])
         return ret
 
     def index_cards(self, list_alias=None):
         if list_alias is None:
-            cards = self._trello.boards.get_card_filter('visible', self._board_id)
+            cards = self.trello.boards.get_card_filter('visible', self._board_id)
         else:
-            cards = self._trello.lists.get_card(self._list_to_id(list_alias))
+            cards = self.trello.lists.get_card(self._list_to_id(list_alias))
         self._index_cards(cards)
         return cards
 
@@ -233,7 +233,7 @@ class TrollyBoard(object):
         else:
             return None
 
-        return self._trello.cards.get(card_id)
+        return self.trello.cards.get(card_id)
 
     def move(self, card_indices, list_alias):
         list_id = self._list_to_id(list_alias)
@@ -259,7 +259,7 @@ class TrollyBoard(object):
         if fails:
             raise ValueError('No such card(s): ' + str(fails))
         for card in moves:
-            self._trello.cards.update(card, idList=list_id)
+            self.trello.cards.update(card, idList=list_id)
         return moves
 
     def default_list(self, list_alias=None):
@@ -298,33 +298,33 @@ class TrollyBoard(object):
         if start_list is None:
             start_list = self._config['default_list']
         list_id = self._list_to_id(start_list)
-        ret = self._trello.cards.new(name, list_id, description)
+        ret = self.trello.cards.new(name, list_id, description)
         self._index_card(ret)
         return ret
 
     def close(self, card_idx):
         card_idx = int(card_idx)
         card_id = self._config['card_rev_map'][card_idx]
-        return self._trello.cards.update_closed(card_id, True)
+        return self.trello.cards.update_closed(card_id, True)
 
     def reopen(self, card_idx):
         card_idx = int(card_idx)
         if card_idx in self._config['card_rev_map']:
             card_id = self._config['card_rev_map'][card_idx]
-            card = self._trello.cards.update_closed(card_id, False)
+            card = self.trello.cards.update_closed(card_id, False)
             return card
 
         # Search our board
-        cards = self._trello.boards.get_card_filter('all', self._board_id)
+        cards = self.trello.boards.get_card_filter('all', self._board_id)
         for card in cards:
             if int(card['idShort']) != card_idx:
                 continue
             # Reopen card
             if card['closed']:
-                self._trello.cards.update_closed(card['id'], False)
+                self.trello.cards.update_closed(card['id'], False)
             # Send to our default list if it was in an archived list
             if card['idList'] not in self._config['list_map']:
-                self._trello.cards.update(card['id'],
+                self.trello.cards.update(card['id'],
                                           idList=self._config['default_list'])
             return card
 
@@ -333,10 +333,10 @@ class TrollyBoard(object):
         if not self._config_card:
             # print('Creating config card')
             list_id = list(self._config['list_map'].keys())[0]
-            card = self._trello.cards.new(_TROLLY_CONFIG_CARD, list_id)
+            card = self.trello.cards.new(_TROLLY_CONFIG_CARD, list_id)
             self._config_card = card['id']
             # Hide our config card
-            self._trello.cards.update_closed(card['id'], True)
+            self.trello.cards.update_closed(card['id'], True)
 
         # Store config as text in description if <=15kb, otherwise store as
         # attachment
@@ -346,18 +346,18 @@ class TrollyBoard(object):
                 # Sadly, need to do two dumps
                 del self._config['attached']
                 config_str = json.dumps(self._config, indent=2)
-            self._trello.cards.update(self._config_card, desc=config_str)
+            self.trello.cards.update(self._config_card, desc=config_str)
             return
 
         if 'attached' not in self._config:
             new_desc = json.dumps({'attached': True})
-            self._trello.cards.update(self._config_card, desc=new_desc)
+            self.trello.cards.update(self._config_card, desc=new_desc)
             self._config['attached'] = True
             config_str = json.dumps(self._config, indent=2)
 
         config_info = config_str.encode('utf-8')
 
-        attachments = self._trello.cards.get_attachments(self._config_card)
+        attachments = self.trello.cards.get_attachments(self._config_card)
         old_config = None
         for suspect in attachments:
             if not suspect['isUpload']:
@@ -369,10 +369,10 @@ class TrollyBoard(object):
 
         # Upload new attachment, then purge the old one, just in case we
         # crash - better to have two (one slightly out of date) than none
-        self._trello.cards.new_file_attachment(self._config_card, 'trolly-config.bz2',
+        self.trello.cards.new_file_attachment(self._config_card, 'trolly-config.bz2',
                                                bindata=bz2.compress(config_info))
         if old_config:
-            self._trello.cards.delete_attachment(old_config, self._config_card)
+            self.trello.cards.delete_attachment(old_config, self._config_card)
 
     def config(self):
         return copy.copy(self._config)
