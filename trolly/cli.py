@@ -119,9 +119,9 @@ def set_default(board, argv):
 
 
 def new_card(board, argv):
+    desc = None
     if argv:
         name = ' '.join(argv)
-        desc = None
     else:
         text = editor()
         lines = text.split('\n')
@@ -130,7 +130,7 @@ def new_card(board, argv):
             print('New card creation canceled.')
             return (1, False)
         lines.pop(0)
-        while lines[0] == '':
+        while len(lines) and lines[0] == '':
             lines.pop(0)
         if len(lines):
             desc = '\n'.join(lines)
