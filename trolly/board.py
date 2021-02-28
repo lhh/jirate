@@ -232,8 +232,15 @@ class TrollyBoard(object):
         return ret
 
     def card(self, card_index, verbose=False):
-        card_id = int(card_index)
-        if card_index not in self._config['card_rev_map'] and card_index not in self._config['card_map']:
+        need_index = False
+        try:
+            card_index = int(card_index)
+            if card_index not in self._config['card_rev_map']:
+                need_index = True
+        except ValueError:
+            if card_index not in self._config['card_map']:
+                need_index = True
+        if need_index:
             self.index_cards()
 
         if card_index in self._config['card_rev_map']:
