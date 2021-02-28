@@ -302,6 +302,10 @@ class TrollyBoard(object):
         self._index_card(ret)
         return ret
 
+    def comment(self, card_idx, text):
+        card_id = self.card_id(card_idx)
+        return self.trello.cards.new_action_comment(card_id, text)
+
     def close(self, card_idx):
         card_idx = int(card_idx)
         card_id = self._config['card_rev_map'][card_idx]
@@ -325,7 +329,7 @@ class TrollyBoard(object):
             # Send to our default list if it was in an archived list
             if card['idList'] not in self._config['list_map']:
                 self.trello.cards.update(card['id'],
-                                          idList=self._config['default_list'])
+                                         idList=self._config['default_list'])
             return card
 
     def save_config(self):
@@ -370,7 +374,7 @@ class TrollyBoard(object):
         # Upload new attachment, then purge the old one, just in case we
         # crash - better to have two (one slightly out of date) than none
         self.trello.cards.new_file_attachment(self._config_card, 'trolly-config.bz2',
-                                               bindata=bz2.compress(config_info))
+                                              bindata=bz2.compress(config_info))
         if old_config:
             self.trello.cards.delete_attachment(old_config, self._config_card)
 

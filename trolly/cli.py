@@ -140,6 +140,20 @@ def new_card(board, argv):
     return (0, True)
 
 
+def comment(board, argv):
+    if not argv:
+        return (1, False)
+
+    card_id = int(argv.pop(0))
+    if argv:
+        text = ' '.join(argv)
+    else:
+        text = editor()
+
+    board.comment(card_id, text)
+    return (0, False)
+
+
 def refresh(board, argv):
     board.refresh()
     board.index_cards()
@@ -149,6 +163,7 @@ def refresh(board, argv):
 commands = {
     'ls': list_cards,
     'll': list_lists,
+    'comment': comment,
     'default': set_default,
     'mv': move,
     'close': close,
