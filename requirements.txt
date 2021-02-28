@@ -1,4 +1,4 @@
 requests>=2.0.0
 trollo>=0.1.9
-editor
+editor>=1.2.1
 PyYAML

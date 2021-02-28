@@ -4,6 +4,8 @@ import os
 import re
 # import yaml
 
+import editor
+
 from trollo import TrelloApi
 
 from trolly import board
@@ -117,11 +119,25 @@ def set_default(board, argv):
 
 
 def new_card(board, argv):
-    # todo argparse here
-    desc = ' '.join(argv)
-    card = board.new(desc)
+    if argv:
+        name = ' '.join(argv)
+        desc = None
+    else:
+        text = editor()
+        lines = text.split('\n')
+        name = lines[0]
+        if not len(name):
+            print('New card creation canceled.')
+            return (1, False)
+        lines.pop(0)
+        while lines[0] == '':
+            lines.pop(0)
+        if len(lines):
+            desc = '\n'.join(lines)
+
+    card = board.new(name, desc)
     print(card['idShort'], card['name'])
-    return (0, False)
+    return (0, True)
 
 
 def refresh(board, argv):
