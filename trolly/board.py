@@ -221,7 +221,7 @@ class TrollyBoard(object):
             ret[self._config['card_map'][card['id']]] = val
         return ret
 
-    def card(self, card_index):
+    def card(self, card_index, verbose=False):
         card_id = int(card_index)
         if card_index not in self._config['card_rev_map'] and card_index not in self._config['card_map']:
             self.index_cards()
@@ -233,7 +233,11 @@ class TrollyBoard(object):
         else:
             return None
 
-        return self.trello.cards.get(card_id)
+        card = self.trello.cards.get(card_id)
+        if verbose:
+            actions = self.trello.cards.get_action(card_id)
+            card['history'] = actions
+        return card
 
     def move(self, card_indices, list_alias):
         list_id = self._list_to_id(list_alias)
