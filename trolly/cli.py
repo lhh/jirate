@@ -160,12 +160,95 @@ def refresh(board, argv):
     return (0, True)
 
 
+def action_null(action):
+    pass
+
+
+def action_comment(action):
+    data = action['data']
+    print(action['date'], '- Comment by', action['memberCreator']['username'])
+    print('=====')
+    print(data['text'])
+
+
+def display_move(action):
+    data = action['data']
+    print(action['date'], '- Moved by', action['memberCreator']['username'])
+    print('   ', data['listBefore']['name'], '→', data['listAfter']['name'])
+
+
+def display_state(action):
+    data = action['data']
+
+    if data['card']['closed']:
+        print(action['date'], '- Closed by', action['memberCreator']['username'])
+    else:
+        print(action['date'], '- Opened by', action['memberCreator']['username'])
+
+
+update_map = {
+    'idList': display_move,
+    'closed': display_state,
+    'desc': action_null
+}
+
+
+def action_update(action):
+    update_type = list(action['data']['old'].keys())[0]
+
+    try:
+        update_map[update_type](action)
+    except KeyError:
+        print('warning: unhandled action type:', action['type'] + ':' + update_type)
+
+
+def action_create(action):
+    print(action['date'], '- Created by', action['memberCreator']['username'])
+
+
+action_map = {
+    'commentCard': action_comment,
+    'updateCard': action_update,
+    'createCard': action_create,
+    'addAttachmentToCard': action_null,
+    'deleteAttachmentFromCard': action_null
+}
+
+
+def display_action(action):
+    try:
+        action_map[action['type']](action)
+    except KeyError:
+        print('warning: unhandled action type:', action['type'])
+        pass
+
+
+def cat(board, argv):
+    card = board.card(argv[0], True)
+    if not card:
+        return (127, False)
+
+    print(card['idShort'], '-', card['name'])
+    if card['desc']:
+        print()
+        print(card['desc'])
+    print()
+    print('Activity')
+    print('--------')
+
+    for act in card['history']:
+        display_action(act)
+
+    return (0, False)
+
+
 commands = {
     'ls': list_cards,
     'll': list_lists,
     'comment': comment,
     'default': set_default,
     'mv': move,
+    'cat': cat,
     'close': close,
     'new': new_card,
     'reopen': reopen,

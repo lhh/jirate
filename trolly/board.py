@@ -245,14 +245,14 @@ class TrollyBoard(object):
 
         if card_index in self._config['card_rev_map']:
             card_id = self._config['card_rev_map'][card_index]
-        elif card_index not in self._config['card_map']:
+        elif card_index in self._config['card_map']:
             card_id = card_index
         else:
             return None
 
         card = self.trello.cards.get(card_id)
         if verbose:
-            actions = self.trello.cards.get_action(card_id)
+            actions = self.trello.cards.get_action(card_id, filter='all')
             card['history'] = actions
         return card
 
