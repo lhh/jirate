@@ -242,6 +242,24 @@ def cat(board, argv):
     return (0, False)
 
 
+def purge(board, argv):
+    dry_run = True
+
+    if len(argv) and argv[0] == '--yes':
+        dry_run = False
+
+    cards = board.gc_cards('all', dry_run)
+    if dry_run:
+        print(f'These {len(cards)} cards would be purged:')
+        for card in cards:
+            print(' ', card, cards[card]['name'])
+        print('Rerun with \'--yes\' to actually perform this operation.')
+    else:
+        print(f'Purged {len(cards)} cards')
+
+    return (0, False)
+
+
 commands = {
     'ls': list_cards,
     'll': list_lists,
@@ -252,7 +270,8 @@ commands = {
     'close': close,
     'new': new_card,
     'reopen': reopen,
-    'refresh': refresh
+    'refresh': refresh,
+    'purge': purge
 }
 
 
