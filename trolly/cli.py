@@ -292,9 +292,22 @@ def parse(board):
 
 
 def get_board():
-    my_board = os.environ['TROLLY_BOARD']
+    try:
+        my_board = os.environ['TROLLY_BOARD']
+    except KeyError:
+        print('Please set a TROLLY_BOARD environment variable')
+        return 1
+
+    readonly = False
+    try:
+        readonly = os.environ['TROLLY_READONLY']
+        if readonly in ('1', 'true', 'True', 'yes', 'Yes'):
+            readonly = True
+    except KeyError:
+        pass
+
     tboard = trello_init()
-    return board.TrollyBoard(tboard, my_board)
+    return board.TrollyBoard(tboard, my_board, readonly=readonly)
 
 
 def main():

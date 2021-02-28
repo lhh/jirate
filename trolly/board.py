@@ -71,7 +71,7 @@ def get_board_config(trello, board_id):
 
 
 class TrollyBoard(object):
-    def __init__(self, trello, url):
+    def __init__(self, trello, url, readonly=False):
         self.trello = trello
 
         if url.startswith('http'):
@@ -81,6 +81,7 @@ class TrollyBoard(object):
 
         self._board = trello.boards.get(board_id)
         self._board_id = self._board['id']
+        self._ro = readonly
 
         config_card = get_config_card(trello, self._board_id)
         if config_card:
@@ -354,6 +355,9 @@ class TrollyBoard(object):
             return card
 
     def save_config(self):
+        if self._ro:
+            return
+
         # Create our config card if not present
         if not self._config_card:
             # print('Creating config card')
