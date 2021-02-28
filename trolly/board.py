@@ -25,6 +25,16 @@ def get_config_card(trello, board_id):
     return None
 
 
+# XXX work around the fact that json doesn't let you index by integers?
+def _fix_config(my_config):
+    if 'card_rev_map' not in my_config:
+        return my_config
+
+    nmap = {int(key): val for key, val in my_config['card_rev_map'].items()}
+    my_config['card_rev_map'] = nmap
+    return my_config
+
+
 def _get_board_config(trello, config_card):
     try:
         ret = json.loads(config_card['desc'])
@@ -33,7 +43,7 @@ def _get_board_config(trello, config_card):
 
     # Not an attachment
     if 'attached' not in ret or not ret['attached']:
-        return ret
+        return _fix_config(ret)
 
     attachments = trello.cards.get_attachments(config_card['id'])
     config_id = None
@@ -53,7 +63,7 @@ def _get_board_config(trello, config_card):
         return None
 
     config_data = json.loads(bz2.decompress(config_attachment['data']).decode('utf-8'))
-    return config_data
+    return _fix_config(config_data)
 
 
 def get_board_config(trello, board_id):
@@ -127,7 +137,7 @@ class TrollyBoard(object):
             self._config['list_map'][item['id']] = name
 
         # Rebuild our reversemap just in case
-        rev_map = {val: key for key, val in self._config['card_map'].items()}
+        rev_map = {int(val): key for key, val in self._config['card_map'].items()}
         self._config['card_rev_map'] = rev_map
 
     def _list_to_id(self, list_alias):
