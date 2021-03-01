@@ -6,7 +6,7 @@ import setuptools
 import re
 
 from textwrap import dedent
-from trollo import __version__
+from trolly import __version__
 
 
 def requires(prefix=''):
