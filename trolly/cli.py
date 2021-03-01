@@ -276,6 +276,11 @@ def cat(board, argv):
         return (127, False)
 
     print(card['idShort'], '-', card['name'])
+
+    if verbose:
+        print('ID :', card['id'])
+        print('URL:', card['url'])
+
     if card['desc']:
         print()
         print(card['desc'])
