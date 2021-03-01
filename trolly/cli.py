@@ -179,7 +179,6 @@ def action_comment(action, verbose):
     else:
         print(action['date'], '- Comment by', action['memberCreator']['username'])
     print('   ', data['text'])
-    print()
 
 
 def display_move(action, verbose):
@@ -200,6 +199,7 @@ def display_state(action, verbose):
 update_map = {
     'idList': display_move,
     'closed': display_state,
+    'name': action_null,
     'desc': action_null
 }
 
@@ -278,6 +278,48 @@ def purge(board, argv):
     return (0, False)
 
 
+def join_card_text(name, desc):
+    return name + '\n\n' + desc
+
+
+def edit_card(board, argv):
+    if len(argv) < 1:
+        print('Syntax: edit <card_id> | comment <comment_id>]')
+        return (1, False)
+
+    arg = argv[0]
+    if arg == 'comment':
+        if len(argv) < 2:
+            print('Syntax: edit <card_id> | comment <comment_id>]')
+            return (1, False)
+
+        comment_id = argv[1]
+        comment = board.trello.actions.get(comment_id)
+        new_text = editor(comment['data']['text'])
+        if not new_text:
+            print('Canceled')
+            return (0, False)
+        if comment['data']['text'] != new_text:
+            board.trello.actions.update(comment_id, new_text)
+        else:
+            print('No changes')
+        return (0, False)
+
+    card_idx = arg
+    card = board.card(card_idx)
+    card_text = join_card_text(card['name'], card['desc'])
+    new_text = editor(card_text)
+    if not new_text:
+        print('Canceled')
+        return (0, False)
+    name, desc = split_card_text(new_text)
+    if card['name'] != name or card['desc'] != desc:
+        board.trello.cards.update(card['id'], name=name, desc=desc)
+    else:
+        print('No changes')
+    return (0, False)
+
+
 commands = {
     'ls': list_cards,
     'll': list_lists,
@@ -286,6 +328,7 @@ commands = {
     'mv': move,
     'cat': cat,
     'close': close,
+    'edit': edit_card,
     'new': new_card,
     'reopen': reopen,
     'refresh': refresh,
