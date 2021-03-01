@@ -436,7 +436,7 @@ def main():
     except KeyError:
         print(f'Invalid command: {cmd}')
         halp()
-        return (1, False)
+        sys.exit(1)
 
     if save:
         # print('Saving...')
