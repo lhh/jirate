@@ -260,7 +260,9 @@ action_map = {
     'removeMemberFromCard': action_null,
     'addAttachmentToCard': action_null,
     'deleteAttachmentFromCard': action_null,
+    'copyCard': action_null,
     'addChecklistToCard': action_null,
+    'removeChecklistFromCard': action_null,
     'updateCheckItemStateOnCard': action_null
 }
 
@@ -396,7 +398,7 @@ def get_board():
         my_board = os.environ['TROLLY_BOARD']
     except KeyError:
         print('Please set a TROLLY_BOARD environment variable')
-        return 1
+        raise
 
     readonly = False
     try:
@@ -423,7 +425,11 @@ def main():
     if cmd == 'help':
         halp()
         sys.exit(0)
-    board = get_board()
+
+    try:
+        board = get_board()
+    except KeyError:
+        sys.exit(1)
 
     try:
         ret, save = commands[cmd](board, argv)
