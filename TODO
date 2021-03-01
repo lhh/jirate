@@ -1,0 +1,29 @@
+Attachments
+- Display attachments
+- add URL attachments
+- add File attachments
+- Delete attachments
+
+Lists
+- Create list
+- Archive list
+
+Ordering
+- Move list left or right in UI
+- Move cards up/down in UI
+
+Labels
+- everything
+  - label aliases like we have for lists
+  - trolly label card abc
+  - create / delete labels
+
+Checklists
+- everything
+
+Code refactoring
+- Simplify wherever duplicate code exists
+
+Man page
+
+Unit tests :P
