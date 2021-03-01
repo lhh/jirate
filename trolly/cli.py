@@ -158,6 +158,10 @@ def comment(board, argv):
     else:
         text = editor()
 
+    if not len(text):
+        print('Canceled')
+        return (0, False)
+
     board.comment(card_id, text)
     return (0, False)
 
