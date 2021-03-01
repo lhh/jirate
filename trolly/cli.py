@@ -118,22 +118,30 @@ def set_default(board, argv):
     return (0, (default != new_default))
 
 
+def split_card_text(text):
+    lines = text.split('\n')
+    name = lines[0]
+    desc = None
+    if not len(name):
+        return (None, None)
+    lines.pop(0)
+    while len(lines) and lines[0] == '':
+        lines.pop(0)
+    if len(lines):
+        desc = '\n'.join(lines)
+    return (name, desc)
+
+
 def new_card(board, argv):
     desc = None
     if argv:
         name = ' '.join(argv)
     else:
         text = editor()
-        lines = text.split('\n')
-        name = lines[0]
-        if not len(name):
+        name, desc = split_card_text(text)
+        if name is None:
             print('New card creation canceled.')
             return (1, False)
-        lines.pop(0)
-        while len(lines) and lines[0] == '':
-            lines.pop(0)
-        if len(lines):
-            desc = '\n'.join(lines)
 
     card = board.new(name, desc)
     print(card['idShort'], card['name'])
@@ -172,6 +180,7 @@ def action_comment(action, verbose):
         print(action['date'], '- Comment by', action['memberCreator']['username'])
     print('   ', data['text'])
     print()
+
 
 def display_move(action, verbose):
     data = action['data']
