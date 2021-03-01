@@ -28,8 +28,12 @@ def bugzilla_refs(trello_list):
 
 # config = get_config("~/.trellosync")
 def trello_init():
-    TRELLO_KEY = os.environ['TRELLO_KEY']
-    TRELLO_TOKEN = os.environ['TRELLO_TOKEN']
+    try:
+        TRELLO_KEY = os.environ['TRELLO_KEY']
+        TRELLO_TOKEN = os.environ['TRELLO_TOKEN']
+    except KeyError:
+        print('Please set your TRELLO_KEY and TRELLO_TOKEN environment variables')
+        exit(1)
 
     if TRELLO_KEY is None:
         print("Please specify key in ~/.???")
@@ -53,7 +57,8 @@ def trello_init():
 
 def move(board, argv):
     if len(argv) < 2:
-        raise ValueError('move requires at least 2 arguments')
+        print('Syntax: mv <card_1> [..<card_N] <list_name>')
+        return (1, False)
 
     target = argv.pop()
     if len(argv) == 1:
@@ -70,12 +75,18 @@ def move(board, argv):
 
 
 def close(board, argv):
+    if len(argv) < 1:
+        print('Syntax: close <card_index>')
+        return (1, False)
     if board.close(argv[0]):
         return (0, False)
     return (1, False)
 
 
 def reopen(board, argv):
+    if len(argv) < 1:
+        print('Syntax: reopen <card_index>')
+        return (1, False)
     if board.reopen(argv[0]):
         return (0, False)
     return (1, False)
@@ -113,6 +124,9 @@ def list_lists(board, argv):
 
 
 def set_default(board, argv):
+    if len(argv) < 1:
+        print('Syntax: default <list_name>')
+        return (1, False)
     default = board.default_list()
     new_default = board.default_list(argv[0])
     return (0, (default != new_default))
@@ -140,7 +154,7 @@ def new_card(board, argv):
         text = editor()
         name, desc = split_card_text(text)
         if name is None:
-            print('New card creation canceled.')
+            print('Canceled')
             return (1, False)
 
     card = board.new(name, desc)
@@ -247,6 +261,10 @@ def cat(board, argv):
     except (ValueError, IndexError):
         verbose = False
 
+    if len(argv) < 1:
+        print('Syntax: cat [-v] <card_index>')
+        return (1, False)
+
     card = board.card(argv[0], True)
     if not card:
         return (127, False)
@@ -289,13 +307,13 @@ def join_card_text(name, desc):
 
 def edit_card(board, argv):
     if len(argv) < 1:
-        print('Syntax: edit <card_id> | comment <comment_id>]')
+        print('Syntax: edit <card_index> | comment <comment_id>]')
         return (1, False)
 
     arg = argv[0]
     if arg == 'comment':
         if len(argv) < 2:
-            print('Syntax: edit <card_id> | comment <comment_id>]')
+            print('Syntax: edit <card_index> | comment <comment_id>]')
             return (1, False)
 
         comment_id = argv[1]
