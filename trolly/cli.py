@@ -378,29 +378,6 @@ commands = {
 }
 
 
-def parse(board):
-    import sys
-    argv = sys.argv
-    argv.pop(0)
-
-    if not len(argv):
-        print('No command specified')
-        sys.exit(0)
-    cmd = argv.pop(0)
-
-    try:
-        ret, save = commands[cmd](board, argv)
-    except KeyError:
-        print(f'Invalid command: {cmd}')
-        halp()
-        return (1, False)
-
-    if save:
-        # print('Saving...')
-        board.save_config()
-    sys.exit(ret)
-
-
 def get_board():
     try:
         my_board = os.environ['TROLLY_BOARD']
@@ -421,7 +398,28 @@ def get_board():
 
 
 def main():
-    parse(get_board())
+    import sys
+    argv = sys.argv
+    argv.pop(0)
+
+    if not len(argv):
+        print('No command specified')
+        sys.exit(0)
+
+    cmd = argv.pop(0)
+    board = get_board()
+
+    try:
+        ret, save = commands[cmd](board, argv)
+    except KeyError:
+        print(f'Invalid command: {cmd}')
+        halp()
+        return (1, False)
+
+    if save:
+        # print('Saving...')
+        board.save_config()
+    sys.exit(ret)
 
 
 if __name__ == '__main__':
