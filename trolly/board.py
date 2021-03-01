@@ -277,8 +277,11 @@ class TrollyBoard(object):
             try:
                 idx = int(idx)
             except ValueError:
-                raise KeyError('No such card: ' + idx)
-            card_id = self._config['card_rev_map'][idx]
+                raise ValueError('No such card: ' + idx)
+            try:
+                card_id = self._config['card_rev_map'][idx]
+            except KeyError:
+                card_id = None
             if not card_id:
                 fails.append(idx)
             else:

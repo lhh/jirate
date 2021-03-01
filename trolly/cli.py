@@ -431,11 +431,15 @@ def main():
     except KeyError:
         sys.exit(1)
 
-    try:
-        ret, save = commands[cmd](board, argv)
-    except KeyError:
+    if cmd not in commands:
         print(f'Invalid command: {cmd}')
         halp()
+        sys.exit(1)
+
+    try:
+        ret, save = commands[cmd](board, argv)
+    except Exception as e:
+        print('Error:', e)
         sys.exit(1)
 
     if save:
