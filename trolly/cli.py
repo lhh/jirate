@@ -343,6 +343,13 @@ def edit_card(board, argv):
     return (0, False)
 
 
+def halp(board, argv):
+    print('Commands:')
+    for key in commands:
+        print('   ', key)
+    return (0, False)
+
+
 commands = {
     'ls': list_cards,
     'll': list_lists,
@@ -355,7 +362,8 @@ commands = {
     'new': new_card,
     'reopen': reopen,
     'refresh': refresh,
-    'purge': purge
+    'purge': purge,
+    'help': halp
 }
 
 
@@ -373,10 +381,7 @@ def parse(board):
         ret, save = commands[cmd](board, argv)
     except KeyError:
         print(f'Invalid command: {cmd}')
-        print()
-        print('Commands:')
-        for key in commands:
-            print('   ', key)
+        halp()
         return (1, False)
 
     if save:
