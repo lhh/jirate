@@ -1,3 +1,6 @@
+Editor
+- Help text in preliminary editor text a la 'git commit'
+
 Attachments
 - Display attachments
 - add URL attachments
@@ -7,6 +10,9 @@ Attachments
 Lists
 - Create list
 - Archive list
+
+Card listing / manipulation
+- For shared boards, get boards with "me" as assignee
 
 Ordering
 - Move list left or right in UI
