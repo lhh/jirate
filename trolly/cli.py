@@ -160,24 +160,26 @@ def refresh(board, argv):
     return (0, True)
 
 
-def action_null(action):
+def action_null(action, arg=None):
     pass
 
 
-def action_comment(action):
+def action_comment(action, verbose):
     data = action['data']
-    print(action['date'], '- Comment by', action['memberCreator']['username'])
-    print('=====')
-    print(data['text'])
+    if verbose:
+        print(action['date'], '- Comment by', action['memberCreator']['username'], 'ID', action['id'])
+    else:
+        print(action['date'], '- Comment by', action['memberCreator']['username'])
+    print('   ', data['text'])
+    print()
 
-
-def display_move(action):
+def display_move(action, verbose):
     data = action['data']
     print(action['date'], '- Moved by', action['memberCreator']['username'])
     print('   ', data['listBefore']['name'], '→', data['listAfter']['name'])
 
 
-def display_state(action):
+def display_state(action, verbose):
     data = action['data']
 
     if data['card']['closed']:
@@ -193,16 +195,16 @@ update_map = {
 }
 
 
-def action_update(action):
+def action_update(action, verbose):
     update_type = list(action['data']['old'].keys())[0]
 
     try:
-        update_map[update_type](action)
+        update_map[update_type](action, verbose)
     except KeyError:
         print('warning: unhandled action type:', action['type'] + ':' + update_type)
 
 
-def action_create(action):
+def action_create(action, verbose):
     print(action['date'], '- Created by', action['memberCreator']['username'])
 
 
@@ -215,15 +217,22 @@ action_map = {
 }
 
 
-def display_action(action):
+def display_action(action, verbose):
     try:
-        action_map[action['type']](action)
+        action_map[action['type']](action, verbose)
     except KeyError:
         print('warning: unhandled action type:', action['type'])
         pass
 
 
 def cat(board, argv):
+    # check for verbose
+    try:
+        argv.pop(argv.index('-v'))
+        verbose = True
+    except (ValueError, IndexError):
+        verbose = False
+
     card = board.card(argv[0], True)
     if not card:
         return (127, False)
@@ -237,7 +246,7 @@ def cat(board, argv):
     print('--------')
 
     for act in card['history']:
-        display_action(act)
+        display_action(act, verbose)
 
     return (0, False)
 
