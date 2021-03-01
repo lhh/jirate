@@ -96,7 +96,11 @@ def list_cards(board, argv):
     if not argv:
         cards = board.list()
     else:
-        cards = board.list(argv[0])
+        try:
+            cards = board.list(argv[0])
+        except KeyError:
+            print('Invalid list: ' + argv[0] + '. Try \'ll\'?')
+            return (1, False)
 
     lists = {}
     for card in cards:
@@ -343,7 +347,7 @@ def edit_card(board, argv):
     return (0, False)
 
 
-def halp(board, argv):
+def halp(board=None, argv=None):
     print('Commands:')
     for key in commands:
         print('   ', key)
