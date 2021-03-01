@@ -204,6 +204,8 @@ def action_comment(action, verbose):
 
 
 def display_move(action, verbose):
+    if not verbose:
+        return
     data = action['data']
     print(action['date'], '- Moved by', action['memberCreator']['username'])
     print('   ', data['listBefore']['name'], '→', data['listAfter']['name'])
