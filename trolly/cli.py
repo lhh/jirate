@@ -373,8 +373,7 @@ commands = {
     'new': new_card,
     'reopen': reopen,
     'refresh': refresh,
-    'purge': purge,
-    'help': halp
+    'purge': purge
 }
 
 
@@ -407,6 +406,9 @@ def main():
         sys.exit(0)
 
     cmd = argv.pop(0)
+    if cmd == 'help':
+        halp()
+        sys.exit(0)
     board = get_board()
 
     try:
