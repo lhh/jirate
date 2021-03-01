@@ -93,11 +93,18 @@ def reopen(board, argv):
 
 
 def list_cards(board, argv):
+    # check for verbose
+    try:
+        argv.pop(argv.index('-m'))
+        userid = 'me'
+    except (ValueError, IndexError):
+        userid = None
+
     if not argv:
-        cards = board.list()
+        cards = board.list(userid=userid)
     else:
         try:
-            cards = board.list(argv[0])
+            cards = board.list(argv[0], userid)
         except KeyError:
             print('Invalid list: ' + argv[0] + '. Try \'ll\'?')
             return (1, False)
@@ -224,8 +231,11 @@ def display_state(action, verbose):
 update_map = {
     'idList': display_move,
     'closed': display_state,
-    'name': action_null,
-    'desc': action_null
+    'due': action_null,         # Due date/time set
+    'dueReminder': action_null, # Due reminder set
+    'pos': action_null,         # Priority change
+    'name': action_null,        # Name updated
+    'desc': action_null         # Description updated
 }
 
 
@@ -246,8 +256,12 @@ action_map = {
     'commentCard': action_comment,
     'updateCard': action_update,
     'createCard': action_create,
+    'addMemberToCard': action_null,
+    'removeMemberFromCard': action_null,
     'addAttachmentToCard': action_null,
-    'deleteAttachmentFromCard': action_null
+    'deleteAttachmentFromCard': action_null,
+    'addChecklistToCard': action_null,
+    'updateCheckItemStateOnCard': action_null
 }
 
 

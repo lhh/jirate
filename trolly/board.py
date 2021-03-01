@@ -88,11 +88,13 @@ class TrollyBoard(object):
             self._config_card = config_card['id']
             self._config = _get_board_config(trello, config_card)
         else:
-            print('warning: no configuration')
+            # print('warning: no configuration')
             self._config_card = None
             self._config = None
 
         self.refresh()
+        if not self._config_card:
+            self.index_cards()
 
     def refresh(self):
         lists = self.trello.boards.get_list(self._board_id)
@@ -216,7 +218,10 @@ class TrollyBoard(object):
         self._index_cards(cards)
         return cards
 
-    def list(self, list_alias=None):
+    def list(self, list_alias=None, userid=None):
+        if userid == 'me':
+            user = self.trello.members.me()
+            userid = user['id']
         cards = self.index_cards(list_alias)
 
         ret = {}
@@ -224,6 +229,8 @@ class TrollyBoard(object):
             if card['closed']:
                 continue
             if card['idList'] not in self._config['list_map']:
+                continue
+            if userid is not None and userid not in card['idMembers']:
                 continue
             val = {}
             val['id'] = card['id']
