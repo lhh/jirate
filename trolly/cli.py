@@ -368,7 +368,17 @@ def parse(board):
         print('No command specified')
         sys.exit(0)
     cmd = argv.pop(0)
-    ret, save = commands[cmd](board, argv)
+
+    try:
+        ret, save = commands[cmd](board, argv)
+    except KeyError:
+        print(f'Invalid command: {cmd}')
+        print()
+        print('Commands:')
+        for key in commands:
+            print('   ', key)
+        return (1, False)
+
     if save:
         # print('Saving...')
         board.save_config()
