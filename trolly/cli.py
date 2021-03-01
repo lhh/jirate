@@ -188,8 +188,9 @@ def display_move(action, verbose):
 
 
 def display_state(action, verbose):
+    if not verbose:
+        return
     data = action['data']
-
     if data['card']['closed']:
         print(action['date'], '- Closed by', action['memberCreator']['username'])
     else:
