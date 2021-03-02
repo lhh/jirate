@@ -231,11 +231,12 @@ def display_state(action, verbose):
 update_map = {
     'idList': display_move,
     'closed': display_state,
-    'due': action_null,         # Due date/time set
-    'dueReminder': action_null, # Due reminder set
-    'pos': action_null,         # Priority change
-    'name': action_null,        # Name updated
-    'desc': action_null         # Description updated
+    'due': action_null,          # Due date/time set
+    'dueReminder': action_null,  # Due reminder set
+    'pos': action_null,          # Priority change
+    'name': action_null,         # Name updated
+    'desc': action_null,         # Description updated
+    'isTemplate': action_null    # Card is a template
 }
 
 
