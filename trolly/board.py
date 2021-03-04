@@ -157,28 +157,40 @@ class TrollyBoard(object):
         self.refresh_labels(False)
         return self._config['labels']
 
+    def _suspect_label(self, labels, name):
+        # Pass 1: exact match
+        for label in labels:
+            if label['name'] == name:
+                return label
+        # Pass 2: try lowercase or nym()
+        for label in labels:
+            if label['name'].lower() == name.lower():
+                return label
+            if nym(label['name']) == name:
+                return label
+        return None
+
     def label_card(self, card_idx, label_name):
-        # Lazy-fetch labels; reduces RTs to trello if we're not doing
-        # any label operations
-        self.refresh_labels(False)
-
         card = self.card(card_idx)
-        for label in card['labels']:
-            if label['name'] == label_name:
-                return card
+        label = self._suspect_label(card['labels'], label_name)
+        if label:
+            return card
 
-        for label in self._config['labels']:
-            if label_name != label['name']:
-                continue
+        self.refresh_labels(False)
+        label = self._suspect_label(self._config['labels'], label_name)
+        if label:
             return self.trello.cards.new_label_idLabel(card['id'], label['id'])
-
         return self.trello.cards.new_label(card['id'], label_name)
 
     def unlabel_card(self, card_idx, label_name):
         card = self.card(card_idx)
-        for label in card['labels']:
-            if label['name'] == label_name:
-                return self.trello.cards.delete_label_idLabel(label['id'], card['id'])
+        if not card:
+            return None
+        if 'labels' not in card:
+            return card
+        label = self._suspect_label(card['labels'], label_name)
+        if label:
+            return self.trello.cards.delete_label_idLabel(label['id'], card['id'])
         return card
 
     def _list_to_id(self, list_alias):

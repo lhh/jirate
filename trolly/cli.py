@@ -394,12 +394,12 @@ def label_card(board, argv):
     remove = False
     if argv[0] == 'rm':
         remove = True
-        argv.pop()
+        argv.pop(0)
     if len(argv) < 2:
         print('Syntax: label [rm] <card_index> <label>')
         return (1, False)
     if remove:
-        board.unlabel_card(argv[1], argv[2])
+        board.unlabel_card(argv[0], argv[1])
         return (0, False)
     board.label_card(argv[0], argv[1])
     return (0, False)
