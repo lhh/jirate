@@ -97,13 +97,21 @@ class TrollyBoard(object):
             self.index_cards()
 
     def refresh(self):
-        lists = self.trello.boards.get_list(self._board_id)
-
         if not self._config:
-            self._config = {'lists': {}, 'list_map': {}, 'default_list': None, 'card_idx': 0}
-            self._config['card_map'] = {}
-            self._config['card_rev_map'] = {}
+            self._config = {'lists': {},
+                            'list_map': {},
+                            'default_list': None,
+                            'card_map': {},
+                            'card_rev_map': {}}
 
+        self.refresh_lists()
+
+        # Rebuild our reversemap just in case
+        rev_map = {int(val): key for key, val in self._config['card_map'].items()}
+        self._config['card_rev_map'] = rev_map
+
+    def refresh_lists(self):
+        lists = self.trello.boards.get_list(self._board_id)
         # XXX this shouldn't be needed; but the search ignores closed lists
         curr_lists = set([item['id'] for item in lists])
         config_lists = set(self._config['list_map'].keys())
@@ -138,10 +146,6 @@ class TrollyBoard(object):
                 name = name + '_'
             self._config['lists'][name] = val
             self._config['list_map'][item['id']] = name
-
-        # Rebuild our reversemap just in case
-        rev_map = {int(val): key for key, val in self._config['card_map'].items()}
-        self._config['card_rev_map'] = rev_map
 
     def _list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
