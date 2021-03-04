@@ -147,6 +147,18 @@ class TrollyBoard(object):
             self._config['lists'][name] = val
             self._config['list_map'][item['id']] = name
 
+    def refresh_labels(self):
+        labels = self.trello.boards.get_labels(self._board_id)
+        self._config['labels'] = {}
+        self._config['label_map'] = {}
+
+        for label in labels:
+            name = nym(label['name'])
+            while nym in self._config['labels']:
+                name = name + '_'
+            self._config['labels'][name] = label
+            self._config['label_map'][label['id']] = name
+
     def _list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)

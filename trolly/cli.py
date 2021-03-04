@@ -9,6 +9,7 @@ import editor
 from trollo import TrelloApi
 
 from trolly import board
+from trolly.decor import color_string
 
 
 def extract_bugzillas(card):
@@ -297,6 +298,11 @@ def cat(board, argv):
     if verbose:
         print('ID :', card['id'])
         print('URL:', card['url'])
+
+    if 'labels' in card and len(card['labels']):
+        print('Labels: ', end='')
+        for label in card['labels']:
+            print(color_string(label['name'], 'white', bgcolor=label['color']), end=' ')
 
     if card['desc']:
         print()
