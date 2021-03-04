@@ -193,6 +193,24 @@ class TrollyBoard(object):
             return self.trello.cards.delete_label_idLabel(label['id'], card['id'])
         return card
 
+    def delete_label(self, label_name):
+        self.refresh_labels(True)
+        label = self._suspect_label(self._config['labels'], label_name)
+        if label:
+            self.trello.labels.delete(label['id'])
+        return label
+
+    def gc_labels(self, dry_run=False):
+        self.refresh_labels()
+        ret = []
+        for label in self._config['labels']:
+            if 'name' not in label or not label['name']:
+                ret.append(label)
+        if not dry_run:
+            for label in ret:
+                self.trello.labels.delete(label['id'])
+        return ret
+
     def _list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)

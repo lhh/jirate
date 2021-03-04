@@ -324,13 +324,20 @@ def purge(board, argv):
         dry_run = False
 
     cards = board.gc_cards('all', dry_run)
+    labels = board.gc_labels(dry_run)
     if dry_run:
-        print(f'These {len(cards)} cards would be purged:')
-        for card in cards:
-            print(' ', card, cards[card]['name'])
+        if len(cards):
+            print(f'These {len(cards)} cards would be purged:')
+            for card in cards:
+                print(' ', card, cards[card]['name'])
+        if len(labels):
+            print(f'{len(labels)} unnamed labels would be purged')
         print('Rerun with \'--yes\' to actually perform this operation.')
     else:
-        print(f'Purged {len(cards)} cards')
+        if len(cards):
+            print(f'Purged {len(cards)} cards')
+        if len(labels):
+            print(f'Purged {len(labels)} unnamed labels')
 
     return (0, False)
 
@@ -383,7 +390,7 @@ def labels(board, argv):
     labels = board.labels()
     for label in labels:
         if not label['name']:
-            continue
+            label['name'] = 'UNNAMED'
         print(' ', color_string(label['name'], 'white', bgcolor=label['color']))
     return (0, False)
 
@@ -395,11 +402,16 @@ def label_card(board, argv):
     if argv[0] == 'rm':
         remove = True
         argv.pop(0)
-    if len(argv) < 2:
-        print('Syntax: label [rm] <card_index> <label>')
+    if len(argv) < 1 or argv[0] == 'help':
+        print('Syntax: label rm [card_index] <label> - nuke a label')
+        print('        label <card_index> <label> - remove a label from a card')
         return (1, False)
     if remove:
-        board.unlabel_card(argv[0], argv[1])
+        if len(argv) == 1:
+            # Remove the label
+            board.delete_label(argv[0])
+        else:
+            board.unlabel_card(argv[0], argv[1])
         return (0, False)
     board.label_card(argv[0], argv[1])
     return (0, False)
