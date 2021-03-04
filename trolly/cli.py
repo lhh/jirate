@@ -371,9 +371,37 @@ def edit_card(board, argv):
         return (0, False)
     name, desc = split_card_text(new_text)
     if card['name'] != name or card['desc'] != desc:
+        # Wrapper?
         board.trello.cards.update(card['id'], name=name, desc=desc)
     else:
         print('No changes')
+    return (0, False)
+
+
+def labels(board, argv):
+    print('Labels:')
+    labels = board.labels()
+    for label in labels:
+        if not label['name']:
+            continue
+        print(' ', color_string(label['name'], 'white', bgcolor=label['color']))
+    return (0, False)
+
+
+def label_card(board, argv):
+    if not len(argv):
+        return labels(board, argv)
+    remove = False
+    if argv[0] == 'rm':
+        remove = True
+        argv.pop()
+    if len(argv) < 2:
+        print('Syntax: label [rm] <card_index> <label>')
+        return (1, False)
+    if remove:
+        board.unlabel_card(argv[1], argv[2])
+        return (0, False)
+    board.label_card(argv[0], argv[1])
     return (0, False)
 
 
@@ -388,6 +416,7 @@ commands = {
     'ls': list_cards,
     'll': list_lists,
     'comment': comment,
+    'label': label_card,
     'default': set_default,
     'mv': move,
     'cat': cat,

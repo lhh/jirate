@@ -147,17 +147,39 @@ class TrollyBoard(object):
             self._config['lists'][name] = val
             self._config['list_map'][item['id']] = name
 
-    def refresh_labels(self):
-        labels = self.trello.boards.get_labels(self._board_id)
-        self._config['labels'] = {}
-        self._config['label_map'] = {}
+    # Unlike lists, don't use nyms for now
+    def refresh_labels(self, force=True):
+        if not force and 'labels' in self._config:
+            return
+        self._config['labels'] = self.trello.boards.get_labels(self._board_id)
 
-        for label in labels:
-            name = nym(label['name'])
-            while nym in self._config['labels']:
-                name = name + '_'
-            self._config['labels'][name] = label
-            self._config['label_map'][label['id']] = name
+    def labels(self):
+        self.refresh_labels(False)
+        return self._config['labels']
+
+    def label_card(self, card_idx, label_name):
+        # Lazy-fetch labels; reduces RTs to trello if we're not doing
+        # any label operations
+        self.refresh_labels(False)
+
+        card = self.card(card_idx)
+        for label in card['labels']:
+            if label['name'] == label_name:
+                return card
+
+        for label in self._config['labels']:
+            if label_name != label['name']:
+                continue
+            return self.trello.cards.new_label_idLabel(card['id'], label['id'])
+
+        return self.trello.cards.new_label(card['id'], label_name)
+
+    def unlabel_card(self, card_idx, label_name):
+        card = self.card(card_idx)
+        for label in card['labels']:
+            if label['name'] == label_name:
+                return self.trello.cards.delete_label_idLabel(label['id'], card['id'])
+        return card
 
     def _list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
