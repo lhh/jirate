@@ -385,19 +385,29 @@ def edit_card(board, argv):
     return (0, False)
 
 
-def labels(board, argv):
+def labels(board, verbose):
     print('Labels:')
     labels = board.labels()
     for label in labels:
         if not label['name']:
             label['name'] = 'UNNAMED'
-        print(' ', color_string(label['name'], 'white', bgcolor=label['color']))
+        label_text = '  ' + color_string(label['name'], 'white', bgcolor=label['color'])
+        if verbose:
+            label_text = label_text + '  ' + label['id']
+        print(label_text)
     return (0, False)
 
 
 def label_card(board, argv):
+    try:
+        argv.pop(argv.index('-v'))
+        verbose = True
+    except (ValueError, IndexError):
+        verbose = False
+
     if not len(argv):
-        return labels(board, argv)
+        return labels(board, verbose)
+
     remove = False
     if argv[0] == 'rm':
         remove = True
