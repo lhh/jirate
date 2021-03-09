@@ -501,6 +501,8 @@ def get_board():
         readonly = os.environ['TROLLY_READONLY']
         if readonly in ('1', 'true', 'True', 'yes', 'Yes'):
             readonly = True
+        else:
+            readonly = False
     except KeyError:
         pass
 

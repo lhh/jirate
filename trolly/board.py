@@ -416,8 +416,8 @@ class TrollyBoard(object):
         return ret
 
     def comment(self, card_idx, text):
-        card_id = self.card_id(card_idx)
-        return self.trello.cards.new_action_comment(card_id, text)
+        card = self.card(card_idx)
+        return self.trello.cards.new_action_comment(card['id'], text)
 
     def close(self, card_idx):
         card_idx = int(card_idx)
