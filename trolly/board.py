@@ -369,6 +369,12 @@ class TrollyBoard(object):
             self.trello.cards.update(card, idList=list_id)
         return moves
 
+    def link(self, index, url, text):
+        card = self.card(index)
+        if not card:
+            raise ValueError('No such card: ' + str(index))
+        return self.trello.cards.new_attachment(card['id'], url, text)
+
     def default_list(self, list_alias=None):
         if list_alias is None:
             return self._config['default_list']

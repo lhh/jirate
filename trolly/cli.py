@@ -307,6 +307,7 @@ def cat(board, argv):
     if card['desc']:
         print()
         print(card['desc'])
+
     print()
     print('Activity')
     print('--------')
@@ -427,6 +428,22 @@ def label_card(board, argv):
     return (0, False)
 
 
+def link(board, argv):
+    if len(argv) < 2:
+        print('Syntax: link <card> <url> [name]')
+        return (1, False)
+
+    card_id = argv.pop(0)
+    url = argv.pop(0)
+    if not len(argv):
+        name = url
+    else:
+        name = ' '.join(argv)
+
+    board.link(card_id, url, name)
+    return (0, False)
+
+
 def halp(board=None, argv=None):
     print('Commands:')
     for key in commands:
@@ -437,6 +454,7 @@ def halp(board=None, argv=None):
 commands = {
     'ls': list_cards,
     'll': list_lists,
+    'link': link,
     'comment': comment,
     'label': label_card,
     'default': set_default,
