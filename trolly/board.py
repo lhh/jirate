@@ -70,6 +70,20 @@ def get_board_config(trello, board_id):
     return _get_board_config(trello, get_config_card(trello, board_id))
 
 
+def _suspect(stuff, field, value):
+    # Pass 1: exact match
+    for item in stuff:
+        if item[field] == value:
+            return item
+    # Pass 2: try lowercase or nym()
+    for item in stuff:
+        if item[field].lower() == value.lower():
+            return item
+        if nym(item[field]) == nym(value):
+            return item
+    return None
+
+
 class TrollyBoard(object):
     def __init__(self, trello, url, readonly=False):
         self.trello = trello
@@ -157,27 +171,14 @@ class TrollyBoard(object):
         self.refresh_labels(False)
         return self._config['labels']
 
-    def _suspect_label(self, labels, name):
-        # Pass 1: exact match
-        for label in labels:
-            if label['name'] == name:
-                return label
-        # Pass 2: try lowercase or nym()
-        for label in labels:
-            if label['name'].lower() == name.lower():
-                return label
-            if nym(label['name']) == name:
-                return label
-        return None
-
     def label_card(self, card_idx, label_name):
         card = self.card(card_idx)
-        label = self._suspect_label(card['labels'], label_name)
+        label = _suspect(card['labels'], 'name', label_name)
         if label:
             return card
 
         self.refresh_labels(False)
-        label = self._suspect_label(self._config['labels'], label_name)
+        label = _suspect(self._config['labels'], 'name', label_name)
         if label:
             return self.trello.cards.new_label_idLabel(card['id'], label['id'])
         return self.trello.cards.new_label(card['id'], label_name)
@@ -188,14 +189,14 @@ class TrollyBoard(object):
             return None
         if 'labels' not in card:
             return card
-        label = self._suspect_label(card['labels'], label_name)
+        label = _suspect(card['labels'], 'name', label_name)
         if label:
             return self.trello.cards.delete_label_idLabel(label['id'], card['id'])
         return card
 
     def delete_label(self, label_name):
         self.refresh_labels(True)
-        label = self._suspect_label(self._config['labels'], label_name)
+        label = _suspect(self._config['labels'], 'name', label_name)
         if label:
             self.trello.labels.delete(label['id'])
         return label
