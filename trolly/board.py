@@ -341,15 +341,22 @@ class TrollyBoard(object):
             card_indices = [card_indices]
         fails = []
         moves = []
+        refreshed = False
         for idx in card_indices:
             try:
                 idx = int(idx)
             except ValueError:
-                raise ValueError('No such card: ' + idx)
+                raise ValueError('Not an index: ' + idx)
             try:
                 card_id = self._config['card_rev_map'][idx]
             except KeyError:
                 card_id = None
+
+            # Only fetch once per call
+            if not card_id and not refreshed:
+                card = self.card(idx)
+                if card:
+                    card_id = card['id']
             if not card_id:
                 fails.append(idx)
             else:
