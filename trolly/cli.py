@@ -464,6 +464,17 @@ def link(board, argv):
     return (0, False)
 
 
+def detach(board, argv):
+    if len(argv) < 2:
+        print('Syntax: detach <card> <name|id|url|filename>')
+        return (1, False)
+
+    card_id = argv.pop(0)
+    info = ' '.join(argv)
+    board.detach(card_id, info)
+    return (0, False)
+
+
 def halp(board=None, argv=None):
     print('Commands:')
     for key in commands:
@@ -476,6 +487,7 @@ commands = {
     'll': list_lists,
     'link': link,
     'comment': comment,
+    'detach': detach,
     'label': label_card,
     'default': set_default,
     'mv': move,

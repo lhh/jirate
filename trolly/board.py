@@ -70,17 +70,47 @@ def get_board_config(trello, board_id):
     return _get_board_config(trello, get_config_card(trello, board_id))
 
 
-def _suspect(stuff, field, value):
+def _suspect(stuff, field, value, exact=False):
     # Pass 1: exact match
     for item in stuff:
+        if field not in item:
+            continue
         if item[field] == value:
             return item
-    # Pass 2: try lowercase or nym()
+
+    if exact:
+        return None
+
+    # Pass 2/3: try lowercase or nym()
     for item in stuff:
+        if field not in item:
+            continue
         if item[field].lower() == value.lower():
             return item
         if nym(item[field]) == nym(value):
             return item
+    return None
+
+
+def _search_attachments(attachments, info):
+    # Check by ID
+    attachment = _suspect(attachments, 'id', info, exact=True)
+    if attachment:
+        return attachment
+
+    # 3-way inexact name search
+    attachment = _suspect(attachments, 'name', info)
+    if attachment:
+        return attachment
+
+    # OK, filename and URL
+    attachment = _suspect(attachments, 'filename', info, exact=True)
+    if attachment:
+        return attachment
+
+    attachment = _suspect(attachments, 'url', info, exact=True)
+    if attachment:
+        return attachment
     return None
 
 
@@ -375,6 +405,24 @@ class TrollyBoard(object):
         if not card:
             raise ValueError('No such card: ' + str(index))
         return self.trello.cards.new_attachment(card['id'], url, text)
+
+    def attach(self, index, filename):
+        # Attach a physical file to a card.
+        pass
+
+    def detach(self, index, info):
+        # Remove link/attachment by ID or name.
+        # If ambiguous (>1 with same name)
+        # raise valueerror
+        card = self.card(index)
+        if not card:
+            raise ValueError('No such card: ' + str(index))
+
+        attachments = self.trello.cards.get_attachments(card['id'])
+        attachment = _search_attachments(attachments, info)
+        if not attachment:
+            return None
+        return self.trello.cards.delete_attachment(attachment['id'], card['id'])
 
     def default_list(self, list_alias=None):
         if list_alias is None:
