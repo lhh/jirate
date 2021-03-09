@@ -277,6 +277,18 @@ def display_action(action, verbose):
         pass
 
 
+def display_attachment(attachment, verbose):
+    print('  ' + attachment['name'])
+    if verbose:
+        print('    ID:', attachment['id'])
+    if attachment['isUpload']:
+        if attachment['filename'] != attachment['name']:
+            print('    Filename:', attachment['filename'])
+    else:
+        if attachment['url'] != attachment['name']:
+            print('    URL:', attachment['url'])
+
+
 def cat(board, argv):
     # check for verbose
     try:
@@ -307,6 +319,14 @@ def cat(board, argv):
     if card['desc']:
         print()
         print(card['desc'])
+
+    if int(card['badges']['attachments']):
+        print()
+        print('Attachments')
+        print('-----------')
+        attachments = board.trello.cards.get_attachments(card['id'])
+        for attachment in attachments:
+            display_attachment(attachment, verbose)
 
     print()
     print('Activity')
