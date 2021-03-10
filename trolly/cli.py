@@ -475,6 +475,17 @@ def detach(board, argv):
     return (0, False)
 
 
+def view_card(board, argv):
+    if len(argv) < 1:
+        print('Syntax: open <card>')
+        return (1, False)
+
+    card_id = argv.pop(0)
+    card = board.card(card_id)
+    os.system('xdg-open ' + card['shortUrl'])
+    return (0, False)
+
+
 def halp(board=None, argv=None):
     print('Commands:')
     for key in commands:
@@ -493,6 +504,7 @@ commands = {
     'mv': move,
     'cat': cat,
     'close': close,
+    'view': view_card,
     'edit': edit_card,
     'new': new_card,
     'reopen': reopen,
