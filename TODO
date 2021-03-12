@@ -5,27 +5,18 @@ Editor
 - Help text in preliminary editor text a la 'git commit'
 
 Attachments
-- Display attachments
-- add URL attachments
 - add File attachments
-- Delete attachments
 
 Lists
 - Create list
 - Archive list
-
-Card listing / manipulation
-- For shared boards, get boards with "me" as assignee
 
 Ordering
 - Move list left or right in UI
 - Move cards up/down in UI
 
 Labels
-- everything
-  - label aliases like we have for lists
-  - trolly label card abc
-  - create / delete labels
+- apply color to a label
 
 Checklists
 - everything
