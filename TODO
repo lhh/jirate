@@ -1,6 +1,9 @@
 Rewrite - getting spaghetti-ish with too many exceptions/value checks
           mixed together
 
+Comments -
+- deleting comments
+
 Editor
 - Help text in preliminary editor text a la 'git commit'
 
@@ -16,13 +19,18 @@ Ordering
 - Move cards up/down in UI
 
 Labels
-- apply color to a label
+- apply new color to a label
 
 Checklists
 - everything
 
 Code refactoring
 - Simplify wherever duplicate code exists
+
+Local configuration
+- JSON or yaml or whatever.
+  - Boards
+  - local config (instead of pushing one to a card on a board)
 
 Man page
 
