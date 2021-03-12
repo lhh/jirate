@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 # import yaml
 
 import editor
@@ -9,6 +10,7 @@ import editor
 from trollo import TrelloApi
 
 from trolly import board
+from trolly.args import ComplicatedArgs
 from trolly.decor import color_string
 
 
@@ -56,63 +58,49 @@ def trello_init():
     return trello
 
 
-def move(board, argv):
-    if len(argv) < 2:
-        print('Syntax: mv <card_1> [..<card_N] <list_name>')
-        return (1, False)
-
-    target = argv.pop()
-    if len(argv) == 1:
+def move(args):
+    if len(args.src) == 1:
         try:
-            board.rename(argv[0], target)
+            board.rename(args.src[0], args.target)
             return (0, True)
         except KeyError:
             pass
 
-    if board.move(argv, target):
-        print('Moved', argv, 'to', target)
+    if args.board.move(args.src, args.target):
+        print('Moved', args.src, 'to', args.target)
         return (0, False)
     return (1, False)
 
 
-def close(board, argv):
-    if len(argv) < 1:
-        print('Syntax: close <card_index>')
-        return (1, False)
-    if board.close(argv[0]):
-        return (0, False)
-    return (1, False)
+def close_card(args):
+    ret = 0
+    for card in args.card:
+        if not args.board.close(card):
+            ret = 1
+    return(ret, False)
 
 
-def reopen(board, argv):
-    if len(argv) < 1:
-        print('Syntax: reopen <card_index>')
-        return (1, False)
-    if board.reopen(argv[0]):
-        return (0, False)
-    return (1, False)
+def reopen_card(args):
+    ret = 0
+    for card in args.card:
+        if not args.board.reopen(card):
+            ret = 1
+    return(ret, False)
 
 
-def list_cards(board, argv):
+def list_cards(args):
     # check for verbose
-    try:
-        argv.pop(argv.index('-m'))
+    if args.mine:
         userid = 'me'
-    except (ValueError, IndexError):
+    else:
         userid = None
 
-    if not argv:
-        cards = board.list(userid=userid)
-    else:
-        try:
-            cards = board.list(argv[0], userid)
-        except KeyError:
-            print('Invalid list: ' + argv[0] + '. Try \'ll\'?')
-            return (1, False)
-
+    cards = args.board.list(userid=userid)
     lists = {}
     for card in cards:
         clist = cards[card]['list']
+        if args.list and clist not in args.list:
+            continue
         if clist not in lists:
             lists[clist] = []
         lists[clist].append([card, cards[card]['name']])
@@ -124,9 +112,9 @@ def list_cards(board, argv):
     return (0, True)
 
 
-def list_lists(board, argv):
-    default = board.default_list()
-    lists = board.lists()
+def list_lists(args):
+    default = args.board.default_list()
+    lists = args.board.lists()
     for lname in lists:
         if lists[lname]['id'] == default:
             print(' *', lname, lists[lname]['name'])
@@ -135,12 +123,9 @@ def list_lists(board, argv):
     return (0, False)
 
 
-def set_default(board, argv):
-    if len(argv) < 1:
-        print('Syntax: default <list_name>')
-        return (1, False)
-    default = board.default_list()
-    new_default = board.default_list(argv[0])
+def set_default(args):
+    default = args.board.default_list()
+    new_default = args.board.default_list(args.list)
     return (0, (default != new_default))
 
 
@@ -158,10 +143,10 @@ def split_card_text(text):
     return (name, desc)
 
 
-def new_card(board, argv):
+def new_card(args):
     desc = None
-    if argv:
-        name = ' '.join(argv)
+    if args.text:
+        name = ' '.join(args.text)
     else:
         text = editor()
         name, desc = split_card_text(text)
@@ -169,18 +154,15 @@ def new_card(board, argv):
             print('Canceled')
             return (1, False)
 
-    card = board.new(name, desc)
+    card = args.board.new(name, desc)
     print(card['idShort'], card['name'])
     return (0, True)
 
 
-def comment(board, argv):
-    if not argv:
-        return (1, False)
-
-    card_id = int(argv.pop(0))
-    if argv:
-        text = ' '.join(argv)
+def comment(args):
+    card_id = int(args.card)
+    if args.text:
+        text = ' '.join(args.text)
     else:
         text = editor()
 
@@ -188,13 +170,13 @@ def comment(board, argv):
         print('Canceled')
         return (0, False)
 
-    board.comment(card_id, text)
+    args.board.comment(card_id, text)
     return (0, False)
 
 
-def refresh(board, argv):
-    board.refresh()
-    board.index_cards()
+def refresh(args):
+    args.board.refresh()
+    args.board.index_cards()
     return (0, True)
 
 
@@ -289,22 +271,7 @@ def display_attachment(attachment, verbose):
             print('    URL:', attachment['url'])
 
 
-def cat(board, argv):
-    # check for verbose
-    try:
-        argv.pop(argv.index('-v'))
-        verbose = True
-    except (ValueError, IndexError):
-        verbose = False
-
-    if len(argv) < 1:
-        print('Syntax: cat [-v] <card_index>')
-        return (1, False)
-
-    card = board.card(argv[0], True)
-    if not card:
-        return (127, False)
-
+def print_card(card, verbose):
     print(card['idShort'], '-', card['name'])
 
     if verbose:
@@ -335,17 +302,29 @@ def cat(board, argv):
     for act in card['history']:
         display_action(act, verbose)
 
+
+def cat(args):
+    cards = []
+    for card_idx in args.card_id:
+        card = args.board.card(card_idx, True)
+        if not card:
+            print('No such card:', card_idx)
+            return (127, False)
+        cards.append(card)
+
+    for card in cards:
+        print_card(card, args.verbose)
     return (0, False)
 
 
-def purge(board, argv):
+def purge(args):
     dry_run = True
 
-    if len(argv) and argv[0] == '--yes':
+    if args.yes:
         dry_run = False
 
-    cards = board.gc_cards('all', dry_run)
-    labels = board.gc_labels(dry_run)
+    cards = args.board.gc_cards('all', dry_run)
+    labels = args.board.gc_labels(dry_run)
     if dry_run:
         if len(cards):
             print(f'These {len(cards)} cards would be purged:')
@@ -367,40 +346,36 @@ def join_card_text(name, desc):
     return name + '\n\n' + desc
 
 
-def edit_card(board, argv):
-    if len(argv) < 1:
-        print('Syntax: edit <card_index> | comment <comment_id>]')
-        return (1, False)
-
-    arg = argv[0]
-    if arg == 'comment':
-        if len(argv) < 2:
-            print('Syntax: edit <card_index> | comment <comment_id>]')
-            return (1, False)
-
-        comment_id = argv[1]
-        comment = board.trello.actions.get(comment_id)
-        new_text = editor(comment['data']['text'])
-        if not new_text:
-            print('Canceled')
-            return (0, False)
+def edit_card(args):
+    if args.comment:
+        comment_id = args.item
+        comment = args.board.trello.actions.get(comment_id)
+        if args.text:
+            new_text = ' '.join(args.text)
+        else:
+            new_text = editor(comment['data']['text'])
+            if not new_text:
+                print('Canceled')
+                return (0, False)
         if comment['data']['text'] != new_text:
-            board.trello.actions.update(comment_id, new_text)
+            args.board.trello.actions.update(comment_id, new_text)
         else:
             print('No changes')
         return (0, False)
 
-    card_idx = arg
-    card = board.card(card_idx)
+    card_idx = args.item
+    card = args.board.card(card_idx)
     card_text = join_card_text(card['name'], card['desc'])
-    new_text = editor(card_text)
+    if args.text:
+        new_text = ' '.join(args.text)
+    else:
+        new_text = editor(card_text)
     if not new_text:
         print('Canceled')
         return (0, False)
     name, desc = split_card_text(new_text)
     if card['name'] != name or card['desc'] != desc:
-        # Wrapper?
-        board.trello.cards.update(card['id'], name=name, desc=desc)
+        args.board.trello.cards.update(card['id'], name=name, desc=desc)
     else:
         print('No changes')
     return (0, False)
@@ -419,98 +394,48 @@ def labels(board, verbose):
     return (0, False)
 
 
-def label_card(board, argv):
-    try:
-        argv.pop(argv.index('-v'))
-        verbose = True
-    except (ValueError, IndexError):
-        verbose = False
+def label_card(args):
+    verbose = args.verbose
+    if not args.card and not args.label:
+        return labels(args.board, verbose)
 
-    if not len(argv):
-        return labels(board, verbose)
-
-    remove = False
-    if argv[0] == 'rm':
-        remove = True
-        argv.pop(0)
-    if len(argv) < 1 or argv[0] == 'help':
-        print('Syntax: label rm [card_index] <label> - nuke a label')
-        print('        label <card_index> <label> - remove a label from a card')
-        return (1, False)
-    if remove:
-        if len(argv) == 1:
-            # Remove the label
-            board.delete_label(argv[0])
+    if args.remove:
+        if args.card and not args.label:
+            # Dragons: Treat one argument as label, not card
+            args.board.delete_label(args.card)
         else:
-            board.unlabel_card(argv[0], argv[1])
+            args.board.unlabel_card(args.card, args.label[0])
         return (0, False)
-    board.label_card(argv[0], argv[1])
+    args.board.label_card(args.card, args.label[0])
     return (0, False)
 
 
-def link(board, argv):
-    if len(argv) < 2:
-        print('Syntax: link <card> <url> [name]')
-        return (1, False)
-
-    card_id = argv.pop(0)
-    url = argv.pop(0)
-    if not len(argv):
+def link(args):
+    card_id = args.card
+    url = args.url
+    if not len(args.name):
         name = url
     else:
-        name = ' '.join(argv)
+        name = ' '.join(args.name)
 
-    board.link(card_id, url, name)
+    args.board.link(card_id, url, name)
     return (0, False)
 
 
-def detach(board, argv):
-    if len(argv) < 2:
-        print('Syntax: detach <card> <name|id|url|filename>')
-        return (1, False)
-
-    card_id = argv.pop(0)
-    info = ' '.join(argv)
-    board.detach(card_id, info)
+def detach(args):
+    card_id = args.card
+    info = ' '.join(args.name)
+    args.board.detach(card_id, info)
     return (0, False)
 
 
-def view_card(board, argv):
-    if len(argv) < 1:
-        print('Syntax: open <card>')
-        return (1, False)
-
-    card_id = argv.pop(0)
-    card = board.card(card_id)
+def view_card(args):
+    card_id = args.card_id
+    card = args.board.card(card_id)
+    if not card:
+        return (127, False)
     os.system('xdg-open ' + card['shortUrl'])
     return (0, False)
-
-
-def halp(board=None, argv=None):
-    print('Commands:')
-    for key in commands:
-        print('   ', key)
-    return (0, False)
-
-
-commands = {
-    'ls': list_cards,
-    'll': list_lists,
-    'link': link,
-    'comment': comment,
-    'detach': detach,
-    'label': label_card,
-    'default': set_default,
-    'mv': move,
-    'cat': cat,
-    'close': close,
-    'view': view_card,
-    'edit': edit_card,
-    'new': new_card,
-    'reopen': reopen,
-    'refresh': refresh,
-    'purge': purge
-}
 
 
 def get_board():
@@ -534,36 +459,87 @@ def get_board():
     return board.TrollyBoard(tboard, my_board, readonly=readonly)
 
 
+def create_parser():
+    parser = ComplicatedArgs()
+
+    cmd = parser.command('ls', help='List card(s)', handler=list_cards)
+    cmd.add_argument('-m', '--mine', action='store_true', help='Display only cards assigned to me.')
+    cmd.add_argument('list', nargs='*', help='Restrict to cards in these list(s)')
+
+    cmd = parser.command('cat', help='Print card(s)', handler=cat)
+    cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    cmd.add_argument('card_id', nargs='+', help='Target card(s)')
+
+    cmd = parser.command('view', help='Display card in browser', handler=view_card)
+    cmd.add_argument('card_id', help='Target card')
+
+    parser.command('ll', help='List lists on board', handler=list_lists)
+
+    cmd = parser.command('label', help='Manage labels', handler=label_card)
+    cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    cmd.add_argument('-r', '--remove', help='Remove label from a card. If no card is specified, removes the label from the board', action='store_true', default=False)
+    cmd.add_argument('card', help='Target Card', nargs='?')
+    cmd.add_argument('label', help='Label', nargs='*')
+
+    cmd = parser.command('mv', help='Move card(s) or rename a list', handler=move)
+    cmd.add_argument('src', metavar='card|list_name', nargs='+', help='Card IDs or list to rename')
+    cmd.add_argument('target', help='Target list name')
+
+    cmd = parser.command('new', help='Create a new card', handler=new_card)
+    cmd.add_argument('text', nargs='*', help='Card title')
+
+    cmd = parser.command('comment', help='Comment on a card', handler=comment)
+    cmd.add_argument('card', help='Card to comment on')
+    cmd.add_argument('text', nargs='*', help='Comment text')
+
+    cmd = parser.command('edit', help='Edit card/comment text', handler=edit_card)
+    cmd.add_argument('-c', '--comment', action='store_true', help='Edit a comment')
+    cmd.add_argument('item', help='Item to edit (card or comment ID)')
+    cmd.add_argument('text', nargs='*', help='New text')
+
+    cmd = parser.command('close', help='Close (archive) card(s)', handler=close_card)
+    cmd.add_argument('card', nargs='+', help='Target card(s)')
+
+    cmd = parser.command('reopen', help='Reopen (send to board) card(s)', handler=reopen_card)
+    cmd.add_argument('card', nargs='+', help='Card IDs reopen')
+
+    cmd = parser.command('link', help='Add a link to a card', handler=link)
+    cmd.add_argument('card', help='Target card')
+    cmd.add_argument('url', help='URL to link')
+    cmd.add_argument('name', nargs='*', help='Text for link')
+
+    cmd = parser.command('detach', help='Remove attachment or link from card', handler=detach)
+    cmd.add_argument('card', help='Target card')
+    cmd.add_argument('name', nargs='+', help='ID, URL, filename, or name of attachment')
+
+    cmd = parser.command('default', help='Set default list for new cards', handler=set_default)
+    cmd.add_argument('list', help='List name')
+
+    cmd = parser.command('purge', help='Remove archived cards and labels from the board', handler=purge)
+    cmd.add_argument('--yes', default=False, action='store_true', help='Really do it')
+
+    parser.command('refresh', help='Refresh board configuration', handler=refresh)
+
+    return parser
+
+
 def main():
-    import sys
-    argv = sys.argv
-    argv.pop(0)
-
-    if not len(argv):
-        print('No command specified')
-        sys.exit(0)
-
-    cmd = argv.pop(0)
-    if cmd == 'help':
-        halp()
-        sys.exit(0)
-
+    parser = create_parser()
     try:
         board = get_board()
     except KeyError:
         sys.exit(1)
 
-    if cmd not in commands:
-        print(f'Invalid command: {cmd}')
-        halp()
-        sys.exit(1)
-
-    try:
-        ret, save = commands[cmd](board, argv)
-    except Exception as e:
-        print('Error:', e)
-        sys.exit(1)
-
+    # Pass this down in namespace to callbacks
+    parser.add_arg('board', board)
+    rc = parser.parse_args()
+    if rc:
+        ret = rc[0]
+        save = rc[1]
+    else:
+        print('No command specified')
+        ret = 0
+        save = False
     if save:
         # print('Saving...')
         board.save_config()
