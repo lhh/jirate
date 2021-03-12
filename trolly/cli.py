@@ -525,6 +525,8 @@ def create_parser():
 
 def main():
     parser = create_parser()
+    ns = parser.parse_args()
+
     try:
         board = get_board()
     except KeyError:
@@ -532,7 +534,7 @@ def main():
 
     # Pass this down in namespace to callbacks
     parser.add_arg('board', board)
-    rc = parser.parse_args()
+    rc = parser.finalize(ns)
     if rc:
         ret = rc[0]
         save = rc[1]

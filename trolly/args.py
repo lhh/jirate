@@ -42,8 +42,11 @@ class ComplicatedArgs(object):
         if cmd in self._handlers:
             del self.handlers[cmd]
 
-    def parse_args(self, ret=None):
-        ns = self._parser.parse_args()
+    def parse_args(self, **kwargs):
+        return self._parser.parse_args(**kwargs)
+
+    # Call our callouts with the namespace mapping we built
+    def finalize(self, ns, ret=None):
         cmd = None
         try:
             if ns.command:
