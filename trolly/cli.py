@@ -271,7 +271,7 @@ def display_attachment(attachment, verbose):
             print('    URL:', attachment['url'])
 
 
-def print_card(card, verbose):
+def print_card(board, card, verbose):
     print(card['idShort'], '-', card['name'])
 
     if verbose:
@@ -313,7 +313,7 @@ def cat(args):
         cards.append(card)
 
     for card in cards:
-        print_card(card, args.verbose)
+        print_card(args.board, card, args.verbose)
     return (0, False)
 
 
