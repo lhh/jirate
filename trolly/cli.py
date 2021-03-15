@@ -259,7 +259,8 @@ action_map = {
     'copyCard': action_null,
     'addChecklistToCard': action_null,
     'removeChecklistFromCard': action_null,
-    'updateCheckItemStateOnCard': action_null
+    'updateCheckItemStateOnCard': action_null,
+    'updateCustomFieldItem': action_null
 }
 
 
