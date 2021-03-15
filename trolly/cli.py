@@ -9,8 +9,8 @@ import editor
 
 from trollo import TrelloApi
 
-from trolly import board
 from trolly.args import ComplicatedArgs
+from trolly.board import TrollyBoard
 from trolly.decor import color_string
 
 
@@ -61,7 +61,7 @@ def trello_init():
 def move(args):
     if len(args.src) == 1:
         try:
-            board.rename(args.src[0], args.target)
+            args.board.rename(args.src[0], args.target)
             return (0, True)
         except KeyError:
             pass
@@ -456,7 +456,7 @@ def get_board():
         pass
 
     tboard = trello_init()
-    return board.TrollyBoard(tboard, my_board, readonly=readonly)
+    return TrollyBoard(tboard, my_board, readonly=readonly)
 
 
 def create_parser():
