@@ -88,18 +88,11 @@ def reopen_card(args):
     return(ret, False)
 
 
-def list_cards(args):
-    # check for verbose
-    if args.mine:
-        userid = 'me'
-    else:
-        userid = None
-
-    cards = args.board.list(userid=userid)
+def print_cards_simple(cards, args=None):
     lists = {}
     for card in cards:
         clist = cards[card]['list']
-        if args.list and clist not in args.list:
+        if args and args.list and clist not in args.list:
             continue
         if clist not in lists:
             lists[clist] = []
@@ -109,6 +102,25 @@ def list_cards(args):
         print(key)
         for item in lists[key]:
             print('  ', item[0], item[1])
+
+
+def search_cards(args):
+    ret = args.board.search(' '.join(args.text))
+    if not ret:
+        return (127, False)
+    print_cards_simple(ret)
+    return (0, False)
+
+
+def list_cards(args):
+    # check for verbose
+    if args.mine:
+        userid = 'me'
+    else:
+        userid = None
+
+    cards = args.board.list(userid=userid)
+    print_cards_simple(cards, args)
     return (0, True)
 
 
@@ -465,6 +477,9 @@ def create_parser():
     cmd = parser.command('ls', help='List card(s)', handler=list_cards)
     cmd.add_argument('-m', '--mine', action='store_true', help='Display only cards assigned to me.')
     cmd.add_argument('list', nargs='*', help='Restrict to cards in these list(s)')
+
+    cmd = parser.command('search', help='List card(s) with matching text', handler=search_cards)
+    cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print card(s)', handler=cat)
     cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')

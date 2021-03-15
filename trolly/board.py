@@ -317,12 +317,7 @@ class TrollyBoard(object):
         self._index_cards(cards)
         return cards
 
-    def list(self, list_alias=None, userid=None):
-        if userid == 'me':
-            user = self.trello.members.me()
-            userid = user['id']
-        cards = self.index_cards(list_alias)
-
+    def _simplify_card_list(self, cards, userid=None):
         ret = {}
         for card in cards:
             if card['closed']:
@@ -337,6 +332,19 @@ class TrollyBoard(object):
             val['list'] = self._config['list_map'][card['idList']]
             ret[self._config['card_map'][card['id']]] = val
         return ret
+
+    def search(self, text):
+        if not text:
+            return None
+        ret = self.trello.search.run(text)
+        return self._simplify_card_list(ret['cards'])
+
+    def list(self, list_alias=None, userid=None):
+        if userid == 'me':
+            user = self.trello.members.me()
+            userid = user['id']
+        cards = self.index_cards(list_alias)
+        return self._simplify_card_list(cards, userid)
 
     def card(self, card_index, verbose=False):
         need_index = False
