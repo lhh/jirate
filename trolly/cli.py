@@ -345,7 +345,8 @@ def purge(args):
             print(f'The preceding {len(cards)} cards would be purged.')
         if len(labels):
             print(f'{len(labels)} unnamed labels would be purged.')
-        print('Rerun with \'--yes\' to actually perform this operation.')
+        if len(cards) or len(labels):
+            print('Rerun with \'--yes\' to actually perform this operation.')
     else:
         if len(cards):
             print(f'Purged {len(cards)} cards')
