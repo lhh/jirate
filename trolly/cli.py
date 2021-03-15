@@ -144,7 +144,7 @@ def set_default(args):
 def split_card_text(text):
     lines = text.split('\n')
     name = lines[0]
-    desc = None
+    desc = ''
     if not len(name):
         return (None, None)
     lines.pop(0)
