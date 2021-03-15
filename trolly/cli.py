@@ -340,11 +340,11 @@ def purge(args):
     labels = args.board.gc_labels(dry_run)
     if dry_run:
         if len(cards):
-            print(f'These {len(cards)} cards would be purged:')
             for card in cards:
                 print(' ', card, cards[card]['name'])
+            print(f'The preceding {len(cards)} cards would be purged.')
         if len(labels):
-            print(f'{len(labels)} unnamed labels would be purged')
+            print(f'{len(labels)} unnamed labels would be purged.')
         print('Rerun with \'--yes\' to actually perform this operation.')
     else:
         if len(cards):
