@@ -398,7 +398,8 @@ def edit_card(args):
 def labels(board, verbose):
     print('Labels:')
     labels = board.labels()
-    for label in labels:
+    labels_sorted = sorted(labels, key=lambda val: val['name'])
+    for label in labels_sorted:
         if not label['name']:
             label['name'] = 'UNNAMED'
         label_text = '  ' + color_string(label['name'], 'white', bgcolor=label['color'])

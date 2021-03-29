@@ -195,7 +195,7 @@ class TrollyBoard(object):
     def refresh_labels(self, force=True):
         if not force and 'labels' in self._config:
             return
-        self._config['labels'] = self.trello.boards.get_labels(self._board_id)
+        self._config['labels'] = self.trello.boards.get_labels(self._board_id, limit=1000)
 
     def labels(self):
         self.refresh_labels(False)
