@@ -213,6 +213,20 @@ class TrollyBoard(object):
             return self.trello.cards.new_label_idLabel(card['id'], label['id'])
         return self.trello.cards.new_label(card['id'], label_name)
 
+    def label_color(self, label_name, color):
+        self.refresh_labels(False)
+        label = _suspect(self._config['labels'], 'name', label_name)
+        if label:
+            return self.trello.labels.update(label['id'], color=color)
+        return None
+
+    def label_rename(self, label_name, new_name):
+        self.refresh_labels(False)
+        label = _suspect(self._config['labels'], 'name', label_name)
+        if label:
+            return self.trello.labels.update(label['id'], name=new_name)
+        return None
+
     def unlabel_card(self, card_idx, label_name):
         card = self.card(card_idx)
         if not card:
@@ -517,6 +531,8 @@ class TrollyBoard(object):
 
         # Store config as text in description if <=15kb, otherwise store as
         # attachment
+        if 'labels' in self._config:
+            del self._config['labels']
         config_str = json.dumps(self._config, indent=2)
         if len(config_str) <= 15360:  # Trello limit is 16k for descriptions
             if 'attached' in self._config:

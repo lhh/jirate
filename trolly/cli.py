@@ -411,17 +411,32 @@ def labels(board, verbose):
 
 def label_card(args):
     verbose = args.verbose
-    if not args.card and not args.label:
+    if not args.target and not args.new:
         return labels(args.board, verbose)
 
+    if args.color:
+        if not args.target:
+            print('Changing colors requires a label.')
+            return (1, False)
+        if args.board.label_color(args.target[0], args.color):
+            return (0, False)
+        return (1, False)
+
+    if args.rename:
+        if not args.target or len(args.target) < 2:
+            print('Renaming a label requires an old name and a new name.')
+            return (1, False)
+        if args.board.label_rename(args.target[0], args.target[1]):
+            return (0, True)
+        return (1, False)
+
     if args.remove:
-        if args.card and not args.label:
-            # Dragons: Treat one argument as label, not card
-            args.board.delete_label(args.card)
+        if len(args.target) < 2:
+            args.board.delete_label(args.target[0])
         else:
-            args.board.unlabel_card(args.card, args.label[0])
+            args.board.unlabel_card(args.target[0], args.target[1])
         return (0, False)
-    args.board.label_card(args.card, args.label[0])
+    args.board.label_card(args.target[0], args.target[1])
     return (0, False)
 
 
@@ -496,8 +511,11 @@ def create_parser():
     cmd = parser.command('label', help='Manage labels', handler=label_card)
     cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     cmd.add_argument('-r', '--remove', help='Remove label from a card. If no card is specified, removes the label from the board', action='store_true', default=False)
-    cmd.add_argument('card', help='Target Card', nargs='?')
-    cmd.add_argument('label', help='Label', nargs='*')
+    cmd.add_argument('--color', help='Specify a label\'s color',
+                     choices=['blue', 'green', 'orange', 'purple', 'red', 'yellow', 'sky', 'lime', 'pink', 'black'])
+    cmd.add_argument('--rename', action='store_true', default=False, help='Rename a label')
+    cmd.add_argument('-n', '--new', help='Create a new label')
+    cmd.add_argument('target', help='Target Card/Label', nargs='*')
 
     cmd = parser.command('mv', help='Move card(s) or rename a list', handler=move)
     cmd.add_argument('src', metavar='card|list_name', nargs='+', help='Card IDs or list to rename')
