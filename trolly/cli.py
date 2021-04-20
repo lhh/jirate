@@ -296,6 +296,22 @@ def print_card(board, card, verbose):
         for label in card['labels']:
             print(color_string(label['name'], 'white', bgcolor=label['color']), end=' ')
 
+    if 'idMembers' in card and card['idMembers']:
+        board_members = board.members()
+        print()
+        print('Assignee(s): ', end='')
+        if verbose:
+            print()
+        for member in board_members:
+            if member['id'] not in card['idMembers']:
+                continue
+            if verbose:
+                print('  *', member['username'], '-', member['fullName'])
+            else:
+                print(member['username'], end='')
+        if not verbose:
+            print()
+
     if card['desc']:
         print()
         print(card['desc'])
@@ -468,6 +484,23 @@ def view_card(args):
     return (0, False)
 
 
+def members(args):
+    members = args.board.members()
+    for m in members:
+        print(m['username'])
+    return (0, False)
+
+
+def assign_card(args):
+    args.board.assign(args.card_id, args.members)
+    return (0, False)
+
+
+def unassign_card(args):
+    args.board.unassign(args.card_id, args.members)
+    return (0, False)
+
+
 def get_board():
     try:
         my_board = os.environ['TROLLY_BOARD']
@@ -517,6 +550,14 @@ def create_parser():
     cmd.add_argument('-n', '--new', help='Create a new label')
     cmd.add_argument('target', help='Target Card/Label', nargs='*')
 
+    cmd = parser.command('assign', help='Assign card to board member(s)', handler=assign_card)
+    cmd.add_argument('card_id', help='Target card')
+    cmd.add_argument('members', help='Board members (if none, assign to self)', nargs='*')
+
+    cmd = parser.command('unassign', help='Remove assignee(s) from card', handler=unassign_card)
+    cmd.add_argument('card_id', help='Target card')
+    cmd.add_argument('members', help='Card assignees (if none, remove only self)', nargs='*')
+
     cmd = parser.command('mv', help='Move card(s) or rename a list', handler=move)
     cmd.add_argument('src', metavar='card|list_name', nargs='+', help='Card IDs or list to rename')
     cmd.add_argument('target', help='Target list name')
@@ -527,6 +568,8 @@ def create_parser():
     cmd = parser.command('comment', help='Comment on a card', handler=comment)
     cmd.add_argument('card', help='Card to comment on')
     cmd.add_argument('text', nargs='*', help='Comment text')
+
+    cmd = parser.command('members', help='Manipulate board members', handler=members)
 
     cmd = parser.command('edit', help='Edit card/comment text', handler=edit_card)
     cmd.add_argument('-c', '--comment', action='store_true', help='Edit a comment')

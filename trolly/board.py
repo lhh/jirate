@@ -227,6 +227,55 @@ class TrollyBoard(object):
             return self.trello.labels.update(label['id'], name=new_name)
         return None
 
+    def refresh_members(self, force=True):
+        if not force and 'labels' in self._config:
+            return
+        self._config['members'] = self.trello.boards.get_member(self._board_id)
+        return self._config['members']
+
+    def members(self):
+        return self.refresh_members(False)
+
+    def assign(self, card_idx, users):
+        card = self.card(card_idx)
+        if not card:
+            return None
+        if users:
+            members = self.members()
+            if not isinstance(users, list):
+                users = [users]
+            user_ids = [mb['id'] for mb in members if mb['username'] in users]
+            if 'me' in users:
+                user = self.trello.members.me()
+                if user not in users:
+                    users.append(user)
+        else:
+            # Just me
+            user = self.trello.members.me()
+            user_ids = [user['id']]
+        for user in user_ids:
+            self.trello.cards.new_member(card['id'], user)
+
+    def unassign(self, card_idx, users):
+        card = self.card(card_idx)
+        if not card:
+            return None
+        if users:
+            members = self.members()
+            if not isinstance(users, list):
+                users = [users]
+            user_ids = [mb['id'] for mb in members if mb['username'] in users]
+            if 'me' in users:
+                user = self.trello.members.me()
+                if user not in users:
+                    users.append(user)
+        else:
+            # Just me
+            user = self.trello.members.me()
+            user_ids = [user['id']]
+        for user in user_ids:
+            self.trello.cards.delete_member_idMember(user, card['id'])
+
     def unlabel_card(self, card_idx, label_name):
         card = self.card(card_idx)
         if not card:
