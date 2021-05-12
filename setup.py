@@ -14,8 +14,7 @@ def requires(prefix=''):
     """
     try:
         reqs = map(str.strip, open(prefix + 'requirements.txt').readlines())
-        reqs = filter(lambda s: re.match(r'\W', s), reqs)
-        return reqs
+        return [req for req in reqs if not re.match(r'\W', req)]
     except Exception:
         pass
     return []
