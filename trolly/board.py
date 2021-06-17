@@ -305,7 +305,7 @@ class TrollyBoard(object):
                 self.trello.labels.delete(label['id'])
         return ret
 
-    def _list_to_id(self, list_alias):
+    def list_to_id(self, list_alias):
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
         if list_alias in self._config['lists']:
@@ -376,7 +376,7 @@ class TrollyBoard(object):
         if list_alias is None:
             cards = self.trello.boards.get_card_filter('visible', self._board_id)
         else:
-            cards = self.trello.lists.get_card(self._list_to_id(list_alias))
+            cards = self.trello.lists.get_card(self.list_to_id(list_alias))
         self._index_cards(cards)
         return cards
 
@@ -435,7 +435,7 @@ class TrollyBoard(object):
         return card
 
     def move(self, card_indices, list_alias):
-        list_id = self._list_to_id(list_alias)
+        list_id = self.list_to_id(list_alias)
         if list_alias not in self._config['lists'] and list_alias not in self._config['list_map']:
             raise KeyError('No such list: ' + list_alias)
 
@@ -530,7 +530,7 @@ class TrollyBoard(object):
     def new(self, name, description=None, start_list=None):
         if start_list is None:
             start_list = self._config['default_list']
-        list_id = self._list_to_id(start_list)
+        list_id = self.list_to_id(start_list)
         ret = self.trello.cards.new(name, list_id, description)
         self._index_card(ret)
         return ret

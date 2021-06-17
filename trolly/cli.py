@@ -72,9 +72,18 @@ def move(args):
     return (1, False)
 
 
-def close_card(args):
+def close_cards_in_lists(args):
+    for archive_list in args.target:
+        list_id = args.board.list_to_id(archive_list)
+        args.board.trello.lists.archive_all_cards(list_id)
+    return(0, False)
+
+
+def close_cards(args):
     ret = 0
-    for card in args.card:
+    if args.list:
+        return close_cards_in_lists(args)
+    for card in args.target:
         if not args.board.close(card):
             ret = 1
     return(ret, False)
@@ -576,8 +585,9 @@ def create_parser():
     cmd.add_argument('item', help='Item to edit (card or comment ID)')
     cmd.add_argument('text', nargs='*', help='New text')
 
-    cmd = parser.command('close', help='Close (archive) card(s)', handler=close_card)
-    cmd.add_argument('card', nargs='+', help='Target card(s)')
+    cmd = parser.command('close', help='Close (archive) card(s) or all cards in a list(s)', handler=close_cards)
+    cmd.add_argument('-l', '--list', action='store_true', help='Act on lists')
+    cmd.add_argument('target', nargs='+', help='Target card(s)/list(s)')
 
     cmd = parser.command('reopen', help='Reopen (send to board) card(s)', handler=reopen_card)
     cmd.add_argument('card', nargs='+', help='Card IDs reopen')
