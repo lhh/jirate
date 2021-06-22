@@ -393,6 +393,8 @@ class TrollyBoard(object):
             val['id'] = card['id']
             val['name'] = card['name']
             val['list'] = self._config['list_map'][card['idList']]
+            if 'labels' in card:
+                val['labels'] = card['labels']
             ret[self._config['card_map'][card['id']]] = val
         return ret
 

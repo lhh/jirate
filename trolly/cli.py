@@ -105,19 +105,22 @@ def print_cards_simple(cards, args=None):
             continue
         if clist not in lists:
             lists[clist] = []
-        lists[clist].append([card, cards[card]['name']])
+        lists[clist].append(card)
 
     for key in lists:
         print(key)
-        for item in lists[key]:
-            print('  ', item[0], item[1])
+        for card in lists[key]:
+            print('  ', card, end=' ')
+            if args.labels:
+                print_labels(cards[card], prefix='')
+            print(cards[card]['name'])
 
 
 def search_cards(args):
     ret = args.board.search(' '.join(args.text))
     if not ret:
         return (127, False)
-    print_cards_simple(ret)
+    print_cards_simple(ret, args)
     return (0, False)
 
 
@@ -293,6 +296,13 @@ def display_attachment(attachment, verbose):
             print('    URL:', attachment['url'])
 
 
+def print_labels(card, prefix='Labels: '):
+    if 'labels' in card and len(card['labels']):
+        print(prefix, end='')
+        for label in card['labels']:
+            print(color_string(label['name'], 'white', bgcolor=label['color']), end=' ')
+
+
 def print_card(board, card, verbose):
     print(card['idShort'], '-', card['name'])
 
@@ -300,10 +310,8 @@ def print_card(board, card, verbose):
         print('ID :', card['id'])
         print('URL:', card['url'])
 
-    if 'labels' in card and len(card['labels']):
-        print('Labels: ', end='')
-        for label in card['labels']:
-            print(color_string(label['name'], 'white', bgcolor=label['color']), end=' ')
+    print_labels(card)
+    print()
 
     if 'idMembers' in card and card['idMembers']:
         board_members = board.members()
@@ -536,6 +544,7 @@ def create_parser():
 
     cmd = parser.command('ls', help='List card(s)', handler=list_cards)
     cmd.add_argument('-m', '--mine', action='store_true', help='Display only cards assigned to me.')
+    cmd.add_argument('-l', '--labels', action='store_true', help='Display card labels.')
     cmd.add_argument('list', nargs='*', help='Restrict to cards in these list(s)')
 
     cmd = parser.command('search', help='List card(s) with matching text', handler=search_cards)
