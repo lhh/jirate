@@ -111,7 +111,7 @@ def print_cards_simple(cards, args=None):
         print(key)
         for card in lists[key]:
             print('  ', card, end=' ')
-            if args.labels:
+            if args and args.labels:
                 print_labels(cards[card], prefix='')
             print(cards[card]['name'])
 
@@ -120,7 +120,7 @@ def search_cards(args):
     ret = args.board.search(' '.join(args.text))
     if not ret:
         return (127, False)
-    print_cards_simple(ret, args)
+    print_cards_simple(ret)
     return (0, False)
 
 
