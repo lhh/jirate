@@ -344,7 +344,7 @@ def print_card(board, card, verbose):
             if verbose:
                 print('  *', member['username'], '-', member['fullName'])
             else:
-                print(member['username'], end='')
+                print(member['username'], end=' ')
         if not verbose:
             print()
 
