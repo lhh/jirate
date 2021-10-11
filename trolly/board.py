@@ -127,14 +127,13 @@ class TrollyBoard(object):
         self._board_id = self._board['id']
         self._ro = readonly
 
-        config_card = get_config_card(trello, self._board_id)
-        if config_card:
-            self._config_card = config_card['id']
-            self._config = _get_board_config(trello, config_card)
-        else:
-            # print('warning: no configuration')
-            self._config_card = None
-            self._config = None
+        self._config_card = None
+        self._config = None
+        if not readonly:
+            config_card = get_config_card(trello, self._board_id)
+            if config_card:
+                self._config_card = config_card['id']
+                self._config = _get_board_config(trello, config_card)
 
         self.refresh()
         if not self._config_card:
