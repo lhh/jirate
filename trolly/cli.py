@@ -235,15 +235,34 @@ def display_state(action, verbose):
         print(action['date'], '- Opened by', action['memberCreator']['username'])
 
 
+def display_card_update(action, verbose):
+    if not verbose:
+        return
+    old = action['data']['old']
+    new = action['data']['card']
+
+    if 'desc' in old:
+        print(action['date'], '- Description updated by', action['memberCreator']['username'])
+        print('   === Old Description ===')
+        print(old['desc'])
+        print('   === New Description ===')
+        print(new['desc'])
+        print()
+    if 'name' in old:
+        print(action['date'], '- Description updated by', action['memberCreator']['username'])
+        print('   Old Name:', old['name'])
+        print('   New Name:', new['name'])
+
+
 update_map = {
     'idList': display_move,
     'closed': display_state,
-    'due': action_null,          # Due date/time set
-    'dueReminder': action_null,  # Due reminder set
-    'pos': action_null,          # Priority change
-    'name': action_null,         # Name updated
-    'desc': action_null,         # Description updated
-    'isTemplate': action_null    # Card is a template
+    'due': action_null,           # Due date/time set
+    'dueReminder': action_null,   # Due reminder set
+    'pos': action_null,           # Priority change
+    'name': display_card_update,  # Name updated
+    'desc': display_card_update,  # Description updated
+    'isTemplate': action_null     # Card is a template
 }
 
 
