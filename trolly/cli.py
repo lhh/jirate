@@ -522,8 +522,14 @@ def view_card(args):
 
 def members(args):
     members = args.board.members()
-    for m in members:
-        print(m['username'])
+    for member in members:
+        if args.verbose:
+            uname = member['username']
+            mname = member['fullName']
+            mid = member['id']
+            print(f'{uname} "{mname}" {mid}')
+        else:
+            print(member['username'])
     return (0, False)
 
 
@@ -607,6 +613,7 @@ def create_parser():
     cmd.add_argument('text', nargs='*', help='Comment text')
 
     cmd = parser.command('members', help='Manipulate board members', handler=members)
+    cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
 
     cmd = parser.command('edit', help='Edit card/comment text', handler=edit_card)
     cmd.add_argument('-c', '--comment', action='store_true', help='Edit a comment')
