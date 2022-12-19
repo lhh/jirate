@@ -19,6 +19,9 @@ class ComplicatedArgs(object):
     def add_arg(self, key, value):
         self._args[key] = value
 
+    def add_argument(self, *args, **kwargs):
+        self._parser.add_argument(*args, **kwargs)
+
     def command(self, cmd, help=None, handler=None):
         if cmd in self._commands:
             raise ValueError('Command already specified:' + str(cmd))
