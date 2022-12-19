@@ -3,6 +3,18 @@
 # Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
+from dateutil.parser import parse
+
+try:
+    from rich.console import Console
+    from rich.markdown import Markdown
+
+    console = Console()
+    _markdown = True
+except ModuleNotFoundError:
+    _markdown = False
+    pass
+
 display_color = True
 HILIGHT = '[1m'
 NORMAL = '[0m'
@@ -39,3 +51,13 @@ def color_string(string, color=None, bgcolor=None):
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
     return ret_string
+
+def md_print(markdown_text):
+    if _markdown:
+        console.print(Markdown(markdown_text))
+    else:
+        print(markdown_text)
+
+def pretty_date(date_str):
+    date_obj = parse(date_str)
+    return date_obj.astimezone().strftime('%F %T %Z')
