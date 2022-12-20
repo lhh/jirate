@@ -26,6 +26,7 @@ COLORS = {'green':       2,     # NOQA
           'red':         9,     # NOQA
           'purple':      93,    # NOQA
           'blue':        12,    # NOQA
+          'blue-gray':   12,    # NOQA
           'turquoise':   80,    # NOQA
           'light green': 119,   # NOQA
           'pink':        205,   # NOQA
@@ -48,6 +49,9 @@ def color_string(string, color=None, bgcolor=None):
     if bgcolor and bgcolor in COLORS:
         bg_color = '[48;5;{0}m'.format(COLORS[bgcolor])
 
+    if not fg_color and not bg_color:
+        return string
+
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
     return ret_string
@@ -61,3 +65,7 @@ def md_print(markdown_text):
 def pretty_date(date_str):
     date_obj = parse(date_str)
     return date_obj.astimezone().strftime('%F %T %Z')
+
+def hbar_under(text):
+    print(text)
+    print('━' * len(text))
