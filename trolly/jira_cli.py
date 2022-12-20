@@ -243,7 +243,7 @@ def print_issue(project, issue_obj, verbose):
         print('Assignee'.ljust(lsize), sep, end=' ')
         print(issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
         # todo: add watchers (verbose)
-    print_labels(issue, prefix='Labels'.ljust(lsize) + ' {sep} ')
+    print_labels(issue, prefix='Labels'.ljust(lsize) + f' {sep} ')
 
     print()
     if issue['description']:
