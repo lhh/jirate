@@ -257,17 +257,27 @@ def print_issue(project, issue_obj, verbose):
         lsize = 0
         rsize = 0
         for link in issue['issuelinks']:
-            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-            status = link['outwardIssue']['fields']['status']
+            if 'outwardIssue' in link:
+                text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+                status = link['outwardIssue']['fields']['status']
+            elif 'inwardIssue' in link:
+                text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
+                status = link['inwardIssue']['fields']['status']
+
             if len(text) > lsize:
                 lsize = len(text)
             if len(status) > rsize:
                 lsize = len(status)
         # pass 2: print the stuff
         for link in issue['issuelinks']:
-            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-            status = link['outwardIssue']['fields']['status']
-            desc = link['outwardIssue']['fields']['summary']
+            if 'outwardIssue' in link:
+                text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+                status = link['outwardIssue']['fields']['status']
+                desc = link['outwardIssue']['fields']['summary']
+            elif 'inwardIssue' in link:
+                text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
+                status = link['inwardIssue']['fields']['status']
+                desc = link['inwardIssue']['fields']['summary']
             print(text, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, desc)
         print()
 
