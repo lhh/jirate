@@ -130,6 +130,24 @@ def new_issue(args):
     return (0, True)
 
 
+def new_subtask(args):
+    desc = None
+    parent_issue = args.project.issue(args.issue_id)
+
+    if args.text:
+        name = ' '.join(args.text)
+    else:
+        text = editor()
+        name, desc = split_issue_text(text)
+        if name is None:
+            print('Canceled')
+            return (1, False)
+
+    issue = args.project.subtask(parent_issue.raw['key'], name, desc)
+    print_issue(args.project, issue, False)
+    return (0, True)
+
+
 def comment(args):
     issue_id = args.issue
 
@@ -223,6 +241,9 @@ def print_issue(project, issue_obj, verbose):
         print(f'(Updated {dstr})')
     else:
         print()
+
+    if 'parent' in issue and issue['parent']:
+        print('Parent'.ljust(lsize), sep, issue['parent']['key'])
     print('Status'.ljust(lsize), sep, color_string(issue['status']['name'], 'white', issue['status']['statusCategory']['colorName']))
 
     if verbose:
@@ -438,6 +459,10 @@ def create_parser():
 
     cmd = parser.command('new', help='Create a new issue', handler=new_issue)
     cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent)')
+    cmd.add_argument('text', nargs='*', help='Issue summary')
+
+    cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
+    cmd.add_argument('issue_id', help='Parent issue', type=str.upper)
     cmd.add_argument('text', nargs='*', help='Issue summary')
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)

@@ -294,7 +294,17 @@ class JiraProject(object):
     def states(self):
         return copy.copy(self._config['states'])
 
-    def new(self, name, description=None, issue_type=None):
+    def new(self, name, description=None, issue_type=None, parent=None):
+        parent_key = None
+        project = self.project_name
+
+        if parent:
+            if issue_type != 'Sub-task':
+                raise ValueError('Specifying a parent only valid for Sub-task type')
+            parent_issue = self.issue(parent)
+            parent_key = parent_issue.raw['key']
+            project = parent_issue.raw['fields']['project']['key']
+
         issuetypes = self._project.issueTypes
         resolved_issue_type = None
         if issue_type is not None:
@@ -308,15 +318,20 @@ class JiraProject(object):
             resolved_issue_type = issuetypes[0].name
 
         args = {}
-        args['project'] = self.project_name
+        args['project'] = project
         args['summary'] = name
         args['issuetype'] = resolved_issue_type
+        if parent_key:
+            args['parent'] = {'key': parent_key}
         if description:
             args['description'] = description
 
         ret = self.jira.create_issue(**args)
         self._index_issue(ret)
         return ret
+
+    def subtask(self, parent, name, description=None):
+        return self.new(name, description, 'Sub-task', parent)
 
     def issue_types(self):
         return self._project.issueTypes
