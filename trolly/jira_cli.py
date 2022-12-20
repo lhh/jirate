@@ -250,6 +250,28 @@ def print_issue(project, issue_obj, verbose):
         md_print(issue['description'])
         print()
 
+    # todo: separate function for this kind of thing
+    if 'issuelinks' in issue and len(issue['issuelinks']):
+        hbar_under('Issue Links')
+        # pass 1: Get the lengths so we can draw separators
+        lsize = 0
+        rsize = 0
+        for link in issue['issuelinks']:
+            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+            status = link['outwardIssue']['fields']['status']
+            if len(text) > lsize:
+                lsize = len(text)
+            if len(status) > rsize:
+                lsize = len(status)
+        # pass 2: print the stuff
+        for link in issue['issuelinks']:
+            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+            status = link['outwardIssue']['fields']['status']
+            desc = link['outwardIssue']['fields']['summary']
+            print(text, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, desc)
+        print()
+
+    # todo: separate function for this kind of thing
     if 'subtasks' in issue and len(issue['subtasks']):
         hbar_under('Sub-tasks')
         # pass 1: Get the lengths so we can draw separators
