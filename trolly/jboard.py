@@ -14,16 +14,21 @@ def nym(s):
 
 
 class JiraProject(object):
-    def __init__(self, jira, project, closed_status='CLOSED', readonly=False):
+    def __init__(self, jira, project, closed_status=None, readonly=False):
         self.jira = jira
         self._ro = readonly
         self._config = None
         self._closed_status = closed_status
-
         self._project = self.jira.project(project)
         self.project_name = project
         self.refresh()
-        # self.index_issues()
+
+        if self._closed_status is None:
+            # guess at common closed states
+            for status in ['CLOSED', 'DONE', 'RESOLVED']:
+                if self.status_to_id(status):
+                    self._closed_status = status
+                    break
 
     def refresh(self):
         if not self._config:
@@ -120,7 +125,7 @@ class JiraProject(object):
     def unlabel_issue(self, issue_alias, label_name):
         return False
 
-    def list_to_id(self, status):
+    def status_to_id(self, status):
         status = nym(status)
 
         if status not in self._config['states'] and status not in self._config['state_map']:
@@ -157,7 +162,7 @@ class JiraProject(object):
 
     def index_issues(self, status=None):
         if status:
-            status_id = self.list_to_id(status)
+            status_id = self.status_to_id(status)
             open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
         else:
             open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
@@ -250,7 +255,7 @@ class JiraProject(object):
         return None
 
     def move(self, issue_aliases, status):
-        status_id = self.list_to_id(status)
+        status_id = self.status_to_id(status)
 
         if not isinstance(issue_aliases, list):
             issue_aliases = [issue_aliases]
