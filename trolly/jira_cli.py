@@ -175,7 +175,7 @@ def refresh(args):
 
 
 def display_comment(action, verbose):
-    print(pretty_date(action['updated']), '-', action['updateAuthor']['displayName'], '- ID:', action['id'])
+    print(pretty_date(action['updated']), '*', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '* ID:', action['id'])
     md_print(action['body'])
     print()
 
@@ -226,9 +226,9 @@ def print_issue(project, issue_obj, verbose):
     print('Status'.ljust(lsize), sep, color_string(issue['status']['name'], 'white', issue['status']['statusCategory']['colorName']))
 
     if verbose:
-        print('Creator'.ljust(lsize), sep, issue['creator']['emailAddress'])
-        if issue['reporter'] is not None:
-            print('Reporter'.ljust(lsize), sep, issue['reporter']['emailAddress'])
+        print('Creator'.ljust(lsize), sep, issue['creator']['emailAddress'], '-', issue['creator']['displayName'])
+        if issue['reporter'] is not None and issue['reporter']['emailAddress'] != issue['creator']['emailAddress']:
+            print('Reporter'.ljust(lsize), sep, issue['reporter']['emailAddress'], '-', issue['creator']['displayName'])
         print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
         print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
         print('URL'.ljust(lsize), sep, issue_obj.permalink())
@@ -238,27 +238,19 @@ def print_issue(project, issue_obj, verbose):
             print([tr['name'] for tr in trans.values()])
         else:
             print('NONE - Issue has no valid transitions; cannot alter status')
-        print()
 
     if 'assignee' in issue and issue['assignee'] and 'name' in issue['assignee']:
         print('Assignee'.ljust(lsize), sep, end=' ')
-        if verbose:
-            print()
-            print('  *', issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
-        else:
-            print(issue['assignee']['emailAddress'], end=' ')
-        # todo: add watchers
-        if not verbose:
-            print()
-
+        print(issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
+        # todo: add watchers (verbose)
     print_labels(issue, prefix='Labels'.ljust(lsize) + ' {sep} ')
 
+    print()
     if issue['description']:
-        print()
         md_print(issue['description'])
+        print()
 
     if issue['comment']['comments']:
-        print()
         hbar_under('Comments')
 
         for cmt in issue['comment']['comments']:
