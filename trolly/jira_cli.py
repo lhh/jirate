@@ -10,7 +10,7 @@ from jira import JIRA
 
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
-from trolly.decor import md_print, pretty_date
+from trolly.decor import md_print, pretty_date, color_string, hbar_under
 
 
 def jira_get_config():
@@ -213,24 +213,35 @@ def print_labels(issue, prefix='Labels: '):
 def print_issue(project, issue_obj, verbose):
     issue = issue_obj.raw['fields']
 
-    print(issue_obj.raw['key'], '-', issue['summary'])
-    print('Status:', issue['status']['name'])
+    lsize = max(len(issue_obj.raw['key']), len('Next States'))
+    sep = '┃'
+
+    print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
+    print('Created'.ljust(lsize), sep, pretty_date(issue['created']), end=' ')
+    if issue['created'] != issue['updated']:
+        dstr = pretty_date(issue['updated'])
+        print(f'(Updated {dstr})')
+    else:
+        print()
+    print('Status'.ljust(lsize), sep, color_string(issue['status']['name'], 'white', issue['status']['statusCategory']['colorName']))
 
     if verbose:
-        print('Type  :', issue['issuetype']['name'])
-        print('ID    :', issue_obj.raw['id'])
-        print('URL   :', issue_obj.permalink())
+        print('Creator'.ljust(lsize), sep, issue['creator']['emailAddress'])
+        if issue['reporter'] is not None:
+            print('Reporter'.ljust(lsize), sep, issue['reporter']['emailAddress'])
+        print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
+        print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
+        print('URL'.ljust(lsize), sep, issue_obj.permalink())
         trans = project.transitions(issue_obj.raw['key'])
+        print('Next States'.ljust(lsize), sep, end=' ')
         if trans:
-            print('Next states:', [tr['name'] for tr in trans.values()])
+            print([tr['name'] for tr in trans.values()])
         else:
-            print('Next states: NONE - Issue has no valid transitions; cannot alter status')
+            print('NONE - Issue has no valid transitions; cannot alter status')
         print()
 
-    print_labels(issue)
-
     if 'assignee' in issue and issue['assignee'] and 'name' in issue['assignee']:
-        print('Assignee: ', end='')
+        print('Assignee'.ljust(lsize), sep, end=' ')
         if verbose:
             print()
             print('  *', issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
@@ -240,14 +251,15 @@ def print_issue(project, issue_obj, verbose):
         if not verbose:
             print()
 
+    print_labels(issue, prefix='Labels'.ljust(lsize) + ' {sep} ')
+
     if issue['description']:
         print()
         md_print(issue['description'])
 
     if issue['comment']['comments']:
         print()
-        print('Comments')
-        print('--------')
+        hbar_under('Comments')
 
         for cmt in issue['comment']['comments']:
             display_comment(cmt, verbose)
