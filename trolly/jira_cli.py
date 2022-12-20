@@ -463,7 +463,7 @@ def create_parser():
 
     cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
     cmd.add_argument('issue_id', help='Parent issue', type=str.upper)
-    cmd.add_argument('text', nargs='*', help='Issue summary')
+    cmd.add_argument('text', nargs='*', help='Subtask summary')
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
