@@ -250,6 +250,25 @@ def print_issue(project, issue_obj, verbose):
         md_print(issue['description'])
         print()
 
+    if 'subtasks' in issue and len(issue['subtasks']):
+        hbar_under('Sub-tasks')
+        # pass 1: Get the lengths so we can draw separators
+        lsize = 0
+        rsize = 0
+        for task in issue['subtasks']:
+            task_key = task['key']
+            status = task['fields']['status']['name']
+            if len(task_key) > lsize:
+                lsize = len(task_key)
+            if len(status) > rsize:
+                lsize = len(status)
+        # pass 2: print the stuff
+        for task in issue['subtasks']:
+            task_key = task['key']
+            status = task['fields']['status']
+            print(task_key, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, task['fields']['summary'])
+        print()
+
     if issue['comment']['comments']:
         hbar_under('Comments')
 
