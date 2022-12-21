@@ -1,25 +1,29 @@
+General:
+
 Rewrite - getting spaghetti-ish with too many exceptions/value checks
           mixed together
 
-Comments -
-- deleting comments
+Man pages
 
-Editor
-- Help text in preliminary editor text a la 'git commit'
+Unit tests :P
+
+JIRA:
 
 Attachments
-- add File attachments
+- add File attachments, link attachments
 
-Lists
-- Create list
-- Archive list
+Labels
+
+External links
+
+Watchers
+
+
+Trello:
 
 Ordering
 - Move list left or right in UI
 - Move cards up/down in UI
-
-Labels
-- apply new color to a label
 
 Checklists
 - everything
@@ -39,6 +43,4 @@ Multiboard support
   - trolly mv card board/list 
     ... trolly mv card -b board list ? # whatever
 
-Man page
 
-Unit tests :P
