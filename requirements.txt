@@ -3,3 +3,4 @@ trollo>=0.2.4
 editor>=1.2.1
 PyYAML
 rich
+jira>=3.2.0
