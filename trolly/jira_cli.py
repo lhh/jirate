@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import json
 import os
 import sys
 
@@ -11,15 +10,7 @@ from jira import JIRA
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
 from trolly.decor import md_print, pretty_date, color_string, hbar_under, nym
-
-
-def jira_get_config():
-    config_file = open(os.path.expanduser('~/.trolly.json'))
-    config_data = config_file.read()
-    config_file.close()
-    config = json.loads(config_data)
-
-    return config
+from trolly.config import get_config
 
 
 def move(args):
@@ -437,7 +428,7 @@ def unassign_issue(args):
 
 
 def get_project(project=None):
-    config = jira_get_config()
+    config = get_config()
 
     if 'jira' not in config:
         print('No JIRA configuration available')
