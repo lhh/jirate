@@ -368,7 +368,7 @@ def print_card(board, card, verbose):
             display_attachment(attachment, verbose)
 
     print()
-    hbar_under('Attachments')
+    hbar_under('Activity')
 
     for act in card['history']:
         display_action(act, verbose)
