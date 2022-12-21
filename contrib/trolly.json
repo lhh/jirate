@@ -5,4 +5,14 @@
 	"searches": {
 		"me": "assignee = currentUser() and status not in (Done, closed, resolved)"
 	}
-}}
+ },
+ "trello": {
+	 "key": "832908fdsy89342789",
+	 "token": "fd234437890890fds890",
+	 "default_board": "board1",
+	 "boards": [
+		 {"name": "board1", "id": "fanv4iqiP", "readonly": "1"},
+		 {"name": "board2", "id": "rah4e3i5u"}
+	 ]
+ }
+}

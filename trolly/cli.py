@@ -11,7 +11,8 @@ from trollo import TrelloApi
 
 from trolly.args import ComplicatedArgs
 from trolly.board import TrollyBoard
-from trolly.decor import color_string
+from trolly.decor import color_string, hbar_under
+from trolly.config import get_config
 
 
 def extract_bugzillas(card):
@@ -29,14 +30,21 @@ def bugzilla_refs(trello_list):
     return ret
 
 
-# config = get_config("~/.trellosync")
-def trello_init():
-    try:
-        TRELLO_KEY = os.environ['TRELLO_KEY']
-        TRELLO_TOKEN = os.environ['TRELLO_TOKEN']
-    except KeyError:
-        print('Please set your TRELLO_KEY and TRELLO_TOKEN environment variables')
-        exit(1)
+def trello_init(config):
+    if config is not None:
+        try:
+            TRELLO_KEY = config['trello']['key']
+            TRELLO_TOKEN = config['trello']['token']
+        except IndexError:
+            print('Please set your Trello key and token in your configuration file')
+            exit(1)
+    else:
+        try:
+            TRELLO_KEY = os.environ['TRELLO_KEY']
+            TRELLO_TOKEN = os.environ['TRELLO_TOKEN']
+        except KeyError:
+            print('Please set your TRELLO_KEY and TRELLO_TOKEN variables or place them your config file')
+            exit(1)
 
     if TRELLO_KEY is None:
         print("Please specify key in ~/.???")
@@ -354,15 +362,13 @@ def print_card(board, card, verbose):
 
     if int(card['badges']['attachments']):
         print()
-        print('Attachments')
-        print('-----------')
+        hbar_under('Attachments')
         attachments = board.trello.cards.get_attachments(card['id'])
         for attachment in attachments:
             display_attachment(attachment, verbose)
 
     print()
-    print('Activity')
-    print('--------')
+    hbar_under('Attachments')
 
     for act in card['history']:
         display_action(act, verbose)
@@ -543,29 +549,54 @@ def unassign_card(args):
     return (0, False)
 
 
-def get_board():
-    try:
-        my_board = os.environ['TROLLY_BOARD']
-    except KeyError:
-        print('Please set a TROLLY_BOARD environment variable')
-        raise
-
+def get_board(board_name=None):
+    config = get_config()
+    board_id = None
     readonly = False
-    try:
-        readonly = os.environ['TROLLY_READONLY']
-        if readonly in ('1', 'true', 'True', 'yes', 'Yes'):
-            readonly = True
-        else:
-            readonly = False
-    except KeyError:
-        pass
 
-    tboard = trello_init()
-    return TrollyBoard(tboard, my_board, readonly=readonly)
+    # Backwards compatibility
+    if config is None:
+        try:
+            board_id = os.environ['TROLLY_BOARD']
+        except KeyError:
+            print('Please set a TROLLY_BOARD environment variable')
+            raise
+
+        try:
+            readonly = os.environ['TROLLY_READONLY']
+            if readonly in ('1', 'true', 'True', 'yes', 'Yes'):
+                readonly = True
+        except KeyError:
+            pass
+    else:
+        if board_name is None:
+            try:
+                board_name = config['trello']['default_board']
+            except IndexError:
+                pass
+        for board in config['trello']['boards']:
+            # take first board if none specified and no default
+            if board_name is None:
+                board_name = board['name']
+            if board_name == board['name']:
+                board_id = board['id']
+                readonly = False
+                try:
+                    readonly = board['readonly']
+                    if readonly in ('1', 'true', 'True', 'yes', 'Yes'):
+                        readonly = True
+                except KeyError:
+                    pass
+                break
+
+    board = trello_init(config)
+    return TrollyBoard(board, board_id, readonly=readonly)
 
 
 def create_parser():
     parser = ComplicatedArgs()
+
+    parser.add_argument('-b', '--board', help='Use this Trello board (from config file)', default=None)
 
     cmd = parser.command('ls', help='List card(s)', handler=list_cards)
     cmd.add_argument('-m', '--mine', action='store_true', help='Display only cards assigned to me.')
@@ -652,7 +683,7 @@ def main():
     ns = parser.parse_args()
 
     try:
-        board = get_board()
+        board = get_board(ns.board)
     except KeyError:
         sys.exit(1)
 

@@ -31,11 +31,6 @@ Checklists
 Code refactoring
 - Simplify wherever duplicate code exists
 
-Local configuration
-- JSON or yaml or whatever.
-  - Boards
-  - local config (instead of pushing one to a card on a board)
-
 Multiboard support
 - Per-board list defaults (my cards vs. all cards)
 - List all relevant cards regardless of board
