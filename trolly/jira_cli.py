@@ -85,6 +85,14 @@ def list_issues(args):
     return (0, True)
 
 
+def list_link_types(args):
+    ltypes = args.project.link_types()
+    for lt in ltypes:
+        print(lt.inward)
+        print(lt.outward)
+    return (0, True)
+
+
 def list_states(args):
     states = args.project.states()
     for name in states:
@@ -145,6 +153,15 @@ def new_subtask(args):
 
     issue = args.project.subtask(parent_issue.raw['key'], name, desc)
     print_issue(args.project, issue, False)
+    return (0, True)
+
+
+def link_issues(args):
+    left_issue = args.issue_left
+    right_issue = args.issue_right
+    link_name = ' '.join(args.text)
+
+    args.project.link(left_issue, right_issue, link_name)
     return (0, True)
 
 
@@ -445,6 +462,7 @@ def create_parser():
 
     parser.command('ll', help='List states available to project', handler=list_states)
     parser.command('lt', help='List issue types available to project', handler=list_issue_types)
+    parser.command('link-types', help='Display link types', handler=list_link_types)
 
     cmd = parser.command('assign', help='Assign issue', handler=assign_issue)
     cmd.add_argument('issue_id', help='Target issue', type=str.upper)
@@ -466,6 +484,11 @@ def create_parser():
     cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
     cmd.add_argument('issue_id', help='Parent issue', type=str.upper)
     cmd.add_argument('text', nargs='*', help='Subtask summary')
+
+    cmd = parser.command('link', help='Create link between two issues', handler=link_issues)
+    cmd.add_argument('issue_left', help='First issue', type=str.upper)
+    cmd.add_argument('text', nargs='+', help='Link text')
+    cmd.add_argument('issue_right', help='Second issue', type=str.upper)
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')

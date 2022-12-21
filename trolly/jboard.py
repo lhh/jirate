@@ -284,6 +284,14 @@ class JiraProject(object):
             self.jira._session.post(url, data={'transition': {'id': transition}})
         return moves
 
+    def link_types(self):
+        return self.jira.issue_link_types()
+
+    def link(self, left_alias, right_alias, link_text):
+        left = self.issue(left_alias)
+        right = self.issue(right_alias)
+        return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
+
     def states(self):
         return copy.copy(self._config['states'])
 
