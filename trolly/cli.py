@@ -11,7 +11,7 @@ from trollo import TrelloApi
 
 from trolly.args import ComplicatedArgs
 from trolly.board import TrollyBoard
-from trolly.decor import color_string, hbar_under, pretty_date
+from trolly.decor import color_string, hbar_under, pretty_date, md_print
 from trolly.config import get_config
 
 
@@ -222,7 +222,7 @@ def action_comment(action, verbose):
         print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'], 'ID', action['id'])
     else:
         print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'])
-    print('   ', data['text'])
+    md_print(data['text'])
 
 
 def display_move(action, verbose):
@@ -252,9 +252,9 @@ def display_card_update(action, verbose):
     if 'desc' in old:
         print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
         print('   === Old Description ===')
-        print(old['desc'])
+        md_print(old['desc'])
         print('   === New Description ===')
-        print(new['desc'])
+        md_print(new['desc'])
         print()
     if 'name' in old:
         print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
@@ -359,8 +359,7 @@ def print_card(board, card, verbose):
             print()
 
     if card['desc']:
-        print()
-        print(card['desc'])
+        md_print(card['desc'])
 
     if int(card['badges']['attachments']):
         print()
