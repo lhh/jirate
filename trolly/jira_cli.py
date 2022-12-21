@@ -288,7 +288,7 @@ def print_issue(project, issue_obj, verbose):
             if len(text) > lsize:
                 lsize = len(text)
             if len(status) > rsize:
-                lsize = len(status)
+                rsize = len(status)
         # pass 2: print the stuff
         for link in issue['issuelinks']:
             if 'outwardIssue' in link:
@@ -299,7 +299,7 @@ def print_issue(project, issue_obj, verbose):
                 text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
                 status = link['inwardIssue']['fields']['status']
                 desc = link['inwardIssue']['fields']['summary']
-            print(text, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, desc)
+            print(text.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, desc)
         print()
 
     # todo: separate function for this kind of thing
