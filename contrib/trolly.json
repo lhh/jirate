@@ -1,5 +1,8 @@
 {"jira": {
-  "url": "https://issues.mycompany.com",
-  "token": "f398fjfdsklhn+3879034f783129",
-  "default_project": "MYPROJECT"
+	"url": "https://issues.mycompany.com",
+	"token": "f398fjfdsklhn+3879034f783129",
+	"default_project": "MYPROJECT",
+	"searches": {
+		"me": "assignee = currentUser() and status not in (Done, closed, resolved)"
+	}
 }}

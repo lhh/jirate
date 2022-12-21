@@ -62,7 +62,20 @@ def print_issues_simple(issues, args=None):
 
 
 def search_issues(args):
-    ret = args.project.search(' '.join(args.text))
+    if args.named_search:
+        searches = args.project.get_user_data('searches')
+        if args.named_search not in searches:
+            print(f'No search configured: {args.named_search}')
+            return (1, False)
+        search_query = searches[args.named_search]
+        ret = args.project.search_issues(search_query)
+    else:
+        search_query = ' '.join(args.text)
+        if args.raw:
+            ret = args.project.search_issues(search_query)
+        else:
+            ret = args.project.search(search_query)
+
     if not ret:
         return (127, False)
     print_issues_simple(ret)
@@ -440,7 +453,10 @@ def get_project(project=None):
         project = jconfig['default_project']
 
     jira = JIRA(jconfig['url'], token_auth=jconfig['token'])
-    return JiraProject(jira, project, readonly=False)
+    proj = JiraProject(jira, project, readonly=False)
+    if 'searches' in jconfig:
+        proj.set_user_data('searches', jconfig['searches'])
+    return proj
 
 
 def create_parser():
@@ -455,7 +471,9 @@ def create_parser():
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
-    cmd = parser.command('search', help='List issue(s) with matching text', handler=search_issues)
+    cmd = parser.command('search', help='Search issue(s) with matching text', handler=search_issues)
+    cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search')
+    cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)

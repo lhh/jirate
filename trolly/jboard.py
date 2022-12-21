@@ -138,7 +138,7 @@ class JiraProject(object):
         for issue in issues:
             self._index_issue(issue)
 
-    def search_issues(self, search_query):
+    def _search_issues(self, search_query):
         index = 0
         chunk_len = 50      # So we can detect end
         ret = []
@@ -156,9 +156,9 @@ class JiraProject(object):
     def index_issues(self, status=None):
         if status:
             status_id = self.status_to_id(status)
-            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
+            open_issues = self._search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
         else:
-            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
+            open_issues = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
         self._index_issues(open_issues)
         return open_issues
 
@@ -200,7 +200,7 @@ class JiraProject(object):
     def search(self, text):
         if not text:
             return None
-        ret = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ {text})')
+        ret = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ {text})')
         return self._simplify_issue_list(ret)
 
     def list(self, status=None, userid=None):
@@ -227,6 +227,12 @@ class JiraProject(object):
             except JIRAError:
                 pass
         return None
+
+    def search_issues(self, text):
+        if not text:
+            return None
+        ret = self._search_issues(text)
+        return self._simplify_issue_list(ret)
 
     def transitions(self, issue):
         if isinstance(issue, str):
@@ -376,8 +382,14 @@ class JiraProject(object):
     def config(self):
         return copy.copy(self._config)
 
+    def get_user_data(self, key):
+        if key in ('states', 'state_map', 'issue_map', 'issue_rev_map'):
+            return KeyError('Reserved configuration keyword: ' + key)
+        if key in self._config:
+            return copy.copy(self._config[key])
+        return None
+
     def set_user_data(self, key, userdata):
         if key in ('states', 'state_map', 'issue_map', 'issue_rev_map'):
             return KeyError('Reserved configuration keyword: ' + key)
-        self._config['userdata']
-        self.save_config()
+        self._config[key] = copy.copy(userdata)
