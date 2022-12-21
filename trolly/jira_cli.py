@@ -253,18 +253,20 @@ def print_issue(project, issue_obj, verbose):
         print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
         print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
         print('URL'.ljust(lsize), sep, issue_obj.permalink())
-        trans = project.transitions(issue_obj.raw['key'])
-        print('Next States'.ljust(lsize), sep, end=' ')
-        if trans:
-            print([tr['name'] for tr in trans.values()])
-        else:
-            print('NONE - Issue has no valid transitions; cannot alter status')
 
     if 'assignee' in issue and issue['assignee'] and 'name' in issue['assignee']:
         print('Assignee'.ljust(lsize), sep, end=' ')
         print(issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
         # todo: add watchers (verbose)
     print_labels(issue, prefix='Labels'.ljust(lsize) + f' {sep} ')
+
+    if verbose:
+        trans = project.transitions(issue_obj.raw['key'])
+        print('Next States'.ljust(lsize), sep, end=' ')
+        if trans:
+            print([tr['name'] for tr in trans.values()])
+        else:
+            print('No valid transitions; cannot alter status')
 
     print()
     if issue['description']:
