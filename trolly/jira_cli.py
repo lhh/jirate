@@ -263,6 +263,57 @@ def print_labels(issue, prefix='Labels: '):
         print()
 
 
+def print_issue_links(issue, sep):
+    hbar_under('Issue Links')
+    # pass 1: Get the lengths so we can draw separators
+    lsize = 0
+    rsize = 0
+    for link in issue['issuelinks']:
+        if 'outwardIssue' in link:
+            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+            status = link['outwardIssue']['fields']['status']
+        elif 'inwardIssue' in link:
+            text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
+            status = link['inwardIssue']['fields']['status']
+
+        if len(text) > lsize:
+            lsize = len(text)
+        if len(status) > rsize:
+            rsize = len(status)
+    # pass 2: print the stuff
+    for link in issue['issuelinks']:
+        if 'outwardIssue' in link:
+            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+            status = link['outwardIssue']['fields']['status']
+            desc = link['outwardIssue']['fields']['summary']
+        elif 'inwardIssue' in link:
+            text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
+            status = link['inwardIssue']['fields']['status']
+            desc = link['inwardIssue']['fields']['summary']
+        print(text.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, desc)
+    print()
+
+
+def print_subtasks(issue, sep):
+    hbar_under('Sub-tasks')
+    # pass 1: Get the lengths so we can draw separators
+    lsize = 0
+    rsize = 0
+    for task in issue['subtasks']:
+        task_key = task['key']
+        status = task['fields']['status']['name']
+        if len(task_key) > lsize:
+            lsize = len(task_key)
+        if len(status) > rsize:
+            lsize = len(status)
+    # pass 2: print the stuff
+    for task in issue['subtasks']:
+        task_key = task['key']
+        status = task['fields']['status']
+        print(task_key, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, task['fields']['summary'])
+    print()
+
+
 def print_issue(project, issue_obj, verbose):
     issue = issue_obj.raw['fields']
 
@@ -293,6 +344,7 @@ def print_issue(project, issue_obj, verbose):
         print('Assignee'.ljust(lsize), sep, end=' ')
         print(issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
         # todo: add watchers (verbose)
+
     print_labels(issue, prefix='Labels'.ljust(lsize) + f' {sep} ')
 
     if verbose:
@@ -308,56 +360,11 @@ def print_issue(project, issue_obj, verbose):
         md_print(issue['description'])
         print()
 
-    # todo: separate function for this kind of thing
     if 'issuelinks' in issue and len(issue['issuelinks']):
-        hbar_under('Issue Links')
-        # pass 1: Get the lengths so we can draw separators
-        lsize = 0
-        rsize = 0
-        for link in issue['issuelinks']:
-            if 'outwardIssue' in link:
-                text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-                status = link['outwardIssue']['fields']['status']
-            elif 'inwardIssue' in link:
-                text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
-                status = link['inwardIssue']['fields']['status']
+        print_issue_links(issue, sep)
 
-            if len(text) > lsize:
-                lsize = len(text)
-            if len(status) > rsize:
-                rsize = len(status)
-        # pass 2: print the stuff
-        for link in issue['issuelinks']:
-            if 'outwardIssue' in link:
-                text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-                status = link['outwardIssue']['fields']['status']
-                desc = link['outwardIssue']['fields']['summary']
-            elif 'inwardIssue' in link:
-                text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
-                status = link['inwardIssue']['fields']['status']
-                desc = link['inwardIssue']['fields']['summary']
-            print(text.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, desc)
-        print()
-
-    # todo: separate function for this kind of thing
     if 'subtasks' in issue and len(issue['subtasks']):
-        hbar_under('Sub-tasks')
-        # pass 1: Get the lengths so we can draw separators
-        lsize = 0
-        rsize = 0
-        for task in issue['subtasks']:
-            task_key = task['key']
-            status = task['fields']['status']['name']
-            if len(task_key) > lsize:
-                lsize = len(task_key)
-            if len(status) > rsize:
-                lsize = len(status)
-        # pass 2: print the stuff
-        for task in issue['subtasks']:
-            task_key = task['key']
-            status = task['fields']['status']
-            print(task_key, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, task['fields']['summary'])
-        print()
+        print_subtasks(issue, sep)
 
     if issue['comment']['comments']:
         hbar_under('Comments')
