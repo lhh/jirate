@@ -242,8 +242,8 @@ class TrollyBoard(object):
             user_ids = [mb['id'] for mb in members if mb['username'] in users]
             if 'me' in users:
                 user = self.trello.members.me()
-                if user not in users:
-                    users.append(user)
+                if user['id'] not in user_ids:
+                    user_ids.append(user['id'])
         else:
             # Just me
             user = self.trello.members.me()
