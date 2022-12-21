@@ -11,7 +11,7 @@ from trollo import TrelloApi
 
 from trolly.args import ComplicatedArgs
 from trolly.board import TrollyBoard
-from trolly.decor import color_string, hbar_under
+from trolly.decor import color_string, hbar_under, pretty_date
 from trolly.config import get_config
 
 
@@ -219,9 +219,9 @@ def action_null(action, arg=None):
 def action_comment(action, verbose):
     data = action['data']
     if verbose:
-        print(action['date'], '- Comment by', action['memberCreator']['username'], 'ID', action['id'])
+        print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'], 'ID', action['id'])
     else:
-        print(action['date'], '- Comment by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'])
     print('   ', data['text'])
 
 
@@ -229,7 +229,7 @@ def display_move(action, verbose):
     if not verbose:
         return
     data = action['data']
-    print(action['date'], '- Moved by', action['memberCreator']['username'])
+    print(pretty_date(action['date']), '- Moved by', action['memberCreator']['username'])
     print('   ', data['listBefore']['name'], '→', data['listAfter']['name'])
 
 
@@ -238,9 +238,9 @@ def display_state(action, verbose):
         return
     data = action['data']
     if data['card']['closed']:
-        print(action['date'], '- Closed by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '- Closed by', action['memberCreator']['username'])
     else:
-        print(action['date'], '- Opened by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '- Opened by', action['memberCreator']['username'])
 
 
 def display_card_update(action, verbose):
@@ -250,14 +250,14 @@ def display_card_update(action, verbose):
     new = action['data']['card']
 
     if 'desc' in old:
-        print(action['date'], '- Description updated by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
         print('   === Old Description ===')
         print(old['desc'])
         print('   === New Description ===')
         print(new['desc'])
         print()
     if 'name' in old:
-        print(action['date'], '- Description updated by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
         print('   Old Name:', old['name'])
         print('   New Name:', new['name'])
 
@@ -284,7 +284,7 @@ def action_update(action, verbose):
 
 
 def action_create(action, verbose):
-    print(action['date'], '- Created by', action['memberCreator']['username'])
+    print(pretty_date(action['date']), '- Created by', action['memberCreator']['username'])
 
 
 action_map = {
@@ -328,29 +328,31 @@ def print_labels(card, prefix='Labels: '):
         print(prefix, end='')
         for label in card['labels']:
             print(color_string(label['name'], 'white', bgcolor=label['color']), end=' ')
+        print()
 
 
 def print_card(board, card, verbose):
-    print(card['idShort'], '-', card['name'])
+    sep = '┃'
+    lsize = max(len(str(card['idShort'])), len('Assignee(s)'))
+
+    print(str(card['idShort']).ljust(lsize), sep, card['name'])
 
     if verbose:
-        print('ID :', card['id'])
-        print('URL:', card['url'])
+        print('ID'.ljust(lsize), sep, card['id'])
+        print('URL'.ljust(lsize), sep, card['url'])
 
-    print_labels(card)
-    print()
+    print_labels(card, prefix='Labels'.ljust(lsize) + f' {sep} ')
 
     if 'idMembers' in card and card['idMembers']:
         board_members = board.members()
-        print()
-        print('Assignee(s): ', end='')
+        print('Assignee(s)'.ljust(lsize), sep, end=' ')
         if verbose:
             print()
         for member in board_members:
             if member['id'] not in card['idMembers']:
                 continue
             if verbose:
-                print('  *', member['username'], '-', member['fullName'])
+                print(' '.ljust(lsize), sep, '*', member['username'], '-', member['fullName'])
             else:
                 print(member['username'], end=' ')
         if not verbose:
