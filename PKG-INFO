@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: trolly
-Version: 0.1.0
+Version: 0.2.0
 Summary: Python library for interacting with the Trello API
 Author: Lon Hohberger
 Author-email: lon@metamorphism.com
@@ -67,4 +67,4 @@ Classifier: Topic :: Software Development
 Classifier: Topic :: Software Development :: Libraries
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Classifier: Topic :: Utilities
-Requires: requests, trollo
+Requires: requests, trollo, editor, jira, rich
