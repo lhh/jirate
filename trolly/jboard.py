@@ -33,7 +33,6 @@ class JiraProject(object):
     def refresh(self):
         if not self._config:
             self._config = {'states': {},
-                            'state_map': {},
                             'issue_map': {},
                             'issue_rev_map': {}}
 
@@ -58,11 +57,6 @@ class JiraProject(object):
                     statuses.append(status)
 
         for item in statuses:
-            # Update in case we renamed list on the UI side
-            if item['id'] in self._config['state_map']:
-                self._config['states'][self._config['state_map'][item['id']]]['name'] = item['name']
-                continue
-
             val = {}
             val['name'] = item['name']
             val['id'] = item['id']
@@ -70,7 +64,6 @@ class JiraProject(object):
             while name in self._config['states']:
                 name = name + '_'
             self._config['states'][name] = val
-            self._config['state_map'][item['id']] = name
 
     def get_user(self, username):
         # JIRA has internal keys that need to be used by API calls;
@@ -248,15 +241,14 @@ class JiraProject(object):
             return None
         return possible
 
-    def _find_transition(self, issue, state_id):
+    def _find_transition(self, issue, status):
         transitions = self.transitions(issue)
-        if state_id in transitions:
-            return transitions[state_id]['id']
+        for state_id in transitions:
+            if transitions[state_id]['name'] == status or nym(transitions[state_id]['name']) == status or str(state_id) == str(status):
+                return transitions[state_id]['id']
         return None
 
     def move(self, issue_aliases, status):
-        status_id = self.status_to_id(status)
-
         if not isinstance(issue_aliases, list):
             issue_aliases = [issue_aliases]
 
@@ -267,11 +259,12 @@ class JiraProject(object):
             issue = self.issue(idx)
             if not issue:
                 fails.append(idx)
-            else:
-                # Don't double-move
-                if idx not in moves:
-                    moves.append(idx)
-                    issues.append(issue)
+                continue
+            if idx in moves:
+                continue
+            # Don't double-move (if someone specified the same item twice)
+            moves.append(idx)
+            issues.append(issue)
 
         # Jira doesn't have a status you can update; you have to retrieve possible
         # transitions and satisfy those requirements. Each issue has its own transition map
@@ -282,7 +275,7 @@ class JiraProject(object):
         if fails:
             raise ValueError('No such issue(s): ' + str(fails))
         for issue in issues:
-            transition = self._find_transition(issue, status_id)
+            transition = self._find_transition(issue, status)
             if not transition:
                 continue
 
