@@ -4,11 +4,11 @@ import bz2
 import copy
 import json
 
+from trolly.decor import nym
+
 
 _TROLLY_CONFIG_CARD = 'META:TROLLY_CONFIG'
 
-
-from trolly.decor import nym
 
 # WARNING WARNING WARNING - upon first creation, there's a race between the time
 # trello searching finds the card.  It's 10~30 seconds.

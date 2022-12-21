@@ -30,9 +30,6 @@ def close_issues(args):
 
 def print_issues_simple(issues, args=None):
     states = {}
-    if args:
-        project_states = args.project.states()
-
     for issue in issues:
         cstatus = issues[issue]['fields']['status']['name']
         if cstatus not in states:

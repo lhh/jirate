@@ -8,6 +8,7 @@ from jira.utils import json_loads
 
 from trolly.decor import nym
 
+
 class JiraProject(object):
     def __init__(self, jira, project, closed_status=None, readonly=False):
         self.jira = jira

@@ -56,15 +56,18 @@ def color_string(string, color=None, bgcolor=None):
 
     return ret_string
 
+
 def md_print(markdown_text):
     if _markdown:
         console.print(Markdown(markdown_text))
     else:
         print(markdown_text)
 
+
 def pretty_date(date_str):
     date_obj = parse(date_str)
     return date_obj.astimezone().strftime('%F %T %Z')
+
 
 def hbar_under(text):
     print(text)

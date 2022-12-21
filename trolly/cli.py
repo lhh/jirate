@@ -84,7 +84,7 @@ def close_cards_in_lists(args):
     for archive_list in args.target:
         list_id = args.board.list_to_id(archive_list)
         args.board.trello.lists.archive_all_cards(list_id)
-    return(0, False)
+    return (0, False)
 
 
 def close_cards(args):
@@ -94,7 +94,7 @@ def close_cards(args):
     for card in args.target:
         if not args.board.close(card):
             ret = 1
-    return(ret, False)
+    return (ret, False)
 
 
 def reopen_card(args):
@@ -102,7 +102,7 @@ def reopen_card(args):
     for card in args.card:
         if not args.board.reopen(card):
             ret = 1
-    return(ret, False)
+    return (ret, False)
 
 
 def print_cards_simple(cards, args=None):
