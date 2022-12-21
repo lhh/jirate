@@ -69,3 +69,9 @@ def pretty_date(date_str):
 def hbar_under(text):
     print(text)
     print('━' * len(text))
+
+
+def nym(s):
+    z = s.lower().replace(' ', '_')
+    z.replace('\t', '_')
+    return z

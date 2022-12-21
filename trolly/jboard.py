@@ -6,12 +6,7 @@ import os
 from jira import JIRAError
 from jira.utils import json_loads
 
-
-def nym(s):
-    z = s.lower().replace(' ', '_')
-    z.replace('\t', '_')
-    return z
-
+from trolly.decor import nym
 
 class JiraProject(object):
     def __init__(self, jira, project, closed_status=None, readonly=False):

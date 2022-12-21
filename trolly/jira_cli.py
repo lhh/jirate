@@ -10,7 +10,7 @@ from jira import JIRA
 
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
-from trolly.decor import md_print, pretty_date, color_string, hbar_under
+from trolly.decor import md_print, pretty_date, color_string, hbar_under, nym
 
 
 def jira_get_config():
@@ -44,15 +44,13 @@ def print_issues_simple(issues, args=None):
 
     for issue in issues:
         cstatus = issues[issue]['fields']['status']['name']
-        if args and args.status:
-            status = project_states[args.status]['name']
-            if cstatus != status:
-                continue
         if cstatus not in states:
             states[cstatus] = []
         states[cstatus].append(issue)
 
     for key in states:
+        if args and args.status and nym(key) != nym(args.status):
+            continue
         print(key)
         for issue in states[key]:
             print('  ', issue, end=' ')

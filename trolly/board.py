@@ -8,11 +8,7 @@ import json
 _TROLLY_CONFIG_CARD = 'META:TROLLY_CONFIG'
 
 
-def nym(s):
-    z = s.lower().replace(' ', '_')
-    z.replace('\t', '_')
-    return z
-
+from trolly.decor import nym
 
 # WARNING WARNING WARNING - upon first creation, there's a race between the time
 # trello searching finds the card.  It's 10~30 seconds.
