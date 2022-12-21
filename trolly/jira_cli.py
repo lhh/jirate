@@ -165,6 +165,11 @@ def link_issues(args):
     return (0, True)
 
 
+def unlink_issues(args):
+    args.project.unlink(args.issue_left, args.issue_right)
+    return (0, True)
+
+
 def comment(args):
     issue_id = args.issue
 
@@ -488,6 +493,10 @@ def create_parser():
     cmd = parser.command('link', help='Create link between two issues', handler=link_issues)
     cmd.add_argument('issue_left', help='First issue', type=str.upper)
     cmd.add_argument('text', nargs='+', help='Link text')
+    cmd.add_argument('issue_right', help='Second issue', type=str.upper)
+
+    cmd = parser.command('unlink', help='Remove link(s) between two issues', handler=unlink_issues)
+    cmd.add_argument('issue_left', help='First issue', type=str.upper)
     cmd.add_argument('issue_right', help='Second issue', type=str.upper)
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)

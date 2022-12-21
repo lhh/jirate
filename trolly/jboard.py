@@ -292,6 +292,27 @@ class JiraProject(object):
         right = self.issue(right_alias)
         return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
 
+    def unlink(self, left_alias, right_alias):
+        left = self.issue(left_alias)
+        right = self.issue(right_alias)
+        info = left.raw['fields']
+
+        if 'issuelinks' not in info or not info['issuelinks']:
+            return 0
+
+        right_name = right.raw['key']
+        count = 0
+        for link in info['issuelinks']:
+            link_id = None
+            if 'inwardIssue' in link and link['inwardIssue']['key'] == right_name:
+                link_id = link['id']
+            if 'outwardIssue' in link and link['outwardIssue']['key'] == right_name:
+                link_id = link['id']
+            if link_id:
+                count = count + 1
+                self.jira.delete_issue_link(link_id)
+        return count
+
     def states(self):
         return copy.copy(self._config['states'])
 
