@@ -48,12 +48,15 @@ def print_issues_simple(issues, args=None):
 
 
 def search_issues(args):
-    if args.named_search:
+    named = args.named_search
+    if not args.text and not named:
+        named = 'default'
+    if named:
         searches = args.project.get_user_data('searches')
-        if args.named_search not in searches:
-            print(f'No search configured: {args.named_search}')
+        if named not in searches:
+            print(f'No search configured: {named}')
             return (1, False)
-        search_query = searches[args.named_search]
+        search_query = searches[named]
         ret = args.project.search_issues(search_query)
     else:
         search_query = ' '.join(args.text)
