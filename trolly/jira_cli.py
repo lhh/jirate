@@ -260,10 +260,10 @@ def print_issue_links(issue, sep):
     for link in issue['issuelinks']:
         if 'outwardIssue' in link:
             text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-            status = link['outwardIssue']['fields']['status']
+            status = link['outwardIssue']['fields']['status']['name']
         elif 'inwardIssue' in link:
             text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
-            status = link['inwardIssue']['fields']['status']
+            status = link['inwardIssue']['fields']['status']['name']
 
         if len(text) > lsize:
             lsize = len(text)
