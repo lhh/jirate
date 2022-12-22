@@ -149,7 +149,7 @@ def list_lists(args):
     lists = args.board.lists()
     for lname in lists:
         if lists[lname]['id'] == default:
-            print(' *', lname, lists[lname]['name'])
+            print(' •', lname, lists[lname]['name'])
         else:
             print('  ', lname, lists[lname]['name'])
     return (0, False)
@@ -219,9 +219,9 @@ def action_null(action, arg=None):
 def action_comment(action, verbose):
     data = action['data']
     if verbose:
-        print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'], 'ID', action['id'])
+        print(pretty_date(action['date']), '• Comment by', action['memberCreator']['username'], 'ID', action['id'])
     else:
-        print(pretty_date(action['date']), '- Comment by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '• Comment by', action['memberCreator']['username'])
     md_print(data['text'])
 
 
@@ -229,7 +229,7 @@ def display_move(action, verbose):
     if not verbose:
         return
     data = action['data']
-    print(pretty_date(action['date']), '- Moved by', action['memberCreator']['username'])
+    print(pretty_date(action['date']), '• Moved by', action['memberCreator']['username'])
     print('   ', data['listBefore']['name'], '→', data['listAfter']['name'])
 
 
@@ -238,9 +238,9 @@ def display_state(action, verbose):
         return
     data = action['data']
     if data['card']['closed']:
-        print(pretty_date(action['date']), '- Closed by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '• Closed by', action['memberCreator']['username'])
     else:
-        print(pretty_date(action['date']), '- Opened by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '• Opened by', action['memberCreator']['username'])
 
 
 def display_card_update(action, verbose):
@@ -250,14 +250,14 @@ def display_card_update(action, verbose):
     new = action['data']['card']
 
     if 'desc' in old:
-        print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
-        print('   === Old Description ===')
+        print(pretty_date(action['date']), '• Description updated by', action['memberCreator']['username'])
+        print('   ┄┉━ Old Description ━┉┄')
         md_print(old['desc'])
-        print('   === New Description ===')
+        print('   ┄┉━ New Description ━┉┄')
         md_print(new['desc'])
         print()
     if 'name' in old:
-        print(pretty_date(action['date']), '- Description updated by', action['memberCreator']['username'])
+        print(pretty_date(action['date']), '• Summary updated by', action['memberCreator']['username'])
         print('   Old Name:', old['name'])
         print('   New Name:', new['name'])
 
@@ -284,7 +284,7 @@ def action_update(action, verbose):
 
 
 def action_create(action, verbose):
-    print(pretty_date(action['date']), '- Created by', action['memberCreator']['username'])
+    print(pretty_date(action['date']), '• Created by', action['memberCreator']['username'])
 
 
 action_map = {
@@ -352,7 +352,7 @@ def print_card(board, card, verbose):
             if member['id'] not in card['idMembers']:
                 continue
             if verbose:
-                print(' '.ljust(lsize), sep, '*', member['username'], '-', member['fullName'])
+                print(' '.ljust(lsize), sep, '•', member['username'], '-', member['fullName'])
             else:
                 print(member['username'], end=' ')
         if not verbose:

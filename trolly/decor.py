@@ -70,8 +70,18 @@ def pretty_date(date_str):
 
 
 def hbar_under(text):
+    tl = len(text)
+    if not tl:
+        return
     print(text)
-    print('━' * len(text))
+    if tl == 1:
+        print('┄')
+    elif tl == 2:
+        print('┄┄')
+    elif tl == 3:
+        print('┄┉┄')
+    else:
+        print('┄┉' + '━' * (len(text) - 4) + '┉┄')
 
 
 def nym(s):

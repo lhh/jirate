@@ -217,7 +217,7 @@ def refresh(args):
 
 
 def display_comment(action, verbose):
-    print(pretty_date(action['updated']), '*', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '* ID:', action['id'])
+    print(pretty_date(action['updated']), '•', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '• ID:', action['id'])
     md_print(action['body'])
     print()
 
