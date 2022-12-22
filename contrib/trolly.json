@@ -3,7 +3,8 @@
 	"token": "f398fjfdsklhn+3879034f783129",
 	"default_project": "MYPROJECT",
 	"searches": {
-		"me": "assignee = currentUser() and status not in (Done, closed, resolved)"
+		"default": "assignee = currentUser() and status not in (Done, closed, resolved)",
+		"closed": "assignee = currentUser() and status in (Done, closed, resolved)"
 	}
  },
  "trello": {
