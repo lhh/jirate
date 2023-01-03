@@ -222,16 +222,6 @@ def display_comment(action, verbose):
     print()
 
 
-def display_state(action, verbose):
-    if not verbose:
-        return
-    data = action['data']
-    if data['issue']['closed']:
-        print(action['date'], '- Closed by', action['memberCreator']['username'])
-    else:
-        print(action['date'], '- Opened by', action['memberCreator']['username'])
-
-
 def display_attachment(attachment, verbose):
     print('  ' + attachment['name'])
     if verbose:
@@ -490,7 +480,6 @@ def create_parser():
 
     cmd = parser.command('unassign', help='Remove assignee from issue', handler=unassign_issue)
     cmd.add_argument('issue_id', help='Target issue', type=str.upper)
-    # cmd.add_argument('members', help='Issue assignees/watchers (if none, remove only self)', nargs='*')
 
     cmd = parser.command('mv', help='Move issue(s) to new state', handler=move)
     cmd.add_argument('src', metavar='issue', nargs='+', help='Issue key(s)')
