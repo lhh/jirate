@@ -310,6 +310,7 @@ def print_issue(project, issue_obj, verbose):
     sep = '┃'
 
     print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
+    print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
     print('Created'.ljust(lsize), sep, pretty_date(issue['created']), end=' ')
     if issue['created'] != issue['updated']:
         dstr = pretty_date(issue['updated'])
@@ -325,7 +326,6 @@ def print_issue(project, issue_obj, verbose):
         print('Creator'.ljust(lsize), sep, issue['creator']['emailAddress'], '-', issue['creator']['displayName'])
         if issue['reporter'] is not None and issue['reporter']['emailAddress'] != issue['creator']['emailAddress']:
             print('Reporter'.ljust(lsize), sep, issue['reporter']['emailAddress'], '-', issue['creator']['displayName'])
-        print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
         print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
         print('URL'.ljust(lsize), sep, issue_obj.permalink())
 
