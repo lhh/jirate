@@ -136,7 +136,10 @@ def new_issue(args):
             return (1, False)
 
     issue = args.project.new(name, desc, issue_type=args.type)
-    print_issue(args.project, issue, False)
+    if args.quiet:
+        print(issue.raw['key'])
+    else:
+        print_issue(args.project, issue, False)
     return (0, True)
 
 
@@ -154,7 +157,10 @@ def new_subtask(args):
             return (1, False)
 
     issue = args.project.subtask(parent_issue.raw['key'], name, desc)
-    print_issue(args.project, issue, False)
+    if args.quiet:
+        print(issue.raw['key'])
+    else:
+        print_issue(args.project, issue, False)
     return (0, True)
 
 
@@ -487,9 +493,11 @@ def create_parser():
 
     cmd = parser.command('new', help='Create a new issue', handler=new_issue)
     cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent)')
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue ID after creation (for scripting)', action='store_true')
     cmd.add_argument('text', nargs='*', help='Issue summary')
 
     cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print subtask ID after creation (for scripting)', action='store_true')
     cmd.add_argument('issue_id', help='Parent issue', type=str.upper)
     cmd.add_argument('text', nargs='*', help='Subtask summary')
 
