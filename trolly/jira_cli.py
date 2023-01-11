@@ -290,12 +290,12 @@ def print_subtasks(issue, sep):
         if len(task_key) > lsize:
             lsize = len(task_key)
         if len(status) > rsize:
-            lsize = len(status)
+            rsize = len(status)
     # pass 2: print the stuff
     for task in issue['subtasks']:
         task_key = task['key']
         status = task['fields']['status']
-        print(task_key, sep, color_string(status['name'], status['statusCategory']['colorName']), sep, task['fields']['summary'])
+        print(task_key.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, task['fields']['summary'])
     print()
 
 
