@@ -280,12 +280,15 @@ def print_issue_links(issue, sep):
     print()
 
 
-def print_subtasks(issue, sep):
-    hbar_under('Sub-tasks')
+# Dict from search or subtask list
+def _print_issue_list(header, issues, sep):
+    hbar_under(header)
     # pass 1: Get the lengths so we can draw separators
     lsize = 0
     rsize = 0
-    for task in issue['subtasks']:
+    for task in issues:
+        if isinstance(task, str):
+            task = issues[task]
         task_key = task['key']
         status = task['fields']['status']['name']
         if len(task_key) > lsize:
@@ -293,11 +296,17 @@ def print_subtasks(issue, sep):
         if len(status) > rsize:
             rsize = len(status)
     # pass 2: print the stuff
-    for task in issue['subtasks']:
+    for task in issues:
+        if isinstance(task, str):
+            task = issues[task]
         task_key = task['key']
         status = task['fields']['status']
         print(task_key.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, task['fields']['summary'])
     print()
+
+
+def print_subtasks(issue, sep):
+    _print_issue_list('Sub-tasks', issue['subtasks'], sep)
 
 
 def eval_custom_field(__code__, field):
@@ -389,6 +398,10 @@ def print_issue(project, issue_obj, verbose):
 
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue, sep)
+
+    if issue['issuetype']['name'] == 'Epic':
+        ret = project.search_issues('"Epic Link" = "' + issue_obj.raw['key'] + '"')
+        _print_issue_list('Issues in Epic', ret, sep)
 
     if issue['comment']['comments']:
         hbar_under('Comments')
