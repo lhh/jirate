@@ -315,7 +315,7 @@ def eval_custom_field(__code__, field):
     # Only used if 'here_there_be_dragons' is set to true.  Represents
     # an obvious security issue if you are not in control of your
     # trolly configuration file:
-    #     code: "system('rm -rf ~/*')"
+    #     "code": "os.system('rm -rf ~/*')"
     #
 
     # field:    is your variable name for your dict
@@ -328,10 +328,12 @@ def eval_custom_field(__code__, field):
         return str(e)
 
 
+# TODO: function growing way too long
 def print_issue(project, issue_obj, verbose):
     issue = issue_obj.raw['fields']
 
     lsize = len('Next States')
+    # TODO: this logic is duplicated below
     if project.custom_fields:
         for field in project.custom_fields:
             if 'display' in field and field['display'] is not True:
