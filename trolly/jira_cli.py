@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import copy
 import os
 import sys
 
@@ -299,10 +300,35 @@ def print_subtasks(issue, sep):
     print()
 
 
+def eval_custom_field(__code__, field):
+    # Proof of concept.
+    #
+    # Only used if 'here_there_be_dragons' is set to true.  Represents
+    # an obvious security issue if you are not in control of your
+    # trolly configuration file:
+    #     code: "system('rm -rf ~/*')"
+    #
+
+    # field:    is your variable name for your dict
+    # __code__: is inline in your config and can reference field
+    if '__code__' in __code__:
+        raise ValueError('Reserved keyword in code snippet')
+    try:
+        return eval(str(__code__))
+    except Exception as e:
+        return str(e)
+
+
 def print_issue(project, issue_obj, verbose):
     issue = issue_obj.raw['fields']
 
-    lsize = max(len(issue_obj.raw['key']), len('Next States'))
+    lsize = len('Next States')
+    if project.custom_fields:
+        for field in project.custom_fields:
+            if 'display' not in field or field['display'] is True:
+                lsize = max(lsize, len(field['name']))
+
+    lsize = max(len(issue_obj.raw['key']), lsize)
     sep = '┃'
 
     print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
@@ -339,6 +365,19 @@ def print_issue(project, issue_obj, verbose):
             print([tr['name'] for tr in trans.values()])
         else:
             print('No valid transitions; cannot alter status')
+
+    if project.custom_fields:
+        for field in project.custom_fields:
+            if 'display' in field and field['display'] is not True:
+                continue
+            if field['id'] not in issue:
+                continue
+            if 'code' in field and project.allow_code:
+                value = eval_custom_field(field['code'], issue[field['id']])
+            else:
+                value = issue[field['id']]
+            if value is not None:
+                print(field['name'].ljust(lsize), sep, str(value))
 
     print()
     if issue['description']:
@@ -425,6 +464,7 @@ def unassign_issue(args):
 
 def get_project(project=None):
     config = get_config()
+    allow_code = False
 
     if 'jira' not in config:
         print('No JIRA configuration available')
@@ -439,15 +479,23 @@ def get_project(project=None):
         print('No default JIRA project specified')
         return None
 
+    # Allows users to represent custom fields in output.
+    # Not recommended to enable.
+    if 'here_there_be_dragons' in config['jira']:
+        if config['jira']['here_there_be_dragons'] is True:
+            allow_code = True
+
     jconfig = config['jira']
     if not project:
         # Not sure why I used an array here
         project = jconfig['default_project']
 
     jira = JIRA(jconfig['url'], token_auth=jconfig['token'])
-    proj = JiraProject(jira, project, readonly=False)
+    proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
+    if 'custom_fields' in jconfig:
+        proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
     return proj
 
 

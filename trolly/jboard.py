@@ -10,13 +10,15 @@ from trolly.decor import nym
 
 
 class JiraProject(object):
-    def __init__(self, jira, project, closed_status=None, readonly=False):
+    def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False):
         self.jira = jira
         self._ro = readonly
         self._config = None
         self._closed_status = closed_status
         self._project = self.jira.project(project)
+        self.custom_fields = None
         self.project_name = project
+        self.allow_code = allow_code
         self.refresh()
 
         if self._closed_status is None:

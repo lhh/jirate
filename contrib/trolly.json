@@ -2,10 +2,15 @@
 	"url": "https://issues.mycompany.com",
 	"token": "f398fjfdsklhn+3879034f783129",
 	"default_project": "MYPROJECT",
+	"here_there_be_dragons": false,
 	"searches": {
 		"default": "assignee = currentUser() and status not in (Done, closed, resolved)",
 		"closed": "assignee = currentUser() and status in (Done, closed, resolved)"
-	}
+	},
+	"custom_fields": [
+		{"name": "Epic Link", "id": "customfield_12311140" },
+ 		{"name": "Completion", "id": "customfield_12317140", "code": "field + '%'"}
+	]
  },
  "trello": {
 	 "key": "832908fdsy89342789",
