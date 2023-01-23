@@ -379,6 +379,8 @@ def print_issue(project, issue_obj, verbose):
         for field in project.custom_fields:
             if 'display' in field and field['display'] is not True:
                 continue
+            if 'custom' in field and field['custom'] is not True:
+                continue
             if field['id'] not in issue:
                 continue
             if 'code' in field and project.allow_code:
