@@ -334,7 +334,17 @@ def print_issue(project, issue_obj, verbose):
     lsize = len('Next States')
     if project.custom_fields:
         for field in project.custom_fields:
-            if 'display' not in field or field['display'] is True:
+            if 'display' in field and field['display'] is not True:
+                continue
+            if 'custom' in field and field['custom'] is not True:
+                continue
+            if field['id'] not in issue:
+                continue
+            if 'code' in field and project.allow_code:
+                value = eval_custom_field(field['code'], issue[field['id']])
+            else:
+                value = issue[field['id']]
+            if value is not None and len(str(value)):
                 lsize = max(lsize, len(field['name']))
 
     lsize = max(len(issue_obj.raw['key']), lsize)
@@ -387,7 +397,7 @@ def print_issue(project, issue_obj, verbose):
                 value = eval_custom_field(field['code'], issue[field['id']])
             else:
                 value = issue[field['id']]
-            if value is not None:
+            if value is not None and len(str(value)):
                 print(field['name'].ljust(lsize), sep, str(value))
 
     print()
