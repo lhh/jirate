@@ -320,6 +320,8 @@ def eval_custom_field(__code__, field):
 
     # field:    is your variable name for your dict
     # __code__: is inline in your config and can reference field
+    if field is None or not field:
+        return None
     if '__code__' in __code__:
         raise ValueError('Reserved keyword in code snippet')
     try:
