@@ -15,6 +15,10 @@ from trolly.config import get_config
 
 
 def move(args):
+    if args.user:
+        args.project.assign(args.src, args.user)
+    if args.mine:
+        args.project.assign(args.src, 'me')
     if args.project.move(args.src, args.target):
         print('Moved', args.src, 'to', args.target)
         return (0, False)
@@ -566,6 +570,8 @@ def create_parser():
     cmd.add_argument('issue_id', help='Target issue', type=str.upper)
 
     cmd = parser.command('mv', help='Move issue(s) to new state', handler=move)
+    cmd.add_argument('-m', '--mine', action='store_true', help='Also assign to myself')
+    cmd.add_argument('-u', '--user', help='Also assign to user')
     cmd.add_argument('src', metavar='issue', nargs='+', help='Issue key(s)')
     cmd.add_argument('target', help='Target state')
 

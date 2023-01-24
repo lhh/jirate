@@ -77,36 +77,40 @@ class JiraProject(object):
 
         return users[0].key
 
-    def assign(self, issue_alias, users):
+    def assign(self, issue_aliases, users=None):
         # Eventually: first in list = assignee, rest are watchers
         if isinstance(users, str):
             users = [users]
-        issue = self.issue(issue_alias)
-        if not issue:
-            return None
+        if isinstance(issue_aliases, str):
+            issue_aliases = [issue_aliases]
 
-        user_ids = []
+        for idx in issue_aliases:
+            issue = self.issue(idx)
+            if not issue:
+                continue
 
-        # first is assignee
-        if users:
-            for user in users:
-                if user == 'me':
-                    user = self._user['name']
-                if user == 'none':
-                    user_ids.append(None)
-                if user not in user_ids:
-                    user_ids.append(self.get_user(user))
-        else:
-            # Just me
-            user = self._user['name']
-            user_ids = [user]
-            # user_ids = [user['id']]
+            user_ids = []
 
-        if not len(users):
-            return
+            # first is assignee
+            if users:
+                for user in users:
+                    if user == 'me':
+                        user = self._user['name']
+                    if user == 'none':
+                        user_ids.append(None)
+                    if user not in user_ids:
+                        user_ids.append(self.get_user(user))
+            else:
+                # Just me
+                user = self._user['name']
+                user_ids = [user]
+                # user_ids = [user['id']]
 
-        user = user_ids.pop(0)
-        issue.update(assignee=user)
+            if not len(users):
+                return
+
+            user = user_ids.pop(0)
+            issue.update(assignee=user)
 
     def update_issue(self, issue_alias, **kwargs):
         issue = self.issue(issue_alias)
