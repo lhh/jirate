@@ -309,7 +309,7 @@ def print_subtasks(issue, sep):
     _print_issue_list('Sub-tasks', issue['subtasks'], sep)
 
 
-def eval_custom_field(__code__, field):
+def eval_custom_field(__code__, field, fields):
     # Proof of concept.
     #
     # Only used if 'here_there_be_dragons' is set to true.  Represents
@@ -319,6 +319,7 @@ def eval_custom_field(__code__, field):
     #
 
     # field:    is your variable name for your dict
+    # fields:   dict of fields indexed by id
     # __code__: is inline in your config and can reference field
     if field is None or not field:
         return None
@@ -345,7 +346,7 @@ def print_issue(project, issue_obj, verbose):
             if field['id'] not in issue:
                 continue
             if 'code' in field and project.allow_code:
-                value = eval_custom_field(field['code'], issue[field['id']])
+                value = eval_custom_field(field['code'], issue[field['id']], issue)
             else:
                 value = issue[field['id']]
             if value is not None and len(str(value)):
@@ -398,7 +399,7 @@ def print_issue(project, issue_obj, verbose):
             if field['id'] not in issue:
                 continue
             if 'code' in field and project.allow_code:
-                value = eval_custom_field(field['code'], issue[field['id']])
+                value = eval_custom_field(field['code'], issue[field['id']], issue)
             else:
                 value = issue[field['id']]
             if value is not None and len(str(value)):
