@@ -75,7 +75,7 @@ class JiraProject(object):
         elif not users:
             raise ValueError(f'No matching users for \'{username}\'')
 
-        return users[0].key
+        return users[0].name
 
     def assign(self, issue_aliases, users=None):
         # Eventually: first in list = assignee, rest are watchers
