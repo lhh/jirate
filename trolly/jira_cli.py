@@ -52,7 +52,32 @@ def print_issues_simple(issues, args=None):
             print(issues[issue]['fields']['summary'])
 
 
-def search_issues(args):
+def print_users(users):
+    nsize = len('Name')
+    ksize = len('User Name')
+    msize = len('Email Address')
+
+    for user in users:
+        nsize = max(nsize, len(user.displayName))
+        ksize = max(ksize, len(user.name))
+        msize = max(msize, len(user.emailAddress))
+
+    sep = '┃'
+    header = 'Name'.ljust(nsize) + '   ' + 'User Name'.ljust(ksize) + '   ' + 'Email Address'.ljust(msize)
+    hbar_under(header)
+    for user in users:
+        print(user.displayName.ljust(nsize), sep, user.name.ljust(ksize), sep, user.emailAddress)
+
+
+def search_jira(args):
+    if args.user:
+        users = args.project.search_users(args.user)
+        if not users:
+            print('No users match "f{args.user}"')
+            return (1, False)
+        print_users(users)
+        return (0, False)
+
     named = args.named_search
     if not args.text and not named:
         named = 'default'
@@ -545,8 +570,9 @@ def create_parser():
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
-    cmd = parser.command('search', help='Search issue(s) with matching text', handler=search_issues)
-    cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search')
+    cmd = parser.command('search', help='Search issue(s)/user(s) with matching text', handler=search_jira)
+    cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
+    cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('text', nargs='*', help='Search text')
 

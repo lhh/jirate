@@ -63,8 +63,13 @@ class JiraProject(object):
                 name = name + '_'
             self._config['states'][name] = val
 
+    def search_users(self, username):
+        # max is 50 by default; we'll start with that
+        users = self.jira.search_users(username)
+        return users
+
     def get_user(self, username):
-        # JIRA has internal keys that need to be used by API calls;
+        # JIRA has internal names that need to be used by API calls;
         # resolve email address if needed
         if '@' not in username:
             return username
