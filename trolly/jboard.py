@@ -207,7 +207,7 @@ class JiraProject(object):
     def search(self, text):
         if not text:
             return None
-        ret = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ {text})')
+        ret = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
         return self._simplify_issue_list(ret)
 
     def list(self, status=None, userid=None):
