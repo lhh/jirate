@@ -2,6 +2,7 @@
 
 import copy
 import os
+import re       # NOQA
 import sys
 
 import editor
@@ -368,6 +369,8 @@ def print_issue(project, issue_obj, verbose):
     # TODO: this logic is duplicated below
     if project.custom_fields:
         for field in project.custom_fields:
+            if 'disabled' in field and field['disabled'] is True:
+                continue
             if 'display' in field and field['display'] is not True:
                 continue
             if 'custom' in field and field['custom'] is not True:
@@ -421,6 +424,8 @@ def print_issue(project, issue_obj, verbose):
 
     if project.custom_fields:
         for field in project.custom_fields:
+            if 'disabled' in field and field['disabled'] is True:
+                continue
             if 'display' in field and field['display'] is not True:
                 continue
             if 'custom' in field and field['custom'] is not True:
