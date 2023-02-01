@@ -735,7 +735,7 @@ def create_parser():
     cmd.add_argument('issue', help='Issue to operate on')
     cmd.add_argument('text', nargs='*', help='Comment text')
 
-    cmd = parser.command('edit', help='Edit comment text', handler=edit_issue)
+    cmd = parser.command('edit', help='Edit issue description or summary', handler=edit_issue)
     cmd.add_argument('issue', help='Issue')
     cmd.add_argument('text', nargs='*', help='New text')
 
