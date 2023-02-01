@@ -4,6 +4,7 @@
 #   http://github.com/release-depot/toolchest
 
 from dateutil.parser import parse
+from pprint import PrettyPrinter
 
 try:
     from rich.console import Console
@@ -79,6 +80,7 @@ def hbar(tl):
     else:
         print('┄┉' + '━' * (tl - 4) + '┉┄')
 
+
 def hbar_over(text):
     tl = len(text)
     if not tl:
@@ -99,3 +101,10 @@ def nym(s):
     z = s.lower().replace(' ', '_')
     z.replace('\t', '_')
     return z
+
+
+_pretty_print = PrettyPrinter(indent=4)
+
+
+def pretty_print(obj):
+    _pretty_print.pprint(obj)
