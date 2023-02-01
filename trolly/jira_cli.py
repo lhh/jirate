@@ -142,6 +142,108 @@ def list_issue_types(args):
     return (0, False)
 
 
+def issue_fields(args):
+    issue = args.project.issue(args.issue)
+    fields = args.project.fields(issue.raw['key'])
+
+    # Remove things we set elsewhere
+    for field in ('description', 'summary', 'assignee'):
+        del fields[field]
+
+    # Remove things we don't support setting
+    for field in ('issuetype', 'attachment', 'reporter'):
+        del fields[field]
+
+    display = False
+    try:
+        if args.operation:
+            pass
+    except AttributeError:
+        display = True
+
+    if display:
+        for field in fields:
+            if field.startswith('customfield_'):
+                print(nym(fields[field]['name']), end='')
+            else:
+                print(nym(field), end='')
+            if 'allowedValues' in fields[field]:
+                values = []
+                for val in fields[field]['allowedValues']:
+                    if 'archived' in val and val['archived']:
+                        continue
+                    if 'name' in val:
+                        values.append(val['name'])
+                    elif 'value' in val:
+                        values.append(val['value'])
+                    else:
+                        values.append(val['id'])
+                print(':', ', '.join(values))
+            else:
+                print()
+        return (0, False)
+
+    for field in fields:
+        if args.name not in (field, fields[field]['name'], nym(fields[field]['name']), fields[field]['fieldId'], nym(fields[field]['fieldId'])):
+            continue
+
+        ops = fields[field]['operations']
+        if args.operation not in ops:
+            print(f'Cannot perform {args.operation} on {args.issue}; try: {ops}')
+            return (1, False)
+
+        # hax
+        field = fields[field]
+
+        # Join stuff if it's not an array
+        if 'schema' in field and field['schema']['type'] == 'array':
+            start_val = args.values
+        else:
+            start_val = [' '.join(args.values)]
+
+        print(start_val)
+
+        # okay time to update them
+        found = False
+
+        send_val = []
+        if 'allowedValues' in field:
+            for val in start_val:
+                found = False
+                for av in field['allowedValues']:
+                    if 'archived' in av and av['archived']:
+                        continue
+                    for key in ['name', 'value']:
+                        if key not in av:
+                            continue
+                        if val not in (av[key], nym(av[key])):
+                            continue
+                        send_val.append({'id': av['id']})
+                        found = True
+                        break
+                    if found:
+                        break
+                if not found:
+                    print(f'Value {val} not allowed for {args.name}')
+                    return (1, False)
+        else:
+            send_val = start_val
+
+        update_args = []
+        if 'schema' not in field or field['schema']['type'] != 'array':
+            send_val = send_val[0]
+
+        if args.operation in ['add', 'remove']:
+            update_args = {field['fieldId']: [{args.operation: val} for val in send_val]}
+        else:
+            update_args = {field['fieldId']: [{args.operation: send_val}]}
+        # pretty_print(update_args)
+        args.project.update_issue(issue.raw['key'], **update_args)
+        return (0, False)
+
+    return (0, False)
+
+
 def split_issue_text(text):
     lines = text.split('\n')
     name = lines[0]
@@ -636,6 +738,15 @@ def create_parser():
     cmd = parser.command('edit', help='Edit comment text', handler=edit_issue)
     cmd.add_argument('issue', help='Issue')
     cmd.add_argument('text', nargs='*', help='New text')
+
+    cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
+    cmd.add_argument('issue', help='Issue')
+    cmd.add_argument('operation', help='Operation', choices=['add', 'set', 'remove'])
+    cmd.add_argument('name', help='Name of field to update')
+    cmd.add_argument('values', help='Value(s) to update', nargs='*')
+
+    cmd = parser.command('fields', help='List fields (and allowed values, when applicable)', handler=issue_fields)
+    cmd.add_argument('issue', help='Issue')
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
     cmd.add_argument('target', nargs='+', help='Target issue(s)')

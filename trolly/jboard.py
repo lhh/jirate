@@ -125,6 +125,14 @@ class JiraProject(object):
     def unlabel_issue(self, issue_alias, label_name):
         return False
 
+    def fields(self, issue_alias):
+        issue = self.issue(issue_alias)
+        # XXX HERE THERE BE DRAGONS
+        # NOT IMPLEMENTED UPSTREAM
+        url = os.path.join(issue.raw['self'], 'editmeta')
+        field_blob = json_loads(self.jira._session.get(url))
+        return field_blob['fields']
+
     def status_to_id(self, status):
         status = nym(status)
 
