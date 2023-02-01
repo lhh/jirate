@@ -69,11 +69,7 @@ def pretty_date(date_str):
     return date_obj.astimezone().strftime('%F %T %Z')
 
 
-def hbar_under(text):
-    tl = len(text)
-    if not tl:
-        return
-    print(text)
+def hbar(tl):
     if tl == 1:
         print('┄')
     elif tl == 2:
@@ -81,7 +77,22 @@ def hbar_under(text):
     elif tl == 3:
         print('┄┉┄')
     else:
-        print('┄┉' + '━' * (len(text) - 4) + '┉┄')
+        print('┄┉' + '━' * (tl - 4) + '┉┄')
+
+def hbar_over(text):
+    tl = len(text)
+    if not tl:
+        return
+    hbar(tl)
+    print(text)
+
+
+def hbar_under(text):
+    tl = len(text)
+    if not tl:
+        return
+    print(text)
+    hbar(tl)
 
 
 def nym(s):

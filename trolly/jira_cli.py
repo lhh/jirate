@@ -11,7 +11,7 @@ from jira import JIRA
 
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
-from trolly.decor import md_print, pretty_date, color_string, hbar_under, nym
+from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym
 from trolly.config import get_config
 
 
@@ -45,12 +45,13 @@ def print_issues_simple(issues, args=None):
     for key in states:
         if args and args.status and nym(key) != nym(args.status):
             continue
-        print(key)
+        hbar_under(key)
         for issue in states[key]:
             print('  ', issue, end=' ')
             if args and args.labels:
                 print_labels(issues[issue], prefix='')
             print(issues[issue]['fields']['summary'])
+        print()
 
 
 def print_users(users):
@@ -99,6 +100,7 @@ def search_jira(args):
     if not ret:
         return (127, False)
     print_issues_simple(ret)
+    hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
 
