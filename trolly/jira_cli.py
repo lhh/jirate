@@ -183,64 +183,72 @@ def issue_fields(args):
                 print()
         return (0, False)
 
-    for field in fields:
-        if args.name not in (field, fields[field]['name'], nym(fields[field]['name']), fields[field]['fieldId'], nym(fields[field]['fieldId'])):
+    field = None
+    for _field in fields:
+        if args.name not in (field, fields[_field]['name'], nym(fields[_field]['name']), fields[_field]['fieldId'], nym(fields[_field]['fieldId'])):
             continue
+        field = fields[_field]
+        break
 
-        ops = fields[field]['operations']
-        if args.operation not in ops:
-            print(f'Cannot perform {args.operation} on {args.issue}; try: {ops}')
-            return (1, False)
+    if not field:
+        key = issue.raw['key']
+        print(f'No field like \'{args.name}\' field in {key}')
+        return (1, False)
 
-        # hax
-        field = fields[field]
+    ops = field['operations']
+    if args.operation not in ops:
+        print(f'Cannot perform {args.operation} on {args.issue}; try: {ops}')
+        return (1, False)
 
-        # Join stuff if it's not an array
-        if 'schema' in field and field['schema']['type'] == 'array':
-            start_val = args.values
-        else:
-            start_val = [' '.join(args.values)]
+    # Join stuff if it's not an array
+    if 'schema' in field and field['schema']['type'] == 'array':
+        start_val = args.values
+    else:
+        start_val = [' '.join(args.values)]
 
-        print(start_val)
+    # okay time to update them
+    found = False
+    send_val = []
 
-        # okay time to update them
-        found = False
-
-        send_val = []
-        if 'allowedValues' in field:
-            for val in start_val:
-                found = False
-                for av in field['allowedValues']:
-                    if 'archived' in av and av['archived']:
+    # Parse allowedValues and look for name, value, and ID, and their nyms
+    if 'allowedValues' in field:
+        # Validate that the name or value exists and create our array of IDs
+        # corresponding to them.
+        for val in start_val:
+            found = False
+            for av in field['allowedValues']:
+                if 'archived' in av and av['archived']:
+                    continue
+                for key in ['name', 'value']:
+                    if key not in av:
                         continue
-                    for key in ['name', 'value']:
-                        if key not in av:
-                            continue
-                        if val not in (av[key], nym(av[key])):
-                            continue
-                        send_val.append({'id': av['id']})
-                        found = True
-                        break
-                    if found:
-                        break
-                if not found:
-                    print(f'Value {val} not allowed for {args.name}')
-                    return (1, False)
-        else:
-            send_val = start_val
+                    if val not in (av[key], nym(av[key])):
+                        continue
+                    send_val.append({'id': av['id']})
+                    found = True
+                    break
+                if found:
+                    break
+            if not found:
+                print(f'Value {val} not allowed for {args.name}')
+                return (1, False)
 
-        update_args = []
-        if 'schema' not in field or field['schema']['type'] != 'array':
-            send_val = send_val[0]
+    # Start with our basic input otherwise; no validation done
+    else:
+        send_val = start_val
 
-        if args.operation in ['add', 'remove']:
-            update_args = {field['fieldId']: [{args.operation: val} for val in send_val]}
-        else:
-            update_args = {field['fieldId']: [{args.operation: send_val}]}
-        # pretty_print(update_args)
-        args.project.update_issue(issue.raw['key'], **update_args)
-        return (0, False)
+    update_args = []
+    # If it's not an array, assume a string for now
+    if 'schema' not in field or field['schema']['type'] != 'array':
+        send_val = send_val[0]
 
+    # Add and remove use a different format than 'set'.
+    # There's also 'modify', but ... that one's even more complicated.
+    if args.operation in ['add', 'remove']:
+        update_args = {field['fieldId']: [{args.operation: val} for val in send_val]}
+    else:
+        update_args = {field['fieldId']: [{args.operation: send_val}]}
+    args.project.update_issue(issue.raw['key'], **update_args)
     return (0, False)
 
 
