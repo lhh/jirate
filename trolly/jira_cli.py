@@ -2,7 +2,6 @@
 
 import copy
 import os
-import re       # NOQA
 import sys
 
 import editor
@@ -13,6 +12,7 @@ from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
 from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym
 from trolly.config import get_config
+from trolly.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
 
 
 def move(args):
@@ -451,105 +451,24 @@ def print_subtasks(issue, sep):
     _print_issue_list('Sub-tasks', issue['subtasks'], sep)
 
 
-def eval_custom_field(__code__, field, fields):
-    # Proof of concept.
-    #
-    # Only used if 'here_there_be_dragons' is set to true.  Represents
-    # an obvious security issue if you are not in control of your
-    # trolly configuration file:
-    #     "code": "os.system('rm -rf ~/*')"
-    #
-
-    # field:    is your variable name for your dict
-    # fields:   dict of fields indexed by id
-    # __code__: is inline in your config and can reference field
-    if field is None or not field:
-        return None
-    if '__code__' in __code__:
-        raise ValueError('Reserved keyword in code snippet')
-    try:
-        return eval(str(__code__))
-    except Exception as e:
-        return str(e)
-
-
-# TODO: function growing way too long
 def print_issue(project, issue_obj, verbose):
-    issue = issue_obj.raw['fields']
-
-    lsize = len('Next States')
-    # TODO: this logic is duplicated below
-    if project.custom_fields:
-        for field in project.custom_fields:
-            if 'disabled' in field and field['disabled'] is True:
-                continue
-            if 'display' in field and field['display'] is not True:
-                continue
-            if 'custom' in field and field['custom'] is not True:
-                continue
-            if field['id'] not in issue:
-                continue
-            if 'code' in field and project.allow_code:
-                value = eval_custom_field(field['code'], issue[field['id']], issue)
-            else:
-                value = issue[field['id']]
-            if value is not None and len(str(value)):
-                lsize = max(lsize, len(field['name']))
-
-    lsize = max(len(issue_obj.raw['key']), lsize)
     sep = '┃'
 
-    print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
-    print('Type'.ljust(lsize), sep, issue['issuetype']['name'])
-    print('Created'.ljust(lsize), sep, pretty_date(issue['created']), end=' ')
-    if issue['created'] != issue['updated']:
-        dstr = pretty_date(issue['updated'])
-        print(f'(Updated {dstr})')
-    else:
-        print()
+    issue = issue_obj.raw['fields']
+    lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
 
-    if 'parent' in issue and issue['parent']:
-        print('Parent'.ljust(lsize), sep, issue['parent']['key'])
-    print('Status'.ljust(lsize), sep, color_string(issue['status']['name'], 'white', issue['status']['statusCategory']['colorName']))
+    print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
+    render_issue_fields(issue, verbose, project.allow_code, lsize)
 
     if verbose:
-        print('Creator'.ljust(lsize), sep, issue['creator']['emailAddress'], '-', issue['creator']['displayName'])
-        if issue['reporter'] is not None and issue['reporter']['emailAddress'] != issue['creator']['emailAddress']:
-            print('Reporter'.ljust(lsize), sep, issue['reporter']['emailAddress'], '-', issue['creator']['displayName'])
         print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
         print('URL'.ljust(lsize), sep, issue_obj.permalink())
-
-    if 'assignee' in issue and issue['assignee'] and 'name' in issue['assignee']:
-        print('Assignee'.ljust(lsize), sep, end=' ')
-        print(issue['assignee']['emailAddress'], '-', issue['assignee']['displayName'])
-        # todo: add watchers (verbose)
-
-    print_labels(issue, prefix='Labels'.ljust(lsize) + f' {sep} ')
-
-    if verbose:
         trans = project.transitions(issue_obj.raw['key'])
         print('Next States'.ljust(lsize), sep, end=' ')
         if trans:
             print([tr['name'] for tr in trans.values()])
         else:
             print('No valid transitions; cannot alter status')
-
-    if project.custom_fields:
-        for field in project.custom_fields:
-            if 'disabled' in field and field['disabled'] is True:
-                continue
-            if 'display' in field and field['display'] is not True:
-                continue
-            if 'custom' in field and field['custom'] is not True:
-                continue
-            if field['id'] not in issue:
-                continue
-            if 'code' in field and project.allow_code:
-                value = eval_custom_field(field['code'], issue[field['id']], issue)
-            else:
-                value = issue[field['id']]
-            if value is not None and len(str(value)):
-                print(field['name'].ljust(lsize), sep, str(value))
 
     print()
     if issue['description']:
@@ -672,6 +591,8 @@ def get_project(project=None):
         proj.set_user_data('searches', jconfig['searches'])
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
+        apply_field_renderers(proj.custom_fields)
+
     return proj
 
 

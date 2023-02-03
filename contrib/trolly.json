@@ -12,6 +12,8 @@
 	"custom_fields": [
 		{"name": "Epic Link", "id": "customfield_12311140" },
 		{"name": "Epic Status", "id": "customfield_12311142", "display": false },
+		{"name": "CC List", "id": "customfield_12355381", "display": "email_list" },
+		{"name": "Example", "id": "example", "display": "[value|key|name|email_list|value_list]" },
 		{"name": "Completion", "id": "customfield_12317140", "code": "field + '%'"}
 	]
  },
