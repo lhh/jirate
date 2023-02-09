@@ -10,7 +10,7 @@ from jira import JIRA
 
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
-from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym
+from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
 from trolly.config import get_config
 from trolly.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
 
@@ -64,11 +64,10 @@ def print_users(users):
         ksize = max(ksize, len(user.name))
         msize = max(msize, len(user.emailAddress))
 
-    sep = '┃'
     header = 'Name'.ljust(nsize) + '   ' + 'User Name'.ljust(ksize) + '   ' + 'Email Address'.ljust(msize)
     hbar_under(header)
     for user in users:
-        print(user.displayName.ljust(nsize), sep, user.name.ljust(ksize), sep, user.emailAddress)
+        vsep_print(None, user.displayName, nsize, user.name, ksize, user.emailAddress)
 
 
 def search_jira(args):
@@ -391,9 +390,10 @@ def print_labels(issue, prefix='Labels: '):
         print()
 
 
-def print_issue_links(issue, sep):
+def print_issue_links(issue):
     hbar_under('Issue Links')
     # pass 1: Get the lengths so we can draw separators
+    sep = f' {vseparator} '
     lsize = 0
     rsize = 0
     for link in issue['issuelinks']:
@@ -418,14 +418,16 @@ def print_issue_links(issue, sep):
             text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
             status = link['inwardIssue']['fields']['status']
             desc = link['inwardIssue']['fields']['summary']
-        print(text.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, desc)
+        # color_string throws off length calculations
+        vsep_print(' ', text.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, desc)
     print()
 
 
 # Dict from search or subtask list
-def _print_issue_list(header, issues, sep):
+def _print_issue_list(header, issues):
     hbar_under(header)
     # pass 1: Get the lengths so we can draw separators
+    sep = f' {vseparator} '
     lsize = 0
     rsize = 0
     for task in issues:
@@ -443,32 +445,30 @@ def _print_issue_list(header, issues, sep):
             task = issues[task]
         task_key = task['key']
         status = task['fields']['status']
-        print(task_key.ljust(lsize), sep, color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), sep, task['fields']['summary'])
+        # color_string throws off length calculations
+        vsep_print(' ', task_key.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, task['fields']['summary'])
     print()
 
 
-def print_subtasks(issue, sep):
-    _print_issue_list('Sub-tasks', issue['subtasks'], sep)
+def print_subtasks(issue):
+    _print_issue_list('Sub-tasks', issue['subtasks'])
 
 
 def print_issue(project, issue_obj, verbose):
-    sep = '┃'
-
     issue = issue_obj.raw['fields']
     lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
 
-    print(issue_obj.raw['key'].ljust(lsize), sep, issue['summary'])
+    vsep_print(' ', issue_obj.raw['key'], lsize, issue['summary'])
     render_issue_fields(issue, verbose, project.allow_code, lsize)
 
     if verbose:
-        print('ID'.ljust(lsize), sep, issue_obj.raw['id'])
-        print('URL'.ljust(lsize), sep, issue_obj.permalink())
+        vsep_print(' ', 'ID', lsize, issue_obj.raw['id'])
+        vsep_print(None, 'URL', lsize, issue_obj.permalink())
         trans = project.transitions(issue_obj.raw['key'])
-        print('Next States'.ljust(lsize), sep, end=' ')
         if trans:
-            print([tr['name'] for tr in trans.values()])
+            vsep_print(' ', 'Next States', lsize, [tr['name'] for tr in trans.values()])
         else:
-            print('No valid transitions; cannot alter status')
+            vsep_print(None, 'Next States', lsize, 'No valid transitions; cannot alter status')
 
     print()
     if issue['description']:
@@ -476,14 +476,14 @@ def print_issue(project, issue_obj, verbose):
         print()
 
     if 'issuelinks' in issue and len(issue['issuelinks']):
-        print_issue_links(issue, sep)
+        print_issue_links(issue)
 
     if 'subtasks' in issue and len(issue['subtasks']):
-        print_subtasks(issue, sep)
+        print_subtasks(issue)
 
     if issue['issuetype']['name'] == 'Epic':
         ret = project.search_issues('"Epic Link" = "' + issue_obj.raw['key'] + '"')
-        _print_issue_list('Issues in Epic', ret, sep)
+        _print_issue_list('Issues in Epic', ret)
 
     if issue['comment']['comments']:
         hbar_under('Comments')

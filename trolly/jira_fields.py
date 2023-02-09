@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from trolly.decor import pretty_date, color_string
+from trolly.decor import pretty_date, color_string, vsep_print
 
 #
 # Field rendering functions. Return a string, or None if you want the field
@@ -395,7 +395,6 @@ def max_field_width(issue, verbose, allow_code):
 
 def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
     global _fields
-    sep = '┃'
 
     if not width:
         width = max_field_width(issue, verbose, allow_code)
@@ -407,4 +406,5 @@ def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
         val = render_field_data(field_key, field, issue, verbose, allow_code)
         if not val:
             continue
-        print(_fields[field_key]['name'].ljust(width), sep, val)
+        vsep_print(' ', _fields[field_key]['name'], width, val)
+        # print(_fields[field_key]['name'].ljust(width), sep, val)

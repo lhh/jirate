@@ -4,6 +4,7 @@
 #   http://github.com/release-depot/toolchest
 
 import re
+import os
 
 from dateutil.parser import parse
 from pprint import PrettyPrinter
@@ -116,3 +117,101 @@ _pretty_print = PrettyPrinter(indent=4)
 
 def pretty_print(obj):
     _pretty_print.pprint(obj)
+
+
+# Print stuff in a format like so:
+# field1 | field2 | field3....
+#                 | field3-continued...
+#                 | field3-continued-more...
+# linesplit: None = trail off with '..', or separator
+#            character (space, comma, etc.)
+#
+# vsep_print(arg1, width1, arg2, width2, ... argN)
+#
+vseparator = '┃'
+
+
+def vsep_print(linesplit=None, *vals):
+
+    global _termsize
+    global vseparator
+
+    sep = f' {vseparator} '
+
+    fields = []
+    widths = []
+    consumed = 0
+
+    screen_width = os.get_terminal_size()[0]
+    args = list(vals)
+
+    if not args:
+        return None
+
+    while len(args) >= 2:
+        val = args.pop(0)
+        if not isinstance(val, str):
+            val = str(val)
+        fields.append(val)
+        widths.append(int(args.pop(0)))
+    fields.append(args.pop(0))
+
+    #       field widths+ separators
+    width = sum(widths) + (len(fields) - 1) * len(sep)
+    for idx in range(0, len(widths)):
+        print(fields[idx].ljust(widths[idx]) + sep, end='')
+        consumed += widths[idx] + len(sep)
+
+    last = fields.pop()
+
+    if len(last) <= (screen_width - width):
+        print(last)
+        return
+
+    # Longer than remaining horizontal screen
+    if not linesplit:
+        print(last[:(screen_width - width - 2)] + '..')
+        return
+
+    max_chunk_len = screen_width - width
+    chunks = last.split(linesplit)
+    # Start on first line
+    newline = False
+    lsize = width - len(sep)
+    consumed = 0
+    while len(chunks):
+        chunk = chunks.pop(0)
+        while len(chunk):
+            if newline is True:
+                consumed = 0
+                print(' ' * lsize + sep, end='')
+            # Assume we'll get to the next line
+            newline = True
+            if len(chunk) > max_chunk_len:
+                # If we've started a line, start a very long
+                # max-chunk-len on new line
+                if consumed > 0:
+                    print()
+                    newline = True
+                    continue
+                print(chunk[:max_chunk_len])
+                newline = True
+                chunk = chunk[max_chunk_len:]
+                continue
+            if len(chunk) > (max_chunk_len - consumed):
+                # Start this chunk on new line
+                print()
+                newline = True
+                continue
+            # OK, we have space - print it
+            print(chunk, end='')
+            consumed += (len(chunk) + 1)
+            if consumed < (max_chunk_len - 1):
+                print(linesplit, end='')
+                newline = False
+            else:
+                print()
+                newline = True
+            # Next chunk
+            break
+    print()
