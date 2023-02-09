@@ -4,6 +4,7 @@ import re  # NOQA
 from collections import OrderedDict
 from trolly.decor import pretty_date, color_string, vsep_print
 
+
 #
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
@@ -92,17 +93,17 @@ def _votes(field, fields):
 # config files.  These should be generic and should not
 # utilize custom fields.
 _field_renderers = {
-        'string': _string,
-        'key': _key,
-        'value': _value,
-        'name': _name,
-        'user': _user,
-        'user_list': _user_list,
-        'array': _array,
-        'email_list': _email_list,
-        'value_list': _value_list,
-        'name_list': _name_list,
-        'date': _date
+    'string': _string,
+    'key': _key,
+    'value': _value,
+    'name': _name,
+    'user': _user,
+    'user_list': _user_list,
+    'array': _array,
+    'email_list': _email_list,
+    'value_list': _value_list,
+    'name_list': _name_list,
+    'date': _date
 }
 
 
@@ -129,12 +130,6 @@ _field_renderers = {
 #
 _base_fields = [
     {
-        'id': 'summary',
-        'name': 'Summary',
-        'display': False,
-        'immutable': True
-    },
-    {
         'id': 'issuetype',
         'name': 'Issue Type',
         'immutable': True,
@@ -152,16 +147,17 @@ _base_fields = [
         'display': _priority
     },
     {
-        'id': 'project',
-        'name': 'Project Name',
-        'display': False
-    },
-    {
         'id': 'created',
         'name': 'Created',
         'immutable': True,
         'verbose': True,
         'display': _created_updated
+    },
+    {
+        'id': 'duedate',
+        'name': 'Due Date',
+        'verbose': True,
+        'display': 'date'
     },
     {
         # This is part of above.
@@ -204,13 +200,24 @@ _base_fields = [
         'id': 'creator',
         'name': 'Creator',
         'verbose': True,
-        'display': 'user'
     },
     {
         'id': 'reporter',
         'name': 'Reporter',
         'verbose': True,
         'display': _reporter
+    },
+    {
+        'id': 'archivedby',
+        'name': 'Archiver',
+        'verbose': True,
+        'display': 'user'
+    },
+    {
+        'id': 'archiveddate',
+        'name': 'Archived',
+        'verbose': True,
+        'display': 'date'
     },
     {
         'id': 'labels',
@@ -228,52 +235,69 @@ _base_fields = [
         'display': 'name_list'
     },
     {
+        'id': 'versions',
+        'name': 'Affects Version(s)',
+        'display': 'name_list'
+    },
+    {
         'id': 'fixVersions',
         'name': 'Fix Version(s)',
         'display': 'name_list'
     },
-    {
-        'id': 'lastViewed',
-        'name': 'Last Viewed',
-        'display': False
-    },
-    {
-        'id': 'watches',
-        'name': 'Watchers',
-        'display': False
-    },
-    {
-        'id': 'worklog',
-        'name': 'Log Work',
-        'display': False
-    },
-    {
-        'id': 'progress',
-        'name': 'Progress',
-        'display': False
-    },
-    {
-        'id': 'timetracking',
-        'name': 'Time Tracking',
-        'display': False
-    },
-    {
-        'id': 'aggregateprogress',
-        'name': 'Progress',
-        'display': False
-    }
 ]
+
+
+# Shortcut to avoid making above list enormous
+# These are all standard fields we don't presently
+# have rendering for, but might in the future.
+# Remember ordering matters in above list.  Since
+# it "shouldn't" for things we're not printing out,
+# alphabetic is fine.
+_quiet_fields = [
+    'aggregateprogress',
+    'aggregatetimeestimate',
+    'aggregatetimeoriginalestimate',
+    'aggregatetimespent',
+    'archivedby',
+    'archiveddate',
+    'duedate',
+    'environment',
+    'lastViewed',
+    'progress',
+    'project',
+    'reporter',
+    'timeestimate',
+    'timeoriginalestimate',
+    'timespent',
+    'timetracking',
+    'versions',
+    'watches',
+    'worklog',
+    'workratio'
+]
+
+_quiet_fields_applied = False
+
+
+if not _quiet_fields_applied:
+    _quiet_fields_applied = True
+    for field in _quiet_fields:
+        val = {'id': field, 'name': field, 'display': False}
+        _base_fields.append(val)
 
 
 # These are fields we should never provide
 # custom rendering for; they are inherently
 # complicated or positional.
 _ignore_fields = [
-        'summary',
-        'description',
-        'issuelinks',
-        'subtasks',
-        'comment'
+    'attachment',
+    'comment',
+    'description',
+    'issuekey',
+    'issuelinks',
+    'subtasks',
+    'summary',
+    'thumbnail'
 ]
 
 
