@@ -3,6 +3,8 @@
 # Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
+import re
+
 from dateutil.parser import parse
 from pprint import PrettyPrinter
 
@@ -58,9 +60,15 @@ def color_string(string, color=None, bgcolor=None):
     return ret_string
 
 
+def jira2md(jira_text):
+    # Replace code blocks with triple-backticks
+    return re.sub(r'{code(:java)?}', '```', jira_text)
+
+
 def md_print(markdown_text):
     if _markdown:
-        console.print(Markdown(markdown_text))
+        fixed_text = jira2md(markdown_text)
+        console.print(Markdown(fixed_text))
     else:
         print(markdown_text)
 
