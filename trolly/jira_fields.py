@@ -9,64 +9,69 @@ from trolly.decor import pretty_date, color_string, vsep_print
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
 #
-def _string(field, fields):
+def _list_of_key(field, key):
+    return ', '.join([item[key] for item in field])
+
+def string(field, fields):
     return field
 
 
-def _key(field, fields):
+def key(field, fields):
     return field['key']
 
 
-def _value(field, fields):
+def value(field, fields):
     return field['value']
 
 
-def _name(field, fields):
+def name(field, fields):
     return field['name']
+
+
+def user(field, fields):
+    return field['displayName'] + ' - ' + field['emailAddress']
+
+
+def user_list(field, fields):
+    return _list_of_key(field, 'emailAddress')
+
+
+def array(field, fields):
+    return ', '.join(field)
+
+
+def value_list(field, fields):
+    return _list_of_key(field, 'value')
+
+
+def name_list(field, fields):
+    return _list_of_key(field, 'name')
+
+
+def date(field, fields):
+    return pretty_date(field)
+
+
+def _ratio(field, fields):
+    if int(field) < 0:
+        return None
+    return str(field)
 
 
 def _status_colorized(field, fields):
     return color_string(field['name'], 'white', field['statusCategory']['colorName'])
 
 
-def _user(field, fields):
-    return field['displayName'] + ' - ' + field['emailAddress']
-
-
-def _user_list(field, fields):
-    return ', '.join([item['emailAddress'] for item in field])
+def _priority(field, fields):
+    if field['name'] not in ('Undefined', 'undefined'):
+        return field['name']
+    return None
 
 
 def _reporter(field, fields):
     if field['emailAddress'] != fields['creator']['emailAddress']:
-        return _user(field, fields)
+        return user(field, fields)
     return None
-
-
-def _array(field, fields):
-    return ', '.join(field)
-
-
-def _email_list(field, fields):
-    return ', '.join([item['emailAddress'] for item in field])
-
-
-def _value_list(field, fields):
-    return ', '.join([item['value'] for item in field])
-
-
-def _name_list(field, fields):
-    return ', '.join([item['name'] for item in field])
-
-
-def _date(field, fields):
-    return pretty_date(field)
-
-
-def _work_ratio(field, fields):
-    if int(field) < 0:
-        return None
-    return str(field)
 
 
 def _created_updated(field, fields):
@@ -75,12 +80,6 @@ def _created_updated(field, fields):
         updated = pretty_date(fields['updated'])
         return f'{created} (Updated {updated})'
     return created
-
-
-def _priority(field, fields):
-    if field['name'] not in ('Undefined', 'undefined'):
-        return field['name']
-    return None
 
 
 def _votes(field, fields):
@@ -93,23 +92,33 @@ def _votes(field, fields):
 # config files.  These should be generic and should not
 # utilize custom fields.
 _field_renderers = {
-    'string': _string,
-    'key': _key,
-    'value': _value,
-    'name': _name,
-    'user': _user,
-    'user_list': _user_list,
-    'array': _array,
-    'email_list': _email_list,
-    'value_list': _value_list,
-    'name_list': _name_list,
-    'date': _date
+    'string': string,
+    'key': key,
+    'value': value,
+    'name': name,
+    'user': user,
+    'user_list': user_list,
+    'array': array,
+    'email_list': user_list,  # Is this duplicate needed?
+    'value_list': value_list,
+    'name_list': name_list,
+    'date': date
 }
 
 
 # Rule of thumb: if it's using an above generic
 # renderer, use the key above.  If it's custom
-# for that field, use the function
+# for that field, use the function. The goal is to
+# provide as many generic items as possible to reduce
+# the need for config-side rendering via code snippets.
+#
+# That said, in the config, one can call the functions:
+#
+#    "code": "name(field, fields)"
+#
+#     ===
+#
+#    "display": "name"
 #
 # 'id': matches your JIRA instance
 # 'name': What to display as output when printing
@@ -194,7 +203,7 @@ _base_fields = [
     {
         'id': 'workratio',
         'name': 'Work Ratio',
-        'display': _work_ratio
+        'display': _ratio
     },
     {
         'id': 'creator',
