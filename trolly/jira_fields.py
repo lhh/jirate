@@ -165,7 +165,6 @@ _base_fields = [
     {
         'id': 'duedate',
         'name': 'Due Date',
-        'verbose': True,
         'display': 'date'
     },
     {
@@ -208,6 +207,7 @@ _base_fields = [
     {
         'id': 'creator',
         'name': 'Creator',
+        'display': 'user',
         'verbose': True,
     },
     {
@@ -269,7 +269,6 @@ _quiet_fields = [
     'aggregatetimespent',
     'archivedby',
     'archiveddate',
-    'duedate',
     'environment',
     'lastViewed',
     'progress',
