@@ -425,6 +425,8 @@ def print_issue_links(issue):
 
 # Dict from search or subtask list
 def _print_issue_list(header, issues):
+    if not issues:
+        return
     hbar_under(header)
     # pass 1: Get the lengths so we can draw separators
     sep = f' {vseparator} '
