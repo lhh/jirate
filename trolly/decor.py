@@ -62,8 +62,8 @@ def color_string(string, color=None, bgcolor=None):
 
 
 def jira2md(jira_text):
-    # Replace code blocks with triple-backticks
-    return re.sub(r'{code(:java)?}', '```', jira_text)
+    # Replace code/noformat blocks with triple-backticks
+    return re.sub(r'({code(:java)?}|{noformat})', '```', jira_text)
 
 
 def md_print(markdown_text):
