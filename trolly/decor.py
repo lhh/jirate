@@ -164,7 +164,7 @@ def vsep_print(linesplit=None, *vals):
 
     last = fields.pop()
     if not isinstance(last, str):
-       last = str(last)
+        last = str(last)
 
     if len(last) <= (screen_width - width):
         print(last)

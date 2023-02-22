@@ -285,6 +285,106 @@ def new_issue(args):
     return (0, True)
 
 
+# new_issue is way too easy. Let's make it *incredibly* complicated!
+def create_issue(args):
+    auto_fields = ['reporter']
+    desc = None
+    issuetype = args.type if args.type else 'Task'
+
+    # Do sanity check before hitting the JIRA API
+    if len(args.args) % 2 == 1:
+        print('Incorrect number of arguments (not divisible by 2)')
+        return (1, False)
+
+    metadata = args.project.jira.createmeta(projectKeys=args.project.project_name,
+                                            # issuetypeNames=issuetype, #  APIv2 ignores this
+                                            expand='projects.issuetypes.fields')
+
+    if not metadata:
+        print('Could not obtain metadata for {args.project.project_name}; invalid project?')
+        return (1, False)
+
+    values = {}
+    argv = copy.copy(args.args)
+    while len(argv):
+        key = argv.pop(0)
+        value = argv.pop(0)
+        values[key] = value
+
+    # Bug - error checking isn't done until later, but we need a
+    # summary or the below code blows up.  So, you might pop up
+    # $EDITOR only to find out later that you used an invalid
+    # issue type.
+    if 'summary' not in values:
+        text = editor()
+        name, desc = split_issue_text(text)
+        if name is None:
+            print('Canceled')
+            return (1, False)
+        values['summary'] = name
+        values['description'] = desc
+
+    # Nope all the auto-populated things
+    for field in auto_fields:
+        if field in values:
+            del values[field]
+
+    commit_values = {}
+    errors = 0
+    issuetypes = metadata['projects'][0]['issuetypes']
+    issue_type_info = None
+    issue_type_names = []
+    for itype in issuetypes:
+        issue_type_names.append(itype['name'])
+        if issuetype not in (itype['name'], nym(itype['name'])):
+            continue
+        issue_type_info = itype
+        break
+
+    if not issue_type_info:
+        print('Invalid issue type:', issuetype)
+        print(f'Valid issue types for {args.project.project_name}:', ', '.join(issue_type_names))
+        return (1, False)
+
+    issuetype = issue_type_info['name']
+    values['issue_type'] = issuetype
+    values['project'] = args.project.project_name
+
+    # resolve field names
+    for field in issue_type_info['fields']:
+        if field in auto_fields:
+            continue
+        fieldname = issue_type_info['fields'][field]['name']
+        if field not in values and fieldname not in values and nym(fieldname) not in values:
+            if issue_type_info['fields'][field]['required']:
+                print(f'Missing required field for {args.project.project_name}/{issuetype}: ' + nym(fieldname))
+                errors = errors + 1
+            continue
+        if field in values:
+            commit_values[field] = values[field]
+            del values[field]
+        if fieldname in values:
+            commit_values[field] = values[fieldname]
+            del values[fieldname]
+        if nym(fieldname) in values:
+            commit_values[field] = values[nym(fieldname)]
+            del values[nym(fieldname)]
+
+    if values:
+        print('WARNING: Input fields is not empty!')
+
+    if errors:
+        print(f'{errors} errors; can\'t create issue')
+        return (1, False)
+
+    issue = args.project.create(**commit_values)
+    if args.quiet:
+        print(issue.raw['key'])
+    else:
+        print_issue(args.project, issue, False)
+    return (0, True)
+
+
 def new_subtask(args):
     desc = None
     parent_issue = args.project.issue(args.issue_id)
@@ -645,6 +745,11 @@ def create_parser():
     cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent)')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue ID after creation (for scripting)', action='store_true')
     cmd.add_argument('text', nargs='*', help='Issue summary')
+
+    cmd = parser.command('create', help='Create a new issue (advanced)', handler=create_issue)
+    cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent)')
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue ID after creation (for scripting)', action='store_true')
+    cmd.add_argument('args', nargs='*', help='field1 "value1" field2 "value2" ... fieldN "valueN"')
 
     cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
     cmd.add_argument('-q', '--quiet', default=False, help='Only print subtask ID after creation (for scripting)', action='store_true')

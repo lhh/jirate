@@ -7,6 +7,7 @@ from jira import JIRAError
 from jira.utils import json_loads
 
 from trolly.decor import nym
+from trolly.jira_input import transmogrify_input
 
 
 class JiraProject(object):
@@ -337,16 +338,28 @@ class JiraProject(object):
     def states(self):
         return copy.copy(self._config['states'])
 
-    def new(self, name, description=None, issue_type=None, parent=None):
-        parent_key = None
-        project = self.project_name
+    def create(self, **args):
+        # Structures for certain things need to be adjusted, because JIRA.
+        # parent key is special because we do our own shortcuts.  Overwrite
+        # project if we're creating a subtask
+        if 'parent' in args and isinstance(args['parent'], str):
+            parent_issue = self.issue(args['parent'])
+            parent_key = parent_issue.raw['key']
+            project = parent_issue.raw['fields']['project']['key']
+            args['parent'] = {'key': parent_key}
+            args['project'] = project
 
+        # Transmogrify other fields
+        new_args = transmogrify_input(**args)
+
+        ret = self.jira.create_issue(**new_args)
+        self._index_issue(ret)
+        return ret
+
+    def new(self, name, description=None, issue_type=None, parent=None):
         if parent:
             if issue_type != 'Sub-task':
                 raise ValueError('Specifying a parent only valid for Sub-task type')
-            parent_issue = self.issue(parent)
-            parent_key = parent_issue.raw['key']
-            project = parent_issue.raw['fields']['project']['key']
 
         issuetypes = self._project.issueTypes
         resolved_issue_type = None
@@ -361,17 +374,15 @@ class JiraProject(object):
             resolved_issue_type = issuetypes[0].name
 
         args = {}
-        args['project'] = project
+        args['project'] = self.project_name
         args['summary'] = name
         args['issuetype'] = resolved_issue_type
-        if parent_key:
-            args['parent'] = {'key': parent_key}
+        if parent is not None:
+            args['parent'] = parent
         if description:
             args['description'] = description
 
-        ret = self.jira.create_issue(**args)
-        self._index_issue(ret)
-        return ret
+        return self.create(**args)
 
     def subtask(self, parent, name, description=None):
         return self.new(name, description, 'Sub-task', parent)

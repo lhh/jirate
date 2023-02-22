@@ -12,6 +12,7 @@ from trolly.decor import pretty_date, color_string, vsep_print
 def _list_of_key(field, key):
     return ', '.join([item[key] for item in field])
 
+
 def string(field, fields):
     return field
 
