@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Paste a template like the following in:
+#
+# My Handy Checklist
+# * item 1
+# * item 2
+#
+# ./checklist2jira 1.0 > my-template.sh
+# (paste in checklist above without leading quotes)
+#
+# #!/bin/bash
+# STORY_ID=$(jolly new -q -t Story 1.0 - My Handy Checklist)
+# jolly subtask $STORY_ID "1.0: item 1"
+# jolly subtask $STORY_ID "1.0: item 2"
+#
+
+if [ -z "$1" ]; then
+	echo "Usage $0 <release>"
+	exit 1
+fi
+
+read
+VERSION=$1
+STORY_TEXT="$VERSION - $REPLY"
+
+echo "#!/bin/bash"
+echo "STORY_ID=\$(jolly new -q -t Story "${STORY_TEXT}")"
+
+while read; do
+	if [ -z "$REPLY" ]; then
+		continue
+	fi
+	TEXT=$(echo "$REPLY" | sed -e 's/^\s*\*\s//')
+        echo "jolly subtask \$STORY_ID \"${VERSION}: ${TEXT}\""
+done
