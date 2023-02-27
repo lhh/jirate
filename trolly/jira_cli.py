@@ -146,7 +146,7 @@ def issue_fields(args):
     fields = args.project.fields(issue.raw['key'])
 
     # Remove things we set elsewhere
-    for field in ('description', 'summary', 'assignee'):
+    for field in ('description', 'summary', 'assignee', 'issuelinks', 'comment'):
         del fields[field]
 
     # Remove things we don't support setting
@@ -161,11 +161,18 @@ def issue_fields(args):
         display = True
 
     if display:
+        nlen = 0
         for field in fields:
             if field.startswith('customfield_'):
-                print(nym(fields[field]['name']), end='')
+                nlen = max(nlen, len(nym(fields[field]['name'])))
             else:
-                print(nym(field), end='')
+                nlen = max(nlen, len(nym(field)))
+        for field in fields:
+            if field.startswith('customfield_'):
+                fname = nym(fields[field]['name'])
+            else:
+                fname = nym(field)
+            fvalue = ''
             if 'allowedValues' in fields[field]:
                 values = []
                 for val in fields[field]['allowedValues']:
@@ -177,9 +184,8 @@ def issue_fields(args):
                         values.append(val['value'])
                     else:
                         values.append(val['id'])
-                print(':', ', '.join(values))
-            else:
-                print()
+                fvalue = ', '.join(values)
+            vsep_print(' ', fname, nlen, fvalue)
         return (0, False)
 
     field = None
