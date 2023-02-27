@@ -143,15 +143,20 @@ def list_issue_types(args):
 
 def issue_fields(args):
     issue = args.project.issue(args.issue)
+    if not issue:
+        print('No such issue:', args.issue)
+        return (1, False)
     fields = args.project.fields(issue.raw['key'])
 
     # Remove things we set elsewhere
     for field in ('description', 'summary', 'assignee', 'issuelinks', 'comment'):
-        del fields[field]
+        if field in fields:
+            del fields[field]
 
     # Remove things we don't support setting
     for field in ('issuetype', 'attachment', 'reporter'):
-        del fields[field]
+        if field in fields:
+            del fields[field]
 
     display = False
     try:
