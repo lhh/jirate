@@ -7,6 +7,7 @@ import sys
 import editor
 
 from jira import JIRA
+from jira.exceptions import JIRAError
 
 from trolly.args import ComplicatedArgs
 from trolly.jboard import JiraProject
@@ -307,9 +308,16 @@ def create_issue(args):
         print('Incorrect number of arguments (not divisible by 2)')
         return (1, False)
 
-    metadata = args.project.jira.createmeta(projectKeys=args.project.project_name,
-                                            # issuetypeNames=issuetype, #  APIv2 ignores this
-                                            expand='projects.issuetypes.fields')
+    try:
+        metadata = args.project.jira.createmeta(projectKeys=args.project.project_name,
+                                                # issuetypeNames=issuetype, #  APIv2 ignores this
+                                                expand='projects.issuetypes.fields')
+    except JIRAError as e:
+        if 'text: Issue Does Not Exist' in str(e):
+            print('The createmeta API does not exist on this JIRA instance.')
+        else:
+            print(e)
+        return (1, False)
 
     if not metadata:
         print('Could not obtain metadata for {args.project.project_name}; invalid project?')
