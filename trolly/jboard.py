@@ -25,9 +25,11 @@ class JiraProject(object):
         if self._closed_status is None:
             # guess at common closed states
             for status in ['CLOSED', 'DONE', 'RESOLVED']:
-                if self.status_to_id(status):
+                try:
+                    self.status_to_id(status):
                     self._closed_status = status
-                    break
+                except KeyError:
+                    pass
 
     def refresh(self):
         if not self._config:
@@ -137,7 +139,7 @@ class JiraProject(object):
     def status_to_id(self, status):
         status = nym(status)
 
-        if status not in self._config['states'] and status not in self._config['state_map']:
+        if status not in self._config['states']:
             raise KeyError('No such list: ' + status)
         if status in self._config['states']:
             return self._config['states'][status]['id']
@@ -409,13 +411,13 @@ class JiraProject(object):
         return copy.copy(self._config)
 
     def get_user_data(self, key):
-        if key in ('states', 'state_map', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map', 'issue_rev_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         if key in self._config:
             return copy.copy(self._config[key])
         return None
 
     def set_user_data(self, key, userdata):
-        if key in ('states', 'state_map', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map', 'issue_rev_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config[key] = copy.copy(userdata)
