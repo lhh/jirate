@@ -567,7 +567,7 @@ def print_subtasks(issue):
     _print_issue_list('Sub-tasks', issue['subtasks'])
 
 
-def print_issue(project, issue_obj, verbose):
+def print_issue(project, issue_obj, verbose=False, no_comments=False):
     issue = issue_obj.raw['fields']
     lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
 
@@ -598,6 +598,8 @@ def print_issue(project, issue_obj, verbose):
         ret = project.search_issues('"Epic Link" = "' + issue_obj.raw['key'] + '"')
         _print_issue_list('Issues in Epic', ret)
 
+    if no_comments:
+        return
     if issue['comment']['comments']:
         hbar_under('Comments')
 
@@ -615,7 +617,7 @@ def cat(args):
         issues.append(issue)
 
     for issue in issues:
-        print_issue(args.project, issue, args.verbose)
+        print_issue(args.project, issue, args.verbose, args.no_comments)
     return (0, False)
 
 
@@ -729,6 +731,7 @@ def create_parser():
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
     cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    cmd.add_argument('-N', '--no-comments', action='store_true', default=False, help='Skip comments')
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
 
     cmd = parser.command('view', help='Display issue in browser', handler=view_issue)

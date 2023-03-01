@@ -26,8 +26,9 @@ class JiraProject(object):
             # guess at common closed states
             for status in ['CLOSED', 'DONE', 'RESOLVED']:
                 try:
-                    self.status_to_id(status):
+                    self.status_to_id(status)
                     self._closed_status = status
+                    break
                 except KeyError:
                     pass
 
