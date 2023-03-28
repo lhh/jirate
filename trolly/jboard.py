@@ -17,6 +17,8 @@ class JiraProject(object):
         self._config = None
         self._closed_status = closed_status
         self._project = self.jira.project(project)
+        self._user = None
+        self._issue_types = None
         self.custom_fields = None
         self.project_name = project
         self.allow_code = allow_code
@@ -32,15 +34,20 @@ class JiraProject(object):
                 except KeyError:
                     pass
 
+    @property
+    def user(self):
+        if self._user is None:
+            # Get current user info and record it
+            url = self._project._get_url('myself')
+            self._user = json_loads(self.jira._session.get(url))
+        return self._user
+
     def refresh(self):
         if not self._config:
             self._config = {'states': {},
                             'issue_map': {},
                             'issue_rev_map': {}}
 
-        # Get current user info and record it
-        url = self._project._get_url('myself')
-        self._user = json_loads(self.jira._session.get(url))
         self.refresh_lists()
         # self.index_issues()
 
@@ -48,11 +55,11 @@ class JiraProject(object):
         # DANGER DANGER - using private stuff because upstream doesn't have it
         spath = os.path.join(self._project._resource, 'statuses')
         url = self._project._get_url(spath.format(str(self._project)))
-        self._task_types = json_loads(self.jira._session.get(url))
+        status_info = json_loads(self.jira._session.get(url))
         status_ids = []
         statuses = []
 
-        for task_type in self._task_types:
+        for task_type in status_info:
             for status in task_type['statuses']:
                 if status['id'] not in status_ids:
                     status_ids.append(status['id'])
@@ -104,14 +111,14 @@ class JiraProject(object):
             if users:
                 for user in users:
                     if user == 'me':
-                        user = self._user['name']
+                        user = self.user['name']
                     if user == 'none':
                         user_ids.append(None)
                     if user not in user_ids:
                         user_ids.append(self.get_user(user))
             else:
                 # Just me
-                user = self._user['name']
+                user = self.user['name']
                 user_ids = [user]
                 # user_ids = [user['id']]
 
@@ -224,7 +231,7 @@ class JiraProject(object):
 
     def list(self, status=None, userid=None):
         if userid == 'me':
-            userid = self._user['name']
+            userid = self.user['name']
         issues = self.index_issues(status)
         return self._simplify_issue_list(issues, userid)
 
@@ -364,7 +371,7 @@ class JiraProject(object):
             if issue_type != 'Sub-task':
                 raise ValueError('Specifying a parent only valid for Sub-task type')
 
-        issuetypes = self._project.issueTypes
+        issuetypes = self.issue_types
         resolved_issue_type = None
         if issue_type is not None:
             for itype in issuetypes:
@@ -390,8 +397,36 @@ class JiraProject(object):
     def subtask(self, parent, name, description=None):
         return self.new(name, description, 'Sub-task', parent)
 
+    @property
     def issue_types(self):
-        return self._project.issueTypes
+        if not self._issue_types:
+            self._issue_types = self._project.issueTypes
+        return self._issue_types
+
+    # Returns a dict that JIRA should just give us.
+    def issue_metadata(self, issue_type_or_id):
+        itype = None
+        for issuetype in self.issue_types:
+            if issuetype.id == issue_type_or_id or nym(issuetype.name) == nym(issue_type_or_id):
+                itype = issuetype
+        if not itype:
+            return None
+
+        issue_type_id = itype.id
+        fields = []
+        start = 0
+        chunk_len = 50
+        while True:
+            data = {'startAt': start, 'maxResults': chunk_len}
+            new_fields = self.jira._get_json(f'issue/createmeta/{self.project_name}/issuetypes/{issue_type_id}', params=data)
+            fields.extend(new_fields['values'])
+            if new_fields['isLast']:
+                break
+            start = start + chunk_len
+
+        field_dict = {val['fieldId']: val for val in fields}
+        metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
+        return metadata
 
     def get_comment(self, issue_alias, comment_id):
         issue = self.issue(issue_alias)

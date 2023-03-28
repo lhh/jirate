@@ -9,9 +9,10 @@ import editor
 from jira import JIRA
 from jira.exceptions import JIRAError
 
-from trolly.args import ComplicatedArgs
+from trolly.args import ComplicatedArgs, GenericArgs
 from trolly.jboard import JiraProject
 from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
+from trolly.decor import pretty_print  # NOQA
 from trolly.config import get_config
 from trolly.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
 
@@ -136,18 +137,26 @@ def list_states(args):
 
 
 def list_issue_types(args):
-    issue_types = args.project.issue_types()
+    issue_types = args.project.issue_types
     for itype in issue_types:
         print('  ', itype.name)
     return (0, False)
 
 
 def issue_fields(args):
-    issue = args.project.issue(args.issue)
-    if not issue:
-        print('No such issue:', args.issue)
-        return (1, False)
-    fields = args.project.fields(issue.raw['key'])
+    if args.issue:
+        issue = args.project.issue(args.issue)
+        if not issue:
+            print('No such issue:', args.issue)
+            return (1, False)
+        fields = args.project.fields(issue.raw['key'])
+    elif args.type:
+        md = args.project.issue_metadata(args.type)
+        if md:
+            fields = md['fields']
+        else:
+            print(f'No metadata for {args.type}')
+            return (1, False)
 
     # Remove things we set elsewhere
     for field in ('description', 'summary', 'assignee', 'issuelinks', 'comment'):
@@ -155,7 +164,7 @@ def issue_fields(args):
             del fields[field]
 
     # Remove things we don't support setting
-    for field in ('issuetype', 'attachment', 'reporter'):
+    for field in ('issuetype', 'attachment', 'reporter', 'project'):
         if field in fields:
             del fields[field]
 
@@ -309,9 +318,7 @@ def create_issue(args):
         return (1, False)
 
     try:
-        metadata = args.project.jira.createmeta(projectKeys=args.project.project_name,
-                                                # issuetypeNames=issuetype, #  APIv2 ignores this
-                                                expand='projects.issuetypes.fields')
+        metadata = args.project.issue_metadata(args.type)
     except JIRAError as e:
         if 'text: Issue Does Not Exist' in str(e):
             print('The createmeta API does not exist on this JIRA instance.')
@@ -320,7 +327,9 @@ def create_issue(args):
         return (1, False)
 
     if not metadata:
-        print('Could not obtain metadata for {args.project.project_name}; invalid project?')
+        print('Invalid issue type:', issuetype)
+        print(f'Valid issue types for {args.project.project_name}:')
+        list_issue_types(args)
         return (1, False)
 
     values = {}
@@ -350,32 +359,18 @@ def create_issue(args):
 
     commit_values = {}
     errors = 0
-    issuetypes = metadata['projects'][0]['issuetypes']
-    issue_type_info = None
-    issue_type_names = []
-    for itype in issuetypes:
-        issue_type_names.append(itype['name'])
-        if issuetype not in (itype['name'], nym(itype['name'])):
-            continue
-        issue_type_info = itype
-        break
 
-    if not issue_type_info:
-        print('Invalid issue type:', issuetype)
-        print(f'Valid issue types for {args.project.project_name}:', ', '.join(issue_type_names))
-        return (1, False)
-
-    issuetype = issue_type_info['name']
-    values['issue_type'] = issuetype
+    issuetype = metadata['name']
+    values['issuetype'] = issuetype
     values['project'] = args.project.project_name
 
     # resolve field names
-    for field in issue_type_info['fields']:
+    for field in metadata['fields']:
         if field in auto_fields:
             continue
-        fieldname = issue_type_info['fields'][field]['name']
+        fieldname = metadata['fields'][field]['name']
         if field not in values and fieldname not in values and nym(fieldname) not in values:
-            if issue_type_info['fields'][field]['required']:
+            if metadata['fields'][field]['required']:
                 print(f'Missing required field for {args.project.project_name}/{issuetype}: ' + nym(fieldname))
                 errors = errors + 1
             continue
@@ -390,7 +385,8 @@ def create_issue(args):
             del values[nym(fieldname)]
 
     if values:
-        print('WARNING: Input fields is not empty!')
+        print('WARNING: Input fields is not empty:')
+        pretty_print(values)
 
     if errors:
         print(f'{errors} errors; can\'t create issue')
@@ -680,6 +676,12 @@ def unassign_issue(args):
     return (0, False)
 
 
+def user_info(args):
+    user_info = [GenericArgs(args.project.user)]
+    print_users(user_info)
+    return(0, False)
+
+
 def get_project(project=None):
     config = get_config()
     allow_code = False
@@ -723,6 +725,8 @@ def create_parser():
     parser = ComplicatedArgs()
 
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
+
+    cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
     cmd = parser.command('ls', help='List issue(s)', handler=list_issues)
     cmd.add_argument('-m', '--mine', action='store_true', help='Display only issues assigned to me.')
@@ -804,7 +808,8 @@ def create_parser():
     cmd.add_argument('values', help='Value(s) to update', nargs='*')
 
     cmd = parser.command('fields', help='List fields (and allowed values, when applicable)', handler=issue_fields)
-    cmd.add_argument('issue', help='Issue')
+    cmd.add_argument('-t', '--type', default=None, help='Fields available at creation time for the specified type')
+    cmd.add_argument('issue', help='Existing Issue (more fields available here)', nargs='?')
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
     cmd.add_argument('target', nargs='+', help='Target issue(s)')

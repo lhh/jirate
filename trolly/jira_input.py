@@ -13,7 +13,7 @@ def _string(field_name, value):
 
 
 _field_transmogrifiers = {
-        'priority': _name_value
+    'priority': _name_value
 }
 
 
