@@ -435,6 +435,14 @@ def unlink_issues(args):
     return (0, True)
 
 
+def link_url(args):
+    issue = args.issue
+    url = args.url
+    text = ' '.join(args.text)
+    args.project.attach(issue, url, text)
+    return (0, True)
+
+
 def comment(args):
     issue_id = args.issue
 
@@ -538,6 +546,29 @@ def print_issue_links(issue):
     print()
 
 
+def print_remote_links(links):
+    hbar_under('External Links')
+
+    # pass 1: Get the lengths so we can draw separators
+    lsize = 0
+    rsize = 0
+    for link in links:
+        text = link.raw['object']['title']
+        lid = str(link.raw['id'])
+        if len(lid) > lsize:
+            lsize = len(lid)
+        if len(text) > rsize:
+            rsize = len(text)
+    # pass 2: print the stuff
+    for link in links:
+        # color_string throws off length calculations
+        text = link.raw['object']['title']
+        lid = str(link.raw['id'])
+        url = link.raw['object']['url']
+        vsep_print(' ', lid.ljust(lsize), lsize, text.ljust(rsize), rsize, url)
+    print()
+
+
 # Dict from search or subtask list
 def _print_issue_list(header, issues):
     if not issues:
@@ -594,6 +625,12 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False):
 
     if 'issuelinks' in issue and len(issue['issuelinks']):
         print_issue_links(issue)
+
+    # Don't print external links unless in verbose mode since it's another API call?
+    if verbose:
+        links = project.remote_links(issue_obj)
+        if links:
+            print_remote_links(links)
 
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue)
@@ -679,7 +716,7 @@ def unassign_issue(args):
 def user_info(args):
     user_info = [GenericArgs(args.project.user)]
     print_users(user_info)
-    return(0, False)
+    return (0, False)
 
 
 def get_project(project=None):
@@ -787,9 +824,14 @@ def create_parser():
     cmd.add_argument('text', nargs='+', help='Link text')
     cmd.add_argument('issue_right', help='Second issue', type=str.upper)
 
-    cmd = parser.command('unlink', help='Remove link(s) between two issues', handler=unlink_issues)
+    cmd = parser.command('attach', help='Attach a web link to an issue', handler=link_url)
+    cmd.add_argument('issue', help='Issue', type=str.upper)
+    cmd.add_argument('url', help='URL to attach')
+    cmd.add_argument('text', nargs='+', help='URL Description')
+
+    cmd = parser.command('unlink', help='Remove link(s) between issues or an external link', handler=unlink_issues)
     cmd.add_argument('issue_left', help='First issue', type=str.upper)
-    cmd.add_argument('issue_right', help='Second issue', type=str.upper)
+    cmd.add_argument('issue_right', help='Second issue (or external link ID)', type=str.upper)
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')

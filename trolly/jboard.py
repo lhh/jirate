@@ -5,6 +5,7 @@ import os
 
 from jira import JIRAError
 from jira.utils import json_loads
+from jira.resources import Issue
 
 from trolly.decor import nym
 from trolly.jira_input import transmogrify_input
@@ -153,6 +154,11 @@ class JiraProject(object):
             return self._config['states'][status]['id']
         return status  # must be the ID
 
+    def attach(self, issue_alias, url, description):
+        item = {'url': url, 'title': description}
+        issue = self.issue(issue_alias)
+        return self.jira.add_simple_link(issue, item)
+
     def _index_issue(self, issue):
         if issue.raw['key'] not in self._config['issue_map']:
             self._config['issue_map'][issue.raw['key']] = issue
@@ -236,6 +242,8 @@ class JiraProject(object):
         return self._simplify_issue_list(issues, userid)
 
     def issue(self, issue_alias, verbose=False):
+        if isinstance(issue_alias, Issue):
+            return issue_alias
         issue_aliases = [issue_alias]
         if issue_alias.upper() != issue_alias:
             issue_aliases.append(issue_alias.upper())
@@ -324,9 +332,20 @@ class JiraProject(object):
         right = self.issue(right_alias)
         return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
 
+    def remote_links(self, issue_alias):
+        issue = self.issue(issue_alias)
+        links = self.jira.remote_links(issue.raw['id'])
+        return links
+
     def unlink(self, left_alias, right_alias):
         left = self.issue(left_alias)
         right = self.issue(right_alias)
+
+        if not right:
+            extlink = self.jira.remote_link(left.raw['key'], str(right_alias))
+            self.jira._session.delete(extlink.raw['self'])
+            return 1
+
         info = left.raw['fields']
 
         if 'issuelinks' not in info or not info['issuelinks']:
