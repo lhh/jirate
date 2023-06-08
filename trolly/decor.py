@@ -4,7 +4,7 @@
 #   http://github.com/release-depot/toolchest
 
 import re
-import os
+import shutil
 
 from dateutil.parser import parse
 from pprint import PrettyPrinter
@@ -142,7 +142,7 @@ def vsep_print(linesplit=None, *vals):
     widths = []
     consumed = 0
 
-    screen_width = os.get_terminal_size()[0]
+    screen_width = shutil.get_terminal_size()[0]
     args = list(vals)
 
     if not args:
