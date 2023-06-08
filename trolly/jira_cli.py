@@ -746,8 +746,10 @@ def get_project(project=None):
     if not project:
         # Not sure why I used an array here
         project = jconfig['default_project']
+    if 'proxies' not in jconfig:
+        jconfig['proxies'] = {"http": "", "https": ""}
 
-    jira = JIRA(jconfig['url'], token_auth=jconfig['token'])
+    jira = JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
