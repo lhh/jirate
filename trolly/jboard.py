@@ -75,6 +75,9 @@ class JiraProject(object):
                 name = name + '_'
             self._config['states'][name] = val
 
+    def delete_issue_map(self):
+        self._config['issue_map'] = {}
+
     def search_users(self, username):
         # max is 50 by default; we'll start with that
         users = self.jira.search_users(username)

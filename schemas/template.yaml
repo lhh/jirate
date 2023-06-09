@@ -1,0 +1,18 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "file://schemas/template.yaml"
+type: object
+description: Template used to file Jira issues.
+required:
+  - issues
+
+properties:
+  issues:
+    description: List of issues to file as part of the template.
+    type: array
+    items:
+      oneOf:
+        - $ref: issue.yaml
+
+# Fail validation if template sets values not defined in the schema
+additionalProperties: False

@@ -1,0 +1,27 @@
+---
+$schema: "https://json-schema.org/draft/2020-12/schema"
+type: object
+description: JIRA issue.
+required:
+  - summary
+  - issue_type
+
+properties:
+  summary:
+    description: Summary or title for the JIRA issue.
+    type: string
+  description:
+    description: Description for the JIRA issue. Can be multiple lines and use JIRA markup.
+    type: string
+  issue_type:
+    description: JIRA issue type like Story, Epic, etc. Possible values vary between projects.
+    type: string
+  subtasks:
+    description: List of subtasks to file within this issue.
+    type: array
+    items:
+      oneOf:
+        - $ref: subtask.yaml
+
+# Fail validation if template sets values not defined in the schema
+additionalProperties: False

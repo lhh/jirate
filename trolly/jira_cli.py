@@ -3,6 +3,7 @@
 import copy
 import os
 import sys
+import yaml
 
 import editor
 
@@ -397,6 +398,43 @@ def create_issue(args):
         print(issue.raw['key'])
     else:
         print_issue(args.project, issue, False)
+    return (0, True)
+
+
+def create_from_template(args):
+    # TODO: consider using Jira's bulk issue creation
+    # TODO: support reading arbitrary fields from the template
+    all_filed = []  # We keep issue keys here because we'll need to refresh anyway
+    with open(args.template_file, 'r') as yaml_file:
+        template = yaml.safe_load(yaml_file)
+
+    for issue in template['issues']:
+        filed = {}
+        if 'description' not in issue:
+            issue['description'] = ""
+        parent = args.project.new(issue['summary'], description=issue['description'], issue_type=issue['issue_type'])
+        filed['parent'] = parent.raw['key']
+
+        if issue['subtasks']:
+            filed['subtasks'] = []
+            for subtask in issue['subtasks']:
+                if 'description' not in subtask:
+                    subtask['description'] = ""
+                child = args.project.subtask(parent.raw['key'], subtask['summary'], subtask['description'])
+                filed['subtasks'].append(child.raw['key'])
+        all_filed.append(filed)
+
+    # Need to refresh to that issues get re-fetched to include subtasks
+    # TODO: Have subtask() update parent issues in _config['issue_map']
+    args.project.delete_issue_map()
+    for filed in all_filed:
+        if args.quiet:
+            if 'subtasks' in filed:
+                print(filed['parent'] + ': ' + ', '.join(filed['subtasks']))
+            else:
+                print(filed['parent'])
+        else:
+            print_issue(args.project, args.project.issue(filed['parent']), False)
     return (0, True)
 
 
@@ -857,6 +895,12 @@ def create_parser():
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
     cmd.add_argument('target', nargs='+', help='Target issue(s)')
+
+    cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
+    cmd.add_argument('template_file', help='Path to the template file')
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
+
+    # TODO: build template from existing issue(s)
 
     return parser
 
