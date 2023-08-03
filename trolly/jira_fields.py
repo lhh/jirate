@@ -279,7 +279,6 @@ _quiet_fields = [
     'timeoriginalestimate',
     'timespent',
     'timetracking',
-    'versions',
     'watches',
     'worklog',
     'workratio'
