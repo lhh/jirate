@@ -4,7 +4,7 @@ import bz2
 import copy
 import json
 
-from trolly.decor import nym
+from jirate.decor import nym
 
 
 _TROLLY_CONFIG_CARD = 'META:TROLLY_CONFIG'

@@ -9,10 +9,10 @@ import editor
 
 from trollo import TrelloApi
 
-from trolly.args import ComplicatedArgs
-from trolly.board import TrollyBoard
-from trolly.decor import color_string, hbar_under, pretty_date, md_print
-from trolly.config import get_config
+from jirate.args import ComplicatedArgs
+from jirate.board import TrollyBoard
+from jirate.decor import color_string, hbar_under, pretty_date, md_print
+from jirate.config import get_config
 
 
 def extract_bugzillas(card):

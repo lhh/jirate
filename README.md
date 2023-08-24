@@ -1,4 +1,4 @@
-# trolly
+# jirate
 High-level CLI for Trello and JIRA
 
 # Installation
