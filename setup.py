@@ -56,7 +56,7 @@ setuptools.setup(
     maintainer='Lon Hohberger',
     maintainer_email='lon@metamorphism.com',
     packages=['jirate'],
-    url='http://github.com/lhh/trolly',
+    url='http://github.com/lhh/jirate',
     data_files=[("", ["LICENSE.txt"])],
     entry_points={
         'console_scripts': ['trolly = jirate.cli:main',
