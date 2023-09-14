@@ -7,8 +7,8 @@ from jira import JIRAError
 from jira.utils import json_loads
 from jira.resources import Issue
 
-from trolly.decor import nym
-from trolly.jira_input import transmogrify_input
+from jirate.decor import nym
+from jirate.jira_input import transmogrify_input
 
 
 class JiraProject(object):

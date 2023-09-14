@@ -6,7 +6,7 @@ import setuptools
 import re
 
 from textwrap import dedent
-from trolly import __version__
+from jirate import __version__
 
 
 def requires(prefix=''):
@@ -21,7 +21,7 @@ def requires(prefix=''):
 
 
 setuptools.setup(
-    name='trolly',
+    name='jirate',
     version=__version__,
     install_requires=requires(),
     license='BSD',
@@ -38,7 +38,7 @@ setuptools.setup(
 
         or by using pip
 
-          $ pip install trolly
+          $ pip install jirate
 
         Documentation:
         --------------
@@ -55,12 +55,12 @@ setuptools.setup(
     author_email='lhh@redhat.com',
     maintainer='Lon Hohberger',
     maintainer_email='lon@metamorphism.com',
-    packages=['trolly'],
+    packages=['jirate'],
     url='http://github.com/lhh/trolly',
     data_files=[("", ["LICENSE.txt"])],
     entry_points={
-        'console_scripts': ['trolly = trolly.cli:main',
-                            'jolly = trolly.jira_cli:main']},
+        'console_scripts': ['trolly = jirate.cli:main',
+                            'jirate = jirate.jira_cli:main']},
     classifiers=['Development Status :: 4 - Beta',
                  'Intended Audience :: Developers',
                  'Natural Language :: English',

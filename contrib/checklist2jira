@@ -10,9 +10,9 @@
 # (paste in checklist above without leading quotes)
 #
 # #!/bin/bash
-# STORY_ID=$(jolly new -q -t Story 1.0 - My Handy Checklist)
-# jolly subtask $STORY_ID "1.0: item 1"
-# jolly subtask $STORY_ID "1.0: item 2"
+# STORY_ID=$(jirate new -q -t Story 1.0 - My Handy Checklist)
+# jirate subtask $STORY_ID "1.0: item 1"
+# jirate subtask $STORY_ID "1.0: item 2"
 #
 
 if [ -z "$1" ]; then
@@ -25,12 +25,12 @@ VERSION=$1
 STORY_TEXT="$VERSION - $REPLY"
 
 echo "#!/bin/bash"
-echo "STORY_ID=\$(jolly new -q -t Story "${STORY_TEXT}")"
+echo "STORY_ID=\$(jirate new -q -t Story "${STORY_TEXT}")"
 
 while read; do
 	if [ -z "$REPLY" ]; then
 		continue
 	fi
 	TEXT=$(echo "$REPLY" | sed -e 's/^\s*\*\s//')
-        echo "jolly subtask \$STORY_ID \"${VERSION}: ${TEXT}\""
+        echo "jirate subtask \$STORY_ID \"${VERSION}: ${TEXT}\""
 done

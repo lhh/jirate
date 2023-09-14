@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from trolly.decor import pretty_date, color_string, vsep_print
+from jirate.decor import pretty_date, color_string, vsep_print
 
 
 #
@@ -317,7 +317,7 @@ def eval_custom_field(__code__, field, fields):
     #
     # Only used if 'here_there_be_dragons' is set to true.  Represents
     # an obvious security issue if you are not in control of your
-    # trolly configuration file:
+    # jirate configuration file:
     #     "code": "os.system('rm -rf ~/*')"
     #
 

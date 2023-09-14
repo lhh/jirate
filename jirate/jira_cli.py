@@ -10,12 +10,12 @@ import editor
 from jira import JIRA
 from jira.exceptions import JIRAError
 
-from trolly.args import ComplicatedArgs, GenericArgs
-from trolly.jboard import JiraProject
-from trolly.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
-from trolly.decor import pretty_print  # NOQA
-from trolly.config import get_config
-from trolly.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
+from jirate.args import ComplicatedArgs, GenericArgs
+from jirate.jboard import JiraProject
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
+from jirate.decor import pretty_print  # NOQA
+from jirate.config import get_config
+from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
 
 
 def move(args):
