@@ -757,8 +757,11 @@ def user_info(args):
     return (0, False)
 
 
-def get_project(project=None):
-    config = get_config()
+def get_project(project=None, config=None, config_file=None):
+    # project: Project key
+    # config: dict / pre-read JSON data
+    if not config:
+        config = get_config(config_file)
     allow_code = False
 
     if 'jira' not in config:
