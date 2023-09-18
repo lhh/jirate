@@ -777,13 +777,13 @@ def get_project(project=None, config=None, config_file=None):
         print('No default JIRA project specified')
         return None
 
+    jconfig = config['jira']
     # Allows users to represent custom fields in output.
     # Not recommended to enable.
-    if 'here_there_be_dragons' in config['jira']:
-        if config['jira']['here_there_be_dragons'] is True:
+    if 'here_there_be_dragons' in jconfig:
+        if jconfig['here_there_be_dragons'] is True:
             allow_code = True
 
-    jconfig = config['jira']
     if not project:
         # Not sure why I used an array here
         project = jconfig['default_project']
@@ -791,7 +791,7 @@ def get_project(project=None, config=None, config_file=None):
         jconfig['proxies'] = {"http": "", "https": ""}
 
     jira = JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
-    proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
+    proj = JiraProject(jira, project, readonly=False, allow_code=allow_code, simplify=True)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
     if 'custom_fields' in jconfig:

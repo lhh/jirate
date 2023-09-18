@@ -12,7 +12,7 @@ from jirate.jira_input import transmogrify_input
 
 
 class JiraProject(object):
-    def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False):
+    def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False, simplify=False):
         self.jira = jira
         self._ro = readonly
         self._config = None
@@ -20,6 +20,7 @@ class JiraProject(object):
         self._project = self.jira.project(project)
         self._user = None
         self._issue_types = None
+        self._simple = simplify
         self.custom_fields = None
         self.project_name = project
         self.allow_code = allow_code
@@ -220,16 +221,19 @@ class JiraProject(object):
                     if 'assignee' in issue_info and issue_info['assignee']:
                         continue
 
-            val = {}
-            val['id'] = issue.raw['id']
-            val['key'] = issue.raw['key']
-            val['fields'] = {}
-            val['fields']['status'] = issue_info['status']
-            val['fields']['summary'] = issue_info['summary']
-            if 'labels' in issue_info:
-                val['labels'] = issue_info['labels']
+            if self._simple:
+                val = {}
+                val['id'] = issue.raw['id']
+                val['key'] = issue.raw['key']
+                val['fields'] = {}
+                val['fields']['status'] = issue_info['status']
+                val['fields']['summary'] = issue_info['summary']
+                if 'labels' in issue_info:
+                    val['labels'] = issue_info['labels']
+                ret[issue.raw['key']] = val
+            else:
+                ret[issue.raw['key']] = issue.raw
 
-            ret[issue.raw['key']] = val
         return ret
 
     def search(self, text):
