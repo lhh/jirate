@@ -3,7 +3,7 @@
 import copy
 import os
 
-from jira import JIRAError
+from jira import JIRA, JIRAError
 from jira.utils import json_loads
 from jira.resources import Issue
 
@@ -11,78 +11,54 @@ from jirate.decor import nym
 from jirate.jira_input import transmogrify_input
 
 
-class JiraProject(object):
-    def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False, simplify=False):
+class Jirate(object):
+    def __init__(self, jira):
         self.jira = jira
-        self._ro = readonly
-        self._config = None
-        self._closed_status = closed_status
-        self._project = self.jira.project(project)
         self._user = None
-        self._issue_types = None
-        self._simple = simplify
-        self.custom_fields = None
-        self.project_name = project
-        self.allow_code = allow_code
-        self.refresh()
-
-        if self._closed_status is None:
-            # guess at common closed states
-            for status in ['CLOSED', 'DONE', 'RESOLVED']:
-                try:
-                    self.status_to_id(status)
-                    self._closed_status = status
-                    break
-                except KeyError:
-                    pass
 
     @property
     def user(self):
         if self._user is None:
             # Get current user info and record it
-            url = self._project._get_url('myself')
+            url = self.jira._get_url('myself')
             self._user = json_loads(self.jira._session.get(url))
         return self._user
 
-    def refresh(self):
-        if not self._config:
-            self._config = {'states': {},
-                            'issue_map': {},
-                            'issue_rev_map': {}}
-
-        self.refresh_lists()
-        # self.index_issues()
-
-    def refresh_lists(self):
-        # DANGER DANGER - using private stuff because upstream doesn't have it
-        spath = os.path.join(self._project._resource, 'statuses')
-        url = self._project._get_url(spath.format(str(self._project)))
-        status_info = json_loads(self.jira._session.get(url))
-        status_ids = []
-        statuses = []
-
-        for task_type in status_info:
-            for status in task_type['statuses']:
-                if status['id'] not in status_ids:
-                    status_ids.append(status['id'])
-                    statuses.append(status)
-
-        for item in statuses:
-            val = {}
-            val['name'] = item['name']
-            val['id'] = item['id']
-            name = nym(val['name'])
-            while name in self._config['states']:
-                name = name + '_'
-            self._config['states'][name] = val
-
-    def delete_issue_map(self):
-        self._config['issue_map'] = {}
+    def attach(self, issue_alias, url, description):
+        # Attach an external URL to an issue
+        item = {'url': url, 'title': description}
+        issue = self.issue(issue_alias)
+        return self.jira.add_simple_link(issue, item)
 
     def search_users(self, username):
-        # max is 50 by default; we'll start with that
+        # Search userlist for a username.  This is provided like this
+        # so we can expand functionality later. Max is 50 by default;
+        # we'll start with that
         users = self.jira.search_users(username)
         return users
+
+    def search_issues(self, search_query):
+        # Run a JQL search and chunk/assemble the results
+        index = 0
+        chunk_len = 50      # So we can detect end
+        ret = []
+        while True:
+            issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
+            if not len(issues):
+                break
+            ret.extend(issues)
+            index = index + len(issues)
+            if len(issues) < chunk_len:
+                break
+        return ret
+
+    def fields(self, issue_alias):
+        issue = self.issue(issue_alias)
+        # XXX HERE THERE BE DRAGONS
+        # NOT IMPLEMENTED UPSTREAM
+        url = os.path.join(issue.raw['self'], 'editmeta')
+        field_blob = json_loads(self.jira._session.get(url))
+        return field_blob['fields']
 
     def get_user(self, username):
         # JIRA has internal names that need to be used by API calls;
@@ -100,6 +76,8 @@ class JiraProject(object):
 
     def assign(self, issue_aliases, users=None):
         # Eventually: first in list = assignee, rest are watchers
+        # XXX Do we want to do that for JIRA, or should we have
+        # separate watch/unwatch?
         if isinstance(users, str):
             users = [users]
         if isinstance(issue_aliases, str):
@@ -133,147 +111,68 @@ class JiraProject(object):
             user = user_ids.pop(0)
             issue.update(assignee=user)
 
+    def get_comment(self, issue_alias, comment_id):
+        # Retrieve contents of a comment.
+        issue = self.issue(issue_alias)
+        return self.jira.comment(issue.raw['key'], comment_id)
+
+    def comment(self, issue_alias, text):
+        # Create a comment and attach it to an issue
+        issue = self.issue(issue_alias)
+        if not issue:
+            return None
+        # Use simple comment mode to add a comment
+        url = os.path.join(issue.raw['self'], 'comment')
+        return self.jira._session.post(url, data={'body': text})
+
+    def close(self, issues):
+        # XXX this might not be a usable API and/or may be a higher
+        # level transition than we want.
+        return self.move(issues, 'Closed')
+
+    def create(self, **args):
+        # Structures for certain things need to be adjusted, because JIRA.
+        # parent key is special because we do our own shortcuts.  Overwrite
+        # project if we're creating a subtask
+        if 'parent' in args and isinstance(args['parent'], str):
+            parent_issue = self.issue(args['parent'])
+            parent_key = parent_issue.raw['key']
+            project = parent_issue.raw['fields']['project']['key']
+            args['parent'] = {'key': parent_key}
+            args['project'] = project
+
+        # Transmogrify other fields
+        new_args = transmogrify_input(**args)
+
+        ret = self.jira.create_issue(**new_args)
+        return ret
+
     def update_issue(self, issue_alias, **kwargs):
+        # Update the values in an issue
         issue = self.issue(issue_alias)
         if issue:
             return issue.update(**kwargs)
 
-    def unlabel_issue(self, issue_alias, label_name):
-        return False
-
-    def fields(self, issue_alias):
-        issue = self.issue(issue_alias)
-        # XXX HERE THERE BE DRAGONS
-        # NOT IMPLEMENTED UPSTREAM
-        url = os.path.join(issue.raw['self'], 'editmeta')
-        field_blob = json_loads(self.jira._session.get(url))
-        return field_blob['fields']
-
-    def status_to_id(self, status):
-        status = nym(status)
-
-        if status not in self._config['states']:
-            raise KeyError('No such list: ' + status)
-        if status in self._config['states']:
-            return self._config['states'][status]['id']
-        return status  # must be the ID
-
-    def attach(self, issue_alias, url, description):
-        item = {'url': url, 'title': description}
-        issue = self.issue(issue_alias)
-        return self.jira.add_simple_link(issue, item)
-
-    def _index_issue(self, issue):
-        if issue.raw['key'] not in self._config['issue_map']:
-            self._config['issue_map'][issue.raw['key']] = issue
-
-    def _index_issues(self, issues):
-        if 'issue_map' not in self._config:
-            self._config['issue_map'] = {}
-
-        for issue in issues:
-            self._index_issue(issue)
-
-    def _search_issues(self, search_query):
-        index = 0
-        chunk_len = 50      # So we can detect end
-        ret = []
-        while True:
-            issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
-            if not len(issues):
-                break
-            self._index_issues(issues)
-            ret.extend(issues)
-            index = index + len(issues)
-            if len(issues) < chunk_len:
-                break
-        return ret
-
-    def index_issues(self, status=None):
-        if status:
-            status_id = self.status_to_id(status)
-            open_issues = self._search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
-        else:
-            open_issues = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
-        self._index_issues(open_issues)
-        return open_issues
-
-    def _simplify_issue_list(self, issues, userid=None):
-        ret = {}
-
-        for issue in issues:
-            issue_info = issue.raw['fields']
-            if userid is not None:
-                if userid != 'none':  # Special keyword for unassigned
-                    if 'assignee' not in issue_info or not issue_info['assignee']:
-                        continue
-                    # Accept name, key, or email address transparently
-                    user = [issue_info['assignee']['name'],
-                            issue_info['assignee']['key'],
-                            issue_info['assignee']['emailAddress']]
-                    if userid not in user:
-                        # last ditch effort: search email address field
-                        if '@' in userid:
-                            continue
-                        if not issue_info['assignee']['emailAddress'].startswith(userid + '@'):
-                            continue
-                else:
-                    if 'assignee' in issue_info and issue_info['assignee']:
-                        continue
-
-            if self._simple:
-                val = {}
-                val['id'] = issue.raw['id']
-                val['key'] = issue.raw['key']
-                val['fields'] = {}
-                val['fields']['status'] = issue_info['status']
-                val['fields']['summary'] = issue_info['summary']
-                if 'labels' in issue_info:
-                    val['labels'] = issue_info['labels']
-                ret[issue.raw['key']] = val
-            else:
-                ret[issue.raw['key']] = issue.raw
-
-        return ret
-
-    def search(self, text):
-        if not text:
-            return None
-        ret = self._search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
-        return self._simplify_issue_list(ret)
-
-    def list(self, status=None, userid=None):
-        if userid == 'me':
-            userid = self.user['name']
-        issues = self.index_issues(status)
-        return self._simplify_issue_list(issues, userid)
-
     def issue(self, issue_alias, verbose=False):
+        # Get a single issue; this will consider an integer as
+        # an issue ID, which JiraProject() does not support
+        # XXX cleanup
         if isinstance(issue_alias, Issue):
             return issue_alias
         issue_aliases = [issue_alias]
+        if isinstance(issue_alias, int):
+            issue_alias = str(issue_alias)
         if issue_alias.upper() != issue_alias:
             issue_aliases.append(issue_alias.upper())
-        if '-' not in issue_alias:
-            issue_aliases.append(self.project_name.upper() + f'-{issue_alias}')
         for alias in issue_aliases:
-            if alias in self._config['issue_map']:
-                return self._config['issue_map'][alias]
             try:
                 issue = self.jira.issue(alias)
                 if not issue:
                     continue
-                self._index_issue(issue)
                 return issue
             except JIRAError:
                 pass
         return None
-
-    def search_issues(self, text):
-        if not text:
-            return None
-        ret = self._search_issues(text)
-        return self._simplify_issue_list(ret)
 
     def transitions(self, issue):
         if isinstance(issue, str):
@@ -371,28 +270,187 @@ class JiraProject(object):
                 self.jira.delete_issue_link(link_id)
         return count
 
+
+class JiraProject(Jirate):
+    def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False, simplify=False):
+        self.jira = jira
+        self._ro = readonly
+        self._config = None
+        self._closed_status = closed_status
+        self._project = self.jira.project(project)
+        self._user = None
+        self._issue_types = None
+        self._simple = simplify
+        self.custom_fields = None
+        self.project_name = project
+        self.allow_code = allow_code
+        self.refresh()
+
+        if self._closed_status is None:
+            # guess at common closed states
+            for status in ['CLOSED', 'DONE', 'RESOLVED']:
+                try:
+                    self.status_to_id(status)
+                    self._closed_status = status
+                    break
+                except KeyError:
+                    pass
+
+    def refresh(self):
+        if not self._config:
+            self._config = {'states': {},
+                            'issue_map': {},
+                            'issue_rev_map': {}}
+
+        self.refresh_lists()
+        # self.index_issues()
+
+    def refresh_lists(self):
+        # DANGER DANGER - using private stuff because upstream doesn't have it
+        spath = os.path.join(self._project._resource, 'statuses')
+        url = self._project._get_url(spath.format(str(self._project)))
+        status_info = json_loads(self.jira._session.get(url))
+        status_ids = []
+        statuses = []
+
+        for task_type in status_info:
+            for status in task_type['statuses']:
+                if status['id'] not in status_ids:
+                    status_ids.append(status['id'])
+                    statuses.append(status)
+
+        for item in statuses:
+            val = {}
+            val['name'] = item['name']
+            val['id'] = item['id']
+            name = nym(val['name'])
+            while name in self._config['states']:
+                name = name + '_'
+            self._config['states'][name] = val
+
+    def delete_issue_map(self):
+        self._config['issue_map'] = {}
+
+    def unlabel_issue(self, issue_alias, label_name):
+        return False
+
+    def status_to_id(self, status):
+        status = nym(status)
+
+        if status not in self._config['states']:
+            raise KeyError('No such list: ' + status)
+        if status in self._config['states']:
+            return self._config['states'][status]['id']
+        return status  # must be the ID
+
+    def search_issues(self, text):
+        # Override so we can index our return values
+        if not text:
+            return None
+        ret = super().search_issues(text)
+        self._index_issues(ret)
+        return ret
+
+    def _index_issue(self, issue):
+        if issue.raw['key'] not in self._config['issue_map']:
+            self._config['issue_map'][issue.raw['key']] = issue
+
+    def _index_issues(self, issues):
+        if 'issue_map' not in self._config:
+            self._config['issue_map'] = {}
+
+        for issue in issues:
+            self._index_issue(issue)
+
+    def index_issues(self, status=None):
+        if status:
+            status_id = self.status_to_id(status)
+            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
+        else:
+            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
+        self._index_issues(open_issues)
+        return open_issues
+
+    def _simplify_issue_list(self, issues, userid=None):
+        # For CLI representation, this returns just the "important" fields
+        # for user presentation.
+        ret = {}
+
+        for issue in issues:
+            issue_info = issue.raw['fields']
+            if userid is not None:
+                if userid != 'none':  # Special keyword for unassigned
+                    if 'assignee' not in issue_info or not issue_info['assignee']:
+                        continue
+                    # Accept name, key, or email address transparently
+                    user = [issue_info['assignee']['name'],
+                            issue_info['assignee']['key'],
+                            issue_info['assignee']['emailAddress']]
+                    if userid not in user:
+                        # last ditch effort: search email address field
+                        if '@' in userid:
+                            continue
+                        if not issue_info['assignee']['emailAddress'].startswith(userid + '@'):
+                            continue
+                else:
+                    if 'assignee' in issue_info and issue_info['assignee']:
+                        continue
+
+            if self._simple:
+                val = {}
+                val['id'] = issue.raw['id']
+                val['key'] = issue.raw['key']
+                val['fields'] = {}
+                val['fields']['status'] = issue_info['status']
+                val['fields']['summary'] = issue_info['summary']
+                if 'labels' in issue_info:
+                    val['labels'] = issue_info['labels']
+                ret[issue.raw['key']] = val
+            else:
+                ret[issue.raw['key']] = issue.raw
+
+        return ret
+
+    def search(self, text):
+        if not text:
+            return None
+        ret = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
+        return self._simplify_issue_list(ret)
+
+    def list(self, status=None, userid=None):
+        if userid == 'me':
+            userid = self.user['name']
+        issues = self.index_issues(status)
+        return self._simplify_issue_list(issues, userid)
+
+    def issue(self, issue_alias, verbose=False):
+        if isinstance(issue_alias, Issue):
+            return issue_alias
+        issue_aliases = [issue_alias]
+        if issue_alias.upper() != issue_alias:
+            issue_aliases.append(issue_alias.upper())
+        if '-' not in issue_alias:
+            issue_aliases.append(self.project_name.upper() + f'-{issue_alias}')
+        for alias in issue_aliases:
+            if alias in self._config['issue_map']:
+                return self._config['issue_map'][alias]
+            try:
+                issue = self.jira.issue(alias)
+                if not issue:
+                    continue
+                self._index_issue(issue)
+                return issue
+            except JIRAError:
+                pass
+        return None
+
     def states(self):
         return copy.copy(self._config['states'])
 
-    def create(self, **args):
-        # Structures for certain things need to be adjusted, because JIRA.
-        # parent key is special because we do our own shortcuts.  Overwrite
-        # project if we're creating a subtask
-        if 'parent' in args and isinstance(args['parent'], str):
-            parent_issue = self.issue(args['parent'])
-            parent_key = parent_issue.raw['key']
-            project = parent_issue.raw['fields']['project']['key']
-            args['parent'] = {'key': parent_key}
-            args['project'] = project
-
-        # Transmogrify other fields
-        new_args = transmogrify_input(**args)
-
-        ret = self.jira.create_issue(**new_args)
-        self._index_issue(ret)
-        return ret
-
     def new(self, name, description=None, issue_type=None, parent=None):
+        # Simple New creation requires understanding what the issuetypes are,
+        # which vary on a per-project basis.  This is why "create" is separate
+        # (and lower-level)
         if parent:
             if issue_type != 'Sub-task':
                 raise ValueError('Specifying a parent only valid for Sub-task type')
@@ -419,6 +477,12 @@ class JiraProject(object):
             args['description'] = description
 
         return self.create(**args)
+
+    def create(self, **args):
+        # override so we can index our value
+        ret = super().create(**args)
+        self._index_issue(ret)
+        return ret
 
     def subtask(self, parent, name, description=None):
         return self.new(name, description, 'Sub-task', parent)
@@ -453,21 +517,6 @@ class JiraProject(object):
         field_dict = {val['fieldId']: val for val in fields}
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
         return metadata
-
-    def get_comment(self, issue_alias, comment_id):
-        issue = self.issue(issue_alias)
-        return self.jira.comment(issue.raw['key'], comment_id)
-
-    def comment(self, issue_alias, text):
-        issue = self.issue(issue_alias)
-        if not issue:
-            return None
-        # Use simple comment mode to add a comment
-        url = os.path.join(issue.raw['self'], 'comment')
-        return self.jira._session.post(url, data={'body': text})
-
-    def close(self, issues):
-        return self.move(issues, 'Closed')
 
     def config(self):
         return copy.copy(self._config)
