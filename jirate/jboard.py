@@ -483,3 +483,16 @@ class JiraProject(object):
         if key in ('states', 'issue_map', 'issue_rev_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config[key] = copy.copy(userdata)
+
+
+def get_jira(jconfig):
+    if 'url' not in jconfig:
+        print('No JIRA URL specified')
+        return None
+    if 'token' not in jconfig:
+        print('No JIRA token specified')
+        return None
+    if 'proxies' not in jconfig:
+        jconfig['proxies'] = {"http": "", "https": ""}
+
+    return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])

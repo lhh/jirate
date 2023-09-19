@@ -7,11 +7,10 @@ import yaml
 
 import editor
 
-from jira import JIRA
 from jira.exceptions import JIRAError
 
 from jirate.args import ComplicatedArgs, GenericArgs
-from jirate.jboard import JiraProject
+from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
@@ -767,17 +766,15 @@ def get_project(project=None, config=None, config_file=None):
     if 'jira' not in config:
         print('No JIRA configuration available')
         return None
-    if 'url' not in config['jira']:
-        print('No JIRA URL specified')
-        return None
-    if 'token' not in config['jira']:
-        print('No JIRA token specified')
-        return None
-    if 'default_project' not in config['jira']:
-        print('No default JIRA project specified')
-        return None
-
     jconfig = config['jira']
+
+    if not project:
+        if 'default_project' in jconfig and not project:
+            project = jconfig['default_project']
+        else:
+            print('No JIRA project specified')
+            return None
+
     # Allows users to represent custom fields in output.
     # Not recommended to enable.
     if 'here_there_be_dragons' in jconfig:
@@ -790,7 +787,7 @@ def get_project(project=None, config=None, config_file=None):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
-    jira = JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
+    jira = get_jira(jconfig)
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code, simplify=True)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
