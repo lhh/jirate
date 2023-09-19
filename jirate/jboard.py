@@ -12,12 +12,14 @@ from jirate.jira_input import transmogrify_input
 
 
 class Jirate(object):
+    """High-level wrapper for python-jira"""
     def __init__(self, jira):
         self.jira = jira
         self._user = None
 
     @property
     def user(self):
+        """This is the connected user (lazy-loaded)"""
         if self._user is None:
             # Get current user info and record it
             url = self.jira._get_url('myself')
@@ -25,12 +27,26 @@ class Jirate(object):
         return self._user
 
     def attach(self, issue_alias, url, description):
-        # Attach an external URL to an issue
+        """Attach an external URL to an issue
+
+        Parameters:
+          issue_alias: int or string, could be JIRA Issue ID or key
+          url: URL to attach (string)
+          description: Description of link (string)
+        """
         item = {'url': url, 'title': description}
         issue = self.issue(issue_alias)
         return self.jira.add_simple_link(issue, item)
 
     def search_users(self, username):
+        """Wrapper for searching JIRA's user database
+
+        Parameters:
+          username: Partial username or email (string)
+
+        Returns:
+          list of jira.resources.User
+        """
         # Search userlist for a username.  This is provided like this
         # so we can expand functionality later. Max is 50 by default;
         # we'll start with that
@@ -38,7 +54,14 @@ class Jirate(object):
         return users
 
     def search_issues(self, search_query):
-        # Run a JQL search and chunk/assemble the results
+        """Run a JQL search and assemble the results into one list
+
+        Parameters:
+          search_query: JQL query line (string)
+
+        Returns:
+          list of jira.resources.Issue
+        """
         index = 0
         chunk_len = 50      # So we can detect end
         ret = []
@@ -53,6 +76,14 @@ class Jirate(object):
         return ret
 
     def fields(self, issue_alias):
+        """Determine the fields available for an issue
+
+        Parameters:
+          issue_alias: int or string, could be JIRA Issue ID or key
+
+        Returns:
+          dict of fields
+        """
         issue = self.issue(issue_alias)
         # XXX HERE THERE BE DRAGONS
         # NOT IMPLEMENTED UPSTREAM
@@ -61,8 +92,14 @@ class Jirate(object):
         return field_blob['fields']
 
     def get_user(self, username):
-        # JIRA has internal names that need to be used by API calls;
-        # resolve email address if needed
+        """Determine JIRA's normalized username for someone
+
+        Parameters:
+          username: email, display name or username
+
+        Returns:
+          username (string)
+        """
         if '@' not in username:
             return username
 
@@ -75,9 +112,20 @@ class Jirate(object):
         return users[0].name
 
     def assign(self, issue_aliases, users=None):
-        # Eventually: first in list = assignee, rest are watchers
-        # XXX Do we want to do that for JIRA, or should we have
-        # separate watch/unwatch?
+        """Assign a set of issues to a user
+
+        NOTE: Originally, the additional users were going to be set as
+        watchers, which is another API call. We did this with Trello.
+        Do we want to do that for JIRA, or should we have separate
+        watch/unwatch?
+
+        Parameters:
+          issue_aliases: list of issue keys or IDs (list of strings)
+          users: list of users (list of strings)
+
+        Returns:
+          list of issues successfully assigned to the user(s)
+        """
         if isinstance(users, str):
             users = [users]
         if isinstance(issue_aliases, str):
@@ -112,12 +160,28 @@ class Jirate(object):
             issue.update(assignee=user)
 
     def get_comment(self, issue_alias, comment_id):
-        # Retrieve contents of a comment.
+        """Retrieve raw comment for an issue
+
+        Parameters:
+          issue_alias: issue key or ID (string)
+          comment_id: ID of comment to retrieve
+
+        Returns:
+          jira.resources.Comment
+        """
         issue = self.issue(issue_alias)
         return self.jira.comment(issue.raw['key'], comment_id)
 
     def comment(self, issue_alias, text):
-        # Create a comment and attach it to an issue
+        """Attach a new comment to an issue
+
+        Parameters:
+          issue_alias: issue key or ID (string)
+          text: Text to attach as comment
+
+        Returns:
+          requests.Response
+        """
         issue = self.issue(issue_alias)
         if not issue:
             return None
@@ -126,11 +190,31 @@ class Jirate(object):
         return self.jira._session.post(url, data={'body': text})
 
     def close(self, issues):
-        # XXX this might not be a usable API and/or may be a higher
-        # level transition than we want.
+        """Attach a new comment to an issue
+
+        XXX this might not be a usable API and/or may be a higher
+        level transition than we want. Note that 'Closed' may also
+        not be correct for a given project, since all transitions
+        are per-project. We could do something intelligent with
+        move, or delete this API altogether.
+
+        Parameters:
+          issues: list of issue keys or IDs (list of string)
+
+        Returns:
+          requests.Response
+        """
         return self.move(issues, 'Closed')
 
     def create(self, **args):
+        """Create a new issue using key/value pairs
+
+        Parameters:
+          **args: Dictionary of key/value pairs (dict)
+
+        Returns:
+          jira.resources.Issue
+        """
         # Structures for certain things need to be adjusted, because JIRA.
         # parent key is special because we do our own shortcuts.  Overwrite
         # project if we're creating a subtask
@@ -148,15 +232,29 @@ class Jirate(object):
         return ret
 
     def update_issue(self, issue_alias, **kwargs):
-        # Update the values in an issue
+        """Update an issue using key/value pairs
+
+        Parameters:
+          **args: Dictionary of key/value pairs (dict)
+
+        Returns:
+          jira.resources.Issue (?)
+        """
         issue = self.issue(issue_alias)
         if issue:
             return issue.update(**kwargs)
 
     def issue(self, issue_alias, verbose=False):
-        # Get a single issue; this will consider an integer as
-        # an issue ID, which JiraProject() does not support
-        # XXX cleanup
+        """Retrieve an issue from JIRA
+
+        XXX Cleanup vs. JiraProject
+
+        Parameters:
+          issue_alias: key or issue ID (string)
+
+        Returns:
+          jira.resources.Issue
+        """
         if isinstance(issue_alias, Issue):
             return issue_alias
         issue_aliases = [issue_alias]
@@ -175,9 +273,16 @@ class Jirate(object):
         return None
 
     def transitions(self, issue):
+        """Retrieve possible next-state transitions for an issue
+
+        Parameters:
+          issue_alias: key or issue ID (string)
+
+        Returns:
+          dict - {'state': 'id', 'state2': 'id2'}
+        """
         if isinstance(issue, str):
             issue = self.issue(issue)
-        # {'state': 'id', 'state2': 'id2' }
         possible = {}
         url = os.path.join(issue.raw['self'], 'transitions')
         transitions = json_loads(self.jira._session.get(url))
@@ -195,6 +300,19 @@ class Jirate(object):
         return None
 
     def move(self, issue_aliases, status):
+        """Execute a transition to move a set of issues to the desired status
+
+        Jira doesn't have a status you can update; you have to retrieve possible
+        transitions and satisfy those requirements. Each issue has its own transition map
+        according to the issue type within a given project
+
+        Parameters:
+          issue_aliases: list keys or issue IDs (list of string)
+          status: Desired status
+
+        Returns:
+          list of successfully moved issues (list of string)
+        """
         if not isinstance(issue_aliases, list):
             issue_aliases = [issue_aliases]
 
@@ -212,12 +330,6 @@ class Jirate(object):
             moves.append(idx)
             issues.append(issue)
 
-        # Jira doesn't have a status you can update; you have to retrieve possible
-        # transitions and satisfy those requirements. Each issue has its own transition map
-        # according to the issue type.
-        # Future improvements:
-        # * cache transitions (one set per issue type)
-        # * list
         if fails:
             raise ValueError('No such issue(s): ' + str(fails))
         for issue in issues:
@@ -231,19 +343,47 @@ class Jirate(object):
         return moves
 
     def link_types(self):
+        """Wrapper for jira.issue_link_types()"""
         return self.jira.issue_link_types()
 
     def link(self, left_alias, right_alias, link_text):
+        """Link two isues together using the noted link type
+
+        Parameters:
+          left_alias: left key or issue IDs (string)
+          right_alias: right key or issue IDs (string)
+          link_text: Desired link type
+
+        Returns:
+          ???
+        """
         left = self.issue(left_alias)
         right = self.issue(right_alias)
         return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
 
     def remote_links(self, issue_alias):
+        """Obtain all remote links (URLs) attached to an issue
+
+        Parameters:
+          issue_alias: key or issue IDs (string)
+
+        Returns:
+          list of jira.resources.RemoteLink
+        """
         issue = self.issue(issue_alias)
         links = self.jira.remote_links(issue.raw['id'])
         return links
 
     def unlink(self, left_alias, right_alias):
+        """Break all links between to issues
+
+        Parameters:
+          left_alias: left key or issue IDs (string)
+          right_alias: right key or issue IDs (string)
+
+        Returns:
+          count of links removed
+        """
         left = self.issue(left_alias)
         right = self.issue(right_alias)
 
@@ -535,6 +675,14 @@ class JiraProject(Jirate):
 
 
 def get_jira(jconfig):
+    """Wrapper to create a python-jira connection
+
+    Parameters:
+      jconfig: dict of 3 keys: url, token, proxies (optional)
+
+    Returns:
+      jira.JIRA
+    """
     if 'url' not in jconfig:
         print('No JIRA URL specified')
         return None

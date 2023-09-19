@@ -313,17 +313,21 @@ _fields = None
 
 
 def eval_custom_field(__code__, field, fields):
-    # Proof of concept.
-    #
-    # Only used if 'here_there_be_dragons' is set to true.  Represents
-    # an obvious security issue if you are not in control of your
-    # jirate configuration file:
-    #     "code": "os.system('rm -rf ~/*')"
-    #
+    """Proof of concept: Execute inline code to render a field
 
-    # field:    is your variable name for your dict
-    # fields:   dict of fields indexed by id
-    # __code__: is inline in your config and can reference field
+    Only used if 'here_there_be_dragons' is set to true.  Represents
+    an obvious security issue if you are not in control of your
+    jirate configuration file:
+        "code": "os.system('rm -rf ~/*')"
+
+    Parameters:
+      field:    is your variable name for your dict
+      fields:   dict of fields indexed by id
+      __code__: is inline in your config and can reference field
+
+    Returns:
+      rendered field value (string)
+    """
     if field is None or not field:
         return None
     if '__code__' in __code__:
@@ -334,8 +338,17 @@ def eval_custom_field(__code__, field, fields):
         return str(e)
 
 
-# kinda slow but...
 def apply_field_renderers(custom_field_defs=None):
+    """Custom field rendering setup function
+
+    Parameters:
+      custom_field_defs: Dictionary (typically retrieved from
+        /rest/api/latest/field) with custom code snippets or
+        field rendering definitions
+
+    Returns:
+      nothing in particular
+    """
     global _fields
     base_fields = OrderedDict()
     custom_fields = OrderedDict()
@@ -379,6 +392,20 @@ def apply_field_renderers(custom_field_defs=None):
 
 
 def render_field_data(field_key, fields, verbose=False, allow_code=False):
+    """Render the field using custom-renderers or user-supplied code
+    Note: you must first configure the rendering engine using apply_field_renderers()
+
+    Parameters:
+      field_key: Key of field in raw JIRA JSON we're rendering
+      fields: The entire raw JIRA JSON we're using
+      verbose: Passed to field rendering function
+      allow_code: Allow eval() during execution (dangerous whenever source
+                  is untrusted)
+
+    Returns:
+      field_name: Human-readable field name (string)
+      value: Rendered field value (string)
+    """
     field = fields[field_key]
     field_name = _fields[field_key]['name']
     if field_key not in _fields:
