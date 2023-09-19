@@ -379,32 +379,36 @@ def apply_field_renderers(custom_field_defs=None):
 
 
 def render_field_data(field_key, field, fields, verbose=False, allow_code=False):
+    field_name = _fields[field_key]['name']
     if field_key not in _fields:
-        return None
+        return field_name, None
     if not field:
-        return None
+        return field_name, None
     field_config = _fields[field_key]
 
     if 'verbose' in field_config:
         if field_config['verbose'] is True and not verbose:
-            return None
+            return field_name, None
     if 'disabled' in field_config and field_config['disabled'] is True:
-        return None
+        return field_name, None
     # display supersedes code
     if 'display' in field_config:
         r_info = field_config['display']
         if isinstance(r_info, bool):
-            return None if not r_info else str(field)
+            if not r_info:
+                return field_name, None
+            else:
+                return field_name, str(field)
         if isinstance(r_info, str):
             if r_info not in _field_renderers:
-                return f'<invalid renderer: {r_info} for {field_key}>'
+                return field_name, f'<invalid renderer: {r_info} for {field_key}>'
             else:
-                return _field_renderers[r_info](field, fields)
+                return field_name, _field_renderers[r_info](field, fields)
         else:
-            return r_info(field, fields)
+            return field_name, r_info(field, fields)
     if 'code' in field_config and allow_code:
-        return eval_custom_field(field_config['code'], field, fields)
-    return str(field)
+        return field_name, eval_custom_field(field_config['code'], field, fields)
+    return field_name, str(field)
 
 
 def field_ordering():
@@ -418,10 +422,10 @@ def max_field_width(issue, verbose, allow_code):
         if field_key not in issue:
             continue
         field = issue[field_key]
-        val = render_field_data(field_key, field, issue, verbose, allow_code)
+        field_name, val = render_field_data(field_key, field, issue, verbose, allow_code)
         if not val:
             continue
-        width = max(width, len(_fields[field_key]['name']))
+        width = max(width, len(field_name))
     return width
 
 
@@ -435,8 +439,8 @@ def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
         if field_key not in issue:
             continue
         field = issue[field_key]
-        val = render_field_data(field_key, field, issue, verbose, allow_code)
+        field_name, val = render_field_data(field_key, field, issue, verbose, allow_code)
         if not val:
             continue
-        vsep_print(' ', _fields[field_key]['name'], width, val)
-        # print(_fields[field_key]['name'].ljust(width), sep, val)
+        vsep_print(' ', field_name, width, val)
+        # print(field_name.ljust(width), sep, val)
