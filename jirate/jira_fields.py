@@ -378,7 +378,8 @@ def apply_field_renderers(custom_field_defs=None):
     _fields = ret
 
 
-def render_field_data(field_key, field, fields, verbose=False, allow_code=False):
+def render_field_data(field_key, fields, verbose=False, allow_code=False):
+    field = fields[field_key]
     field_name = _fields[field_key]['name']
     if field_key not in _fields:
         return field_name, None
@@ -421,8 +422,7 @@ def max_field_width(issue, verbose, allow_code):
     for field_key in _fields:
         if field_key not in issue:
             continue
-        field = issue[field_key]
-        field_name, val = render_field_data(field_key, field, issue, verbose, allow_code)
+        field_name, val = render_field_data(field_key, issue, verbose, allow_code)
         if not val:
             continue
         width = max(width, len(field_name))
@@ -438,8 +438,7 @@ def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
     for field_key in _fields:
         if field_key not in issue:
             continue
-        field = issue[field_key]
-        field_name, val = render_field_data(field_key, field, issue, verbose, allow_code)
+        field_name, val = render_field_data(field_key, issue, verbose, allow_code)
         if not val:
             continue
         vsep_print(' ', field_name, width, val)
