@@ -489,7 +489,7 @@ class JiraProject(Jirate):
             return None
         ret = super().search_issues(text)
         self._index_issues(ret)
-        return ret
+        return self._simplify_issue_list(ret)
 
     def _index_issue(self, issue):
         if issue.raw['key'] not in self._config['issue_map']:
