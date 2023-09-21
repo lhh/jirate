@@ -505,9 +505,9 @@ class JiraProject(Jirate):
     def index_issues(self, status=None):
         if status:
             status_id = self.status_to_id(status)
-            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
+            open_issues = super().search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
         else:
-            open_issues = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
+            open_issues = super().search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
         self._index_issues(open_issues)
         return open_issues
 
