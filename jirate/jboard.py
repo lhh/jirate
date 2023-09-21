@@ -489,7 +489,7 @@ class JiraProject(Jirate):
             return None
         ret = super().search_issues(text)
         self._index_issues(ret)
-        return self._simplify_issue_list(ret)
+        return ret
 
     def _index_issue(self, issue):
         if issue.raw['key'] not in self._config['issue_map']:
@@ -511,57 +511,15 @@ class JiraProject(Jirate):
         self._index_issues(open_issues)
         return open_issues
 
-    def _simplify_issue_list(self, issues, userid=None):
-        # For CLI representation, this returns just the "important" fields
-        # for user presentation.
-        ret = {}
-
-        for issue in issues:
-            issue_info = issue.raw['fields']
-            if userid is not None:
-                if userid != 'none':  # Special keyword for unassigned
-                    if 'assignee' not in issue_info or not issue_info['assignee']:
-                        continue
-                    # Accept name, key, or email address transparently
-                    user = [issue_info['assignee']['name'],
-                            issue_info['assignee']['key'],
-                            issue_info['assignee']['emailAddress']]
-                    if userid not in user:
-                        # last ditch effort: search email address field
-                        if '@' in userid:
-                            continue
-                        if not issue_info['assignee']['emailAddress'].startswith(userid + '@'):
-                            continue
-                else:
-                    if 'assignee' in issue_info and issue_info['assignee']:
-                        continue
-
-            if self._simple:
-                val = {}
-                val['id'] = issue.raw['id']
-                val['key'] = issue.raw['key']
-                val['fields'] = {}
-                val['fields']['status'] = issue_info['status']
-                val['fields']['summary'] = issue_info['summary']
-                if 'labels' in issue_info:
-                    val['labels'] = issue_info['labels']
-                ret[issue.raw['key']] = val
-            else:
-                ret[issue.raw['key']] = issue.raw
-
-        return ret
-
     def search(self, text):
         if not text:
             return None
-        ret = self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
-        return self._simplify_issue_list(ret)
+        return self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
 
     def list(self, status=None, userid=None):
         if userid == 'me':
             userid = self.user['name']
-        issues = self.index_issues(status)
-        return self._simplify_issue_list(issues, userid)
+        return self.index_issues(status)
 
     def issue(self, issue_alias, verbose=False):
         if isinstance(issue_alias, Issue):

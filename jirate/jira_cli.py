@@ -36,10 +36,11 @@ def close_issues(args):
     return (ret, False)
 
 
-def print_issues_simple(issues, args=None):
+def print_issues_by_state(issue_list, args=None):
     states = {}
-    for issue in issues:
-        cstatus = issues[issue]['fields']['status']['name']
+
+    for issue in issue_list:
+        cstatus = issue.raw['fields']['status']['name']
         if cstatus not in states:
             states[cstatus] = []
         states[cstatus].append(issue)
@@ -49,10 +50,10 @@ def print_issues_simple(issues, args=None):
             continue
         hbar_under(key)
         for issue in states[key]:
-            print('  ', issue, end=' ')
+            print('  ', issue.key, end=' ')
             if args and args.labels:
-                print_labels(issues[issue], prefix='')
-            print(issues[issue]['fields']['summary'])
+                print_labels(issue.raw, prefix='')
+            print(issue.raw['fields']['summary'])
         print()
 
 
@@ -100,7 +101,7 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    print_issues_simple(ret)
+    print_issues_by_state(ret)
     hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
@@ -117,7 +118,7 @@ def list_issues(args):
         userid = None
 
     issues = args.project.list(userid=userid)
-    print_issues_simple(issues, args)
+    print_issues_by_state(issues, args)
     return (0, True)
 
 
