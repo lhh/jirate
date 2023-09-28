@@ -619,8 +619,8 @@ def _print_issue_list(header, issues):
     for task in issues:
         if isinstance(task, str):
             task = issues[task]
-        task_key = task['key']
-        status = task['fields']['status']['name']
+        task_key = task.key
+        status = task.raw['fields']['status']['name']
         if len(task_key) > lsize:
             lsize = len(task_key)
         if len(status) > rsize:
@@ -629,10 +629,10 @@ def _print_issue_list(header, issues):
     for task in issues:
         if isinstance(task, str):
             task = issues[task]
-        task_key = task['key']
-        status = task['fields']['status']
+        task_key = task.key
+        status = task.raw['fields']['status']
         # color_string throws off length calculations
-        vsep_print(' ', task_key.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, task['fields']['summary'])
+        vsep_print(' ', task_key.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, task.raw['fields']['summary'])
     print()
 
 
