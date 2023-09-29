@@ -332,10 +332,7 @@ def eval_custom_field(__code__, field, fields):
         return None
     if '__code__' in __code__:
         raise ValueError('Reserved keyword in code snippet')
-    try:
-        return eval(str(__code__))
-    except Exception as e:
-        return str(e)
+    return eval(str(__code__))
 
 
 def apply_field_renderers(custom_field_defs=None):
@@ -431,11 +428,19 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
             if r_info not in _field_renderers:
                 return field_name, f'<invalid renderer: {r_info} for {field_key}>'
             else:
-                return field_name, _field_renderers[r_info](field, fields)
+                try:
+                    ret = _field_renderers[r_info](field, fields)
+                except Exception as exc:
+                    ret = '<' + str(exc) + '>'
+                return field_name, ret
         else:
             return field_name, r_info(field, fields)
     if 'code' in field_config and allow_code:
-        return field_name, eval_custom_field(field_config['code'], field, fields)
+        try:
+            ret = eval_custom_field(field_config['code'], field, fields)
+        except Exception as exc:
+            ret = '<' + str(exc) + '>'
+        return field_name, ret
     return field_name, str(field)
 
 
