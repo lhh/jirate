@@ -124,13 +124,13 @@ def list_issues(args):
 
 def list_link_types(args):
     ltypes = args.project.link_types()
-    namelen = len('Inward')
+    namelen = len('Outward')
     for lt in ltypes:
-        namelen = max(namelen, len(lt.inward))
-    blen = vsep_print(None, 'Inward', namelen, 'Outward')
+        namelen = max(namelen, len(lt.outward))
+    blen = vsep_print(None, 'Outward', namelen, 'Inward')
     hbar(blen)
     for lt in ltypes:
-        vsep_print(None, lt.inward, namelen, lt.outward)
+        vsep_print(None, lt.outward, namelen, lt.inward)
     return (0, True)
 
 
