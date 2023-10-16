@@ -11,7 +11,7 @@ from jira.exceptions import JIRAError
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar_over, nym, vsep_print, vseparator
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
@@ -124,16 +124,23 @@ def list_issues(args):
 
 def list_link_types(args):
     ltypes = args.project.link_types()
+    namelen = len('Inward')
     for lt in ltypes:
-        print(lt.inward)
-        print(lt.outward)
+        namelen = max(namelen, len(lt.inward))
+    blen = vsep_print(None, 'Inward', namelen, 'Outward')
+    hbar(blen)
+    for lt in ltypes:
+        vsep_print(None, lt.inward, namelen, lt.outward)
     return (0, True)
 
 
 def list_states(args):
     states = args.project.states()
+    namelen = 0
     for name in states:
-        print('  ', name, states[name]['name'])
+        namelen = max(namelen, len(name))
+    for name in states:
+        vsep_print(None, name, namelen, states[name]['name'])
     return (0, False)
 
 
@@ -924,10 +931,17 @@ def main():
         project = get_project(ns.project)
     except KeyError:
         sys.exit(1)
+    except JIRAError as err:
+        print(err)
+        sys.exit(1)
 
     # Pass this down in namespace to callbacks
     parser.add_arg('project', project)
-    rc = parser.finalize(ns)
+    try:
+        rc = parser.finalize(ns)
+    except JIRAError as err:
+        print(err)
+        sys.exit(1)
     if rc:
         ret = rc[0]
         save = rc[1]  # NOQA

@@ -132,7 +132,6 @@ vseparator = '┃'
 
 
 def vsep_print(linesplit=None, *vals):
-
     global _termsize
     global vseparator
 
@@ -141,6 +140,7 @@ def vsep_print(linesplit=None, *vals):
     fields = []
     widths = []
     consumed = 0
+    maxwidth = 0  # Maxiumum width we printed (up to screen width)
 
     screen_width = shutil.get_terminal_size()[0]
     args = list(vals)
@@ -168,12 +168,12 @@ def vsep_print(linesplit=None, *vals):
 
     if len(last) <= (screen_width - width):
         print(last)
-        return
+        return len(last) + width
 
     # Longer than remaining horizontal screen
     if not linesplit:
         print(last[:(screen_width - width - 2)] + '..')
-        return
+        return screen_width
 
     max_chunk_len = screen_width - width
     chunks = last.split(linesplit)
@@ -221,3 +221,4 @@ def vsep_print(linesplit=None, *vals):
     # newline in output
     if consumed < max_chunk_len:
         print()
+    return screen_width
