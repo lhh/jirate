@@ -26,15 +26,16 @@ setuptools.setup(
     install_requires=requires(),
     license='BSD',
     long_description=dedent("""\
-        Python Trello CLI
+        Python JIRA & Trello CLI
         --------------------------
-        This Python CLI is simply a wrapper around Trollo
+        This Python CLI is a high-level wrapper around the JIRA and Trollo modules.
 
         Getting Started:
         ----------------
-        To use the Trello CLI, install the package either by downloading the source and running
+        To use the CLI, install the package either by downloading the source and running
 
-          $ python setup.py install
+          $ pip install -r requirements.txt
+          $ pip install .
 
         or by using pip
 
@@ -44,9 +45,14 @@ setuptools.setup(
         --------------
         You can find documentation for the Python API at:
 
+            http://pypi.org/project/jira/
             http://pypi.org/project/trollo/
 
-        And documentation for the Trello API at:
+        Documentation for the JIRA API is at:
+
+            https://docs.atlassian.com/software/jira/docs/api/REST/latest/
+
+        Documentation for the Trello API at:
 
             https://developers.trello.com/reference/
 
