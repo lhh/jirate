@@ -3,6 +3,8 @@
 import copy
 import os
 
+from toolchest.strutil import list_or_splitstr
+
 from jira import JIRA, JIRAError
 from jira.utils import json_loads
 from jira.resources import Issue
@@ -270,6 +272,26 @@ class Jirate(object):
                 return issue
             except JIRAError:
                 pass
+        return None
+
+    def issues(self, issue_list, verbose=False):
+        """Retrieve one or more issues from JIRA
+
+        Parameters:
+          issue_list: string of keys or list of keys (strings)
+
+        Returns:
+          list of jira.resources.Issue or None
+        """
+        if isinstance(issue_list, Issue):
+            return issue_list
+        issues = list_or_splitstr(issue_list)
+
+        ret = []
+        for issue in issues:
+            ret.append(self.issue(issue, verbose))
+        if ret:
+            return ret
         return None
 
     def transitions(self, issue):
