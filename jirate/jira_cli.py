@@ -660,6 +660,7 @@ def print_subtasks(issue):
 def print_issue(project, issue_obj, verbose=False, no_comments=False):
     issue = issue_obj.raw['fields']
     lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
+    lsize = max(lsize, len('Next States'))
 
     vsep_print(' ', issue_obj.raw['key'], lsize, issue['summary'])
     render_issue_fields(issue, verbose, project.allow_code, lsize)
