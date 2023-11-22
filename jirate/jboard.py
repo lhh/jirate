@@ -771,6 +771,36 @@ class JiraProject(Jirate):
         self._index_issue(ret)
         return ret
 
+    def components(self):
+        """ Return list of components assigned to this project
+
+        Returns:
+           List[component]
+        """
+        return self.jira.project_components(self._project)
+
+    def add_component(self, name, description=None):
+        """ Add a component to the project
+
+        Returns:
+           component
+        """
+        return self.jira.create_component(name, self._project, description=description)
+
+    def remove_component(self, name):
+        """ Remove a component from the project. To do this, we have to run down
+        the list of components in this project to find a match then pass the ID
+        to the API
+
+        Returns:
+            ???
+        """
+        comps = self.components()
+        for comp in comps:
+            if comp.name == name:
+                return comp.delete()
+        return 1
+
     def subtask(self, parent, name, description=None):
         return self.new(name, description, 'Sub-task', parent)
 

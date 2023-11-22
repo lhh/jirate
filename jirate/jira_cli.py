@@ -911,6 +911,24 @@ def user_info(args):
     return (0, False)
 
 
+def component_ops(args):
+    if args.remove:
+        # Explicitly one at a time
+        ret = args.project.remove_component(args.remove[0])
+        return (0, False)
+
+    if args.add:
+        if len(args.add) == 1:
+            ret = args.project.add_component(args.add[0])
+        else:
+            ret = args.project.add_component(args.add[0], ' '.join(args.add[1:]))
+        if ret:
+            return (0, False)
+        return (1, False)
+
+    return (1, False)
+
+
 def call_api(args):
     data = args.project.api_call(args.resource, args.raw)
     if data:
@@ -923,7 +941,7 @@ def call_api(args):
 
 
 def component_list(args):
-    comps_data = args.project.jira.project_components(args.project.project_name)
+    comps_data = args.project.components()
     comp_info = {}
     for comp in comps_data:
         if not args.search or re.search(args.search, comp.raw['name']) or not args.raw and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
@@ -933,7 +951,7 @@ def component_list(args):
                 comp_info[comp.raw['name']] = comp.raw['description'].strip()
     comp_names = sorted(list(comp_info.keys()))
 
-    if args.raw:
+    if args.quiet:
         for name in comp_names:
             print(name)
     else:
@@ -1096,8 +1114,12 @@ def create_parser():
     cmd.add_argument('--raw', help='Produce raw JSON instead of a Python object', default=False, action='store_true')
     cmd.add_argument('resource', help='Location sans host/REST version (e.g. self, issue/KEY-123')
 
+    cmd = parser.command('component', help='Modify component(s)', handler=component_ops)
+    cmd.add_argument('-a', '--add', help='Component to add', nargs='+')
+    cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
+
     cmd = parser.command('components', help='List components', handler=component_list)
-    cmd.add_argument('-r', '--raw', help='Just print component names', default=False, action='store_true')
+    cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
     cmd.add_argument('-s', '--search', help='Search by regular expression')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
