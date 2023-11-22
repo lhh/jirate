@@ -775,6 +775,14 @@ def user_info(args):
     return (0, False)
 
 
+def call_api(args):
+    data = args.project.api_call(args.resource)
+    if data:
+        pretty_print(data)
+        return (0, False)
+    return (1, False)
+
+
 def get_project(project=None, config=None, config_file=None):
     # project: Project key
     # config: dict / pre-read JSON data
@@ -914,6 +922,9 @@ def create_parser():
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
     cmd.add_argument('target', nargs='+', help='Target issue(s)')
+
+    cmd = parser.command('call-api', help='Call an API directly and print the resulting JSON', handler=call_api)
+    cmd.add_argument('resource', help='Location sans host/REST version (e.g. self, issue/KEY-123')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
