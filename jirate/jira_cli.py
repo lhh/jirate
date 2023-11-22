@@ -507,11 +507,28 @@ def comment(args):
             if not new_text:
                 print('Canceled')
                 return (0, False)
-        if comment.body != new_text:
-            comment.update(body=new_text)
+
+        update_args = {'body': new_text}
+        update_anyway = False
+        if args.group:
+            if args.group.lower() == 'all':
+                # This took some doing; it's not well-documented.
+                # This clears the 'visibility' property of the comment,
+                # making it viewable by all users
+                update_args['visibility'] = {'identifier': None}
+            else:
+                update_args['visibility'] = {'type': 'group', 'value': args.group}
+            update_anyway = True
+        if update_anyway or comment.body != new_text:
+            comment.update(**update_args)
         else:
             print('No changes')
         return (0, False)
+
+    if args.group:
+        group_name = args.group
+    else:
+        group_name = None
 
     if args.text:
         text = ' '.join(args.text)
@@ -522,7 +539,7 @@ def comment(args):
         print('Canceled')
         return (0, False)
 
-    args.project.comment(issue_id, text)
+    args.project.comment(issue_id, text, group_name)
     return (0, False)
 
 
@@ -534,6 +551,9 @@ def refresh(args):
 
 def display_comment(action, verbose):
     print(pretty_date(action['updated']), '•', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '• ID:', action['id'])
+    if 'visibility' in action:
+        print('🔒', action['visibility']['type'], '•', action['visibility']['value'])
+    hbar(20)
     md_print(action['body'])
     print()
 
@@ -903,6 +923,7 @@ def create_parser():
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
     cmd.add_argument('-r', '--remove', help='Comment ID to remove')
+    cmd.add_argument('-g', '--group', help='Specify comment group visibility')
     cmd.add_argument('issue', help='Issue to operate on')
     cmd.add_argument('text', nargs='*', help='Comment text')
 

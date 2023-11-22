@@ -178,7 +178,7 @@ class Jirate(object):
         issue = self.issue(issue_alias)
         return self.jira.comment(issue.raw['key'], comment_id)
 
-    def comment(self, issue_alias, text):
+    def comment(self, issue_alias, text, visibility=None):
         """Attach a new comment to an issue
 
         Parameters:
@@ -192,11 +192,20 @@ class Jirate(object):
         if not issue:
             return None
         # Use simple comment mode to add a comment
+        comment_data = {'body': text}
+        if visibility:
+            if isinstance(visibility, str):
+                comment_data['visibility'] = {}
+                comment_data['visibility']['type'] = 'group'
+                comment_data['visibility']['value'] = visibility
+            elif isinstance(visibility, dict):
+                comment_data['visibility'] = visibility
+
         url = os.path.join(issue.raw['self'], 'comment')
-        return self.jira._session.post(url, data={'body': text})
+        return self.jira._session.post(url, data=comment_data)
 
     def close(self, issues):
-        """Attach a new comment to an issue
+        """Close an issue
 
         XXX this might not be a usable API and/or may be a higher
         level transition than we want. Note that 'Closed' may also
