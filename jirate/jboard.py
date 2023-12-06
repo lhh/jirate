@@ -642,7 +642,7 @@ class JiraProject(Jirate):
         chunk_len = 50
         while True:
             data = {'startAt': start, 'maxResults': chunk_len}
-            new_fields = self.jira._get_json(f'issue/createmeta/{self.project_name}/issuetypes/{issue_type_id}', params=data)
+            new_fields = self.jira.createmeta_fieldtypes(self.project_name, issue_type_id, params=data)
             fields.extend(new_fields['values'])
             if new_fields['isLast']:
                 break
