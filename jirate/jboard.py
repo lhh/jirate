@@ -24,8 +24,9 @@ class Jirate(object):
         """This is the connected user (lazy-loaded)"""
         if self._user is None:
             # Get current user info and record it
-            url = self.jira._get_url('myself')
-            self._user = json_loads(self.jira._session.get(url))
+            # This doesn't use self.jira.session().raw since this
+            # doesn't have all the information available.
+            self._user = self.jira.myself()
         return self._user
 
     def attach(self, issue_alias, url, description):
