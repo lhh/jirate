@@ -256,20 +256,18 @@ class Jirate(object):
         issue = self.issue(issue_alias)
         return self.jira.comment(issue.raw['key'], comment_id)
 
-    def comment(self, issue_alias, text, visibility=None):
-        """Attach a new comment to an issue
+    def comment(self, issues, text, visibility=None):
+        """Attach a new comment to a set of issues
 
         Parameters:
-          issue_alias: issue key or ID (string)
+          issues: issue key or ID (string)
           text: Text to attach as comment
 
         Returns:
-          requests.Response
+          [jira.resources.Issue] for updated issues
         """
-        issue = self.issue(issue_alias)
-        if not issue:
-            return None
-        # Use simple comment mode to add a comment
+        issue_list = list_or_splitstr(issues)
+
         comment_data = {'body': text}
         if visibility:
             if isinstance(visibility, str):
@@ -279,8 +277,14 @@ class Jirate(object):
             elif isinstance(visibility, dict):
                 comment_data['visibility'] = visibility
 
-        url = os.path.join(issue.raw['self'], 'comment')
-        return self.jira._session.post(url, data=comment_data)
+        ret = []
+        for alias in issue_list:
+            issue = self.issue(alias)
+            # Use simple comment mode to add a comment
+            url = os.path.join(issue.raw['self'], 'comment')
+            if self.jira._session.post(url, data=comment_data):
+                ret.append(issue)
+        return ret
 
     def close(self, issues):
         """Close an issue
@@ -334,8 +338,36 @@ class Jirate(object):
           jira.resources.Issue (?)
         """
         issue = self.issue(issue_alias)
-        if issue:
-            return issue.update(**kwargs)
+        if not issue:
+            return None
+
+        args = {}
+        for field in kwargs:
+            args[self.field_map(field)] = kwargs[field]
+        return issue.update(**kwargs)
+
+    def update(self, issue_list, **kwargs):
+        """Update a set of issues using key/value pairs
+
+        Parameters:
+          **kwargs: Dictionary of key/value pairs (dict)
+
+        Returns:
+          [jira.resources.Issue] of updated issues
+        """
+        ret = []
+        args = {}
+
+        for field in kwargs:
+            args[self.field_map(field)] = kwargs[field]
+        issues = list_or_splitstr(issue_list)
+        for issue_alias in issues:
+            issue = self.issue(issue_alias)
+            if not issue:
+                continue
+            issue.update(**args)
+            ret.append(issue)
+        return ret
 
     def issue(self, issue_alias, verbose=False):
         """Retrieve an issue from JIRA
