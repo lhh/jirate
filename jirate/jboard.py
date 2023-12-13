@@ -559,12 +559,11 @@ class Jirate(object):
 
 class JiraProject(Jirate):
     def __init__(self, jira, project, closed_status=None, readonly=False, allow_code=False, simplify=False):
-        self.jira = jira
+        super().__init__(jira)
         self._ro = readonly
         self._config = None
         self._closed_status = closed_status
         self._project = self.jira.project(project)
-        self._user = None
         self._issue_types = None
         self._simple = simplify
         self.custom_fields = None
