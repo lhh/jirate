@@ -213,7 +213,7 @@ def issue_fields(args):
 
     field = None
     for _field in fields:
-        if args.name not in (field, fields[_field]['name'], nym(fields[_field]['name']), fields[_field]['fieldId'], nym(fields[_field]['fieldId'])):
+        if args.name not in (fields[_field]['name'], nym(fields[_field]['name']), fields[_field]['fieldId'], nym(fields[_field]['fieldId'])):
             continue
         field = fields[_field]
         break
