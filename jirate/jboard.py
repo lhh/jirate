@@ -2,6 +2,7 @@
 
 import copy
 import os
+import types
 
 from toolchest.strutil import list_or_splitstr
 
@@ -13,11 +14,24 @@ from jirate.decor import nym
 from jirate.jira_input import transmogrify_input
 
 
+def _resolve_field(obj, field_name):
+    return obj._jirate._field(obj, field_name)
+
+
+def _resolve_field_setup(jirate_obj, issue_obj):
+    # Do NOT trample future python JIRA objects' field function.
+    if hasattr(issue_obj, 'field'):
+        raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug!')
+    issue_obj._jirate = jirate_obj
+    issue_obj.field = types.MethodType(_resolve_field, issue_obj)
+
+
 class Jirate(object):
     """High-level wrapper for python-jira"""
     def __init__(self, jira):
         self.jira = jira
         self._user = None
+        self._field_map = None
 
     @property
     def user(self):
@@ -56,6 +70,25 @@ class Jirate(object):
         users = self.jira.search_users(username)
         return users
 
+    def field_map(self, name):
+        if self._field_map is None:
+            self._field_map = {}
+            fields = self.jira.fields()
+            for field in fields:
+                self._field_map[field['name']] = field['id']
+                alias = nym(field['name'])
+                # if they're the same, don't store
+                if alias == field['name']:
+                    continue
+                # append underscores for collisions
+                # XXX hopefully this is extremely rare
+                while alias in self._field_map:
+                    alias = alias + '_'
+                self._field_map[alias] = field['id']
+        if name in self._field_map:
+            return self._field_map[name]
+        return name
+
     def search_issues(self, search_query):
         """Run a JQL search and assemble the results into one list
 
@@ -76,7 +109,51 @@ class Jirate(object):
             index = index + len(issues)
             if len(issues) < chunk_len:
                 break
+        for issue in ret:
+            _resolve_field_setup(self, issue)
         return ret
+
+    def _field(self, issue, field_name):
+        """Reconcile a field in an issue with custom field defs
+        on the jira server. Does not retrieve the issue from the
+        JIRA server.
+
+        Parameters:
+          issue_alias: int or string, could be JIRA Issue ID or key
+          field_name: human readable field name
+
+        Returns:
+          field value, or none if not found
+
+        Raises:
+          AttributeError if the field does not exist.
+        """
+        # Don't return customfield if there's a direct match
+        # obvious match
+        if field_name in issue.raw['fields']:
+            return issue.raw['fields'][field_name]
+        fname = self.field_map(field_name)
+        if fname in issue.raw['fields']:
+            return issue.raw['fields'][fname]
+        raise AttributeError(str(issue) + f' has no field like {field_name}')
+
+    def field(self, issue_alias, field_name):
+        """Reconcile a field in an issue with custom field defs
+        on the jira server. Retrieves the issue from the server if
+        needed.
+
+        Parameters:
+          issue_alias: int or string, could be JIRA Issue ID or key
+          field_name: human readable field name
+
+        Returns:
+          field value, or none if not found
+
+        Raises:
+          AttributeError if the field does not exist.
+        """
+        issue = self.issue(issue_alias)
+        return self._field(issue, field_name)
 
     def fields(self, issue_alias):
         """Determine the fields available for an issue
@@ -283,6 +360,7 @@ class Jirate(object):
                 issue = self.jira.issue(alias)
                 if not issue:
                     continue
+                _resolve_field_setup(self, issue)
                 return issue
             except JIRAError:
                 pass
