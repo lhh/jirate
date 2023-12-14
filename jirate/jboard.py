@@ -191,9 +191,12 @@ class Jirate(object):
 
         return users[0].name
 
-    def api_call(self, uri):
+    def api_call(self, uri, raw=False):
         url = self.jira._get_url(uri)
-        return json_loads(self.jira._session.get(url))
+        ret = self.jira._session.get(url)
+        if raw:
+            return ret.text
+        return json_loads(ret)
 
     def assign(self, issue_aliases, users=None):
         """Assign a set of issues to a user

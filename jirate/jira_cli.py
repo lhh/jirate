@@ -796,9 +796,12 @@ def user_info(args):
 
 
 def call_api(args):
-    data = args.project.api_call(args.resource)
+    data = args.project.api_call(args.resource, args.raw)
     if data:
-        pretty_print(data)
+        if args.raw:
+            print(data)
+        else:
+            pretty_print(data)
         return (0, False)
     return (1, False)
 
@@ -945,6 +948,7 @@ def create_parser():
     cmd.add_argument('target', nargs='+', help='Target issue(s)')
 
     cmd = parser.command('call-api', help='Call an API directly and print the resulting JSON', handler=call_api)
+    cmd.add_argument('--raw', help='Produce raw JSON instead of a Python object', default=False, action='store_true')
     cmd.add_argument('resource', help='Location sans host/REST version (e.g. self, issue/KEY-123')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
