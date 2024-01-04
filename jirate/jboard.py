@@ -491,9 +491,16 @@ class Jirate(object):
         Returns:
           ???
         """
-        left = self.issue(left_alias)
-        right = self.issue(right_alias)
-        return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
+        if isinstance(left_alias, Issue):
+            left = left_alias.key
+        else:
+            left = left_alias.upper()
+        if isinstance(right_alias, Issue):
+            right = right_alias.key
+        else:
+            right = right_alias.upper()
+
+        return self.jira.create_issue_link(link_text, left, right)
 
     def remote_links(self, issue_alias):
         """Obtain all remote links (URLs) attached to an issue
