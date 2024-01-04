@@ -458,25 +458,14 @@ class Jirate(object):
         Returns:
           list of successfully moved issues (list of string)
         """
-        if not isinstance(issue_aliases, list):
-            issue_aliases = [issue_aliases]
+        issue_aliases = list_or_splitstr(issue_aliases)
+        issue_aliases = list(set(issue_aliases))
+        issues = self.issues(issue_aliases)
 
-        fails = []
-        moves = []
-        issues = []
-        for idx in issue_aliases:
-            issue = self.issue(idx)
-            if not issue:
-                fails.append(idx)
-                continue
-            if idx in moves:
-                continue
-            # Don't double-move (if someone specified the same item twice)
-            moves.append(idx)
-            issues.append(issue)
-
-        if fails:
+        if len(issues) < len(issue_aliases):
+            fails = list(set(issue_aliases) - set([issue.key for issue in issues]))
             raise ValueError('No such issue(s): ' + str(fails))
+
         for issue in issues:
             transition = self._find_transition(issue, status)
             if not transition:
@@ -485,7 +474,7 @@ class Jirate(object):
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
             self.jira._session.post(url, data={'transition': {'id': transition}})
-        return moves
+        return issues
 
     def link_types(self):
         """Wrapper for jira.issue_link_types()"""
