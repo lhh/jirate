@@ -514,9 +514,8 @@ class Jirate(object):
         Returns:
           list of jira.resources.RemoteLink
         """
-        issue = self.issue(issue_alias)
-        links = self.jira.remote_links(issue.raw['id'])
-        return links
+        issue = _issue_key(issue_alias)
+        return self.jira.remote_links(issue)
 
     def unlink(self, left_alias, right_alias):
         """Break all links between to issues
