@@ -225,14 +225,10 @@ class Jirate(object):
         """
         if isinstance(users, str):
             users = [users]
-        if isinstance(issue_aliases, str):
-            issue_aliases = [issue_aliases]
+        issue_aliases = list_or_splitstr(issue_aliases)
+        issues = self.issues(issue_aliases)
 
-        for idx in issue_aliases:
-            issue = self.issue(idx)
-            if not issue:
-                continue
-
+        for issue in issues:
             user_ids = []
 
             # first is assignee
