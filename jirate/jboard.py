@@ -414,12 +414,8 @@ class Jirate(object):
             return issue_list
         issues = list_or_splitstr(issue_list)
 
-        ret = []
-        for issue in issues:
-            ret.append(self.issue(issue, verbose))
-        if ret:
-            return ret
-        return None
+        # This is one API call instead of N
+        return self.search_issues('key in (' + ', '.join(issues) + ')') or None
 
     def transitions(self, issue):
         """Retrieve possible next-state transitions for an issue
