@@ -26,6 +26,16 @@ def _resolve_field_setup(jirate_obj, issue_obj):
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
 
 
+def _issue_key(alias):
+    if isinstance(alias, str):
+        return alias.upper()
+    elif isinstance(alias, Issue):
+        return alias.key
+    elif isinstance(alias, int):
+        return str(alias)
+    raise ValueError(f'Unhandled type for {alias}')
+
+
 class Jirate(object):
     """High-level wrapper for python-jira"""
     def __init__(self, jira):
@@ -491,15 +501,8 @@ class Jirate(object):
         Returns:
           ???
         """
-        if isinstance(left_alias, Issue):
-            left = left_alias.key
-        else:
-            left = left_alias.upper()
-        if isinstance(right_alias, Issue):
-            right = right_alias.key
-        else:
-            right = right_alias.upper()
-
+        left = _issue_key(left_alias)
+        right = _issue_key(right_alias)
         return self.jira.create_issue_link(link_text, left, right)
 
     def remote_links(self, issue_alias):
