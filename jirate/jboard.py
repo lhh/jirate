@@ -225,7 +225,6 @@ class Jirate(object):
         """
         if isinstance(users, str):
             users = [users]
-        issue_aliases = list_or_splitstr(issue_aliases)
         issues = self.issues(issue_aliases)
 
         for issue in issues:
@@ -419,9 +418,18 @@ class Jirate(object):
         if isinstance(issue_list, Issue):
             return issue_list
         issues = list_or_splitstr(issue_list)
+        search_issues = []
+        issue_objs = []
+        for issue in issues:
+            if isinstance(issue, Issue):
+                issue_objs.append(issue)
+            else:
+                search_issues.append(issue)
 
         # This is one API call instead of N
-        return self.search_issues('key in (' + ', '.join(issues) + ')') or None
+        ret = self.search_issues('key in (' + ', '.join(search_issues) + ')')
+        ret.extend(issue_objs)
+        return ret or None
 
     def transitions(self, issue):
         """Retrieve possible next-state transitions for an issue
@@ -464,8 +472,6 @@ class Jirate(object):
         Returns:
           list of successfully moved issues (list of string)
         """
-        issue_aliases = list_or_splitstr(issue_aliases)
-        issue_aliases = list(set(issue_aliases))
         issues = self.issues(issue_aliases)
 
         if len(issues) < len(issue_aliases):
