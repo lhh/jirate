@@ -2,6 +2,7 @@
 
 import copy
 import os
+import re
 import types
 
 from toolchest.strutil import list_or_splitstr
@@ -83,18 +84,22 @@ class Jirate(object):
     def field_map(self, name):
         if self._field_map is None:
             self._field_map = {}
-            fields = self.jira.fields()
+            # JIRA already has some of this
+            fields = self.jira._fields_cache
             for field in fields:
-                self._field_map[field['name']] = field['id']
-                alias = nym(field['name'])
+                if re.match('^cf\\[[0-9]+\\]$', field):
+                    continue
+                value = fields[field]
+                self._field_map[field] = value
+                alias = nym(field)
                 # if they're the same, don't store
-                if alias == field['name']:
+                if alias == field:
                     continue
                 # append underscores for collisions
                 # XXX hopefully this is extremely rare
                 while alias in self._field_map:
                     alias = alias + '_'
-                self._field_map[alias] = field['id']
+                self._field_map[alias] = value
         if name in self._field_map:
             return self._field_map[name]
         return name
