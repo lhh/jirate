@@ -838,7 +838,7 @@ def get_project(project=None, config=None, config_file=None):
         jconfig['proxies'] = {"http": "", "https": ""}
 
     jira = get_jira(jconfig)
-    proj = JiraProject(jira, project, readonly=False, allow_code=allow_code, simplify=True)
+    proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
     if 'custom_fields' in jconfig:
