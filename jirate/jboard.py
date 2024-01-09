@@ -2,6 +2,7 @@
 
 import copy
 import os
+import re
 import types
 
 from toolchest.strutil import list_or_splitstr
@@ -24,6 +25,16 @@ def _resolve_field_setup(jirate_obj, issue_obj):
         raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug!')
     issue_obj._jirate = jirate_obj
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
+
+
+def _issue_key(alias):
+    if isinstance(alias, str):
+        return alias.upper()
+    elif isinstance(alias, Issue):
+        return alias.key
+    elif isinstance(alias, int):
+        return str(alias)
+    raise ValueError(f'Unhandled type for {alias}')
 
 
 class Jirate(object):
@@ -73,18 +84,22 @@ class Jirate(object):
     def field_map(self, name):
         if self._field_map is None:
             self._field_map = {}
-            fields = self.jira.fields()
+            # JIRA already has some of this
+            fields = self.jira._fields_cache
             for field in fields:
-                self._field_map[field['name']] = field['id']
-                alias = nym(field['name'])
+                if re.match('^cf\\[[0-9]+\\]$', field):
+                    continue
+                value = fields[field]
+                self._field_map[field] = value
+                alias = nym(field)
                 # if they're the same, don't store
-                if alias == field['name']:
+                if alias == field:
                     continue
                 # append underscores for collisions
                 # XXX hopefully this is extremely rare
                 while alias in self._field_map:
                     alias = alias + '_'
-                self._field_map[alias] = field['id']
+                self._field_map[alias] = value
         if name in self._field_map:
             return self._field_map[name]
         return name
@@ -215,14 +230,9 @@ class Jirate(object):
         """
         if isinstance(users, str):
             users = [users]
-        if isinstance(issue_aliases, str):
-            issue_aliases = [issue_aliases]
+        issues = self.issues(issue_aliases)
 
-        for idx in issue_aliases:
-            issue = self.issue(idx)
-            if not issue:
-                continue
-
+        for issue in issues:
             user_ids = []
 
             # first is assignee
@@ -413,9 +423,22 @@ class Jirate(object):
         if isinstance(issue_list, Issue):
             return issue_list
         issues = list_or_splitstr(issue_list)
+        search_issues = []
+        issue_objs = []
+        for issue in issues:
+            if isinstance(issue, Issue):
+                issue_objs.append(issue)
+            else:
+                search_issues.append(issue)
 
-        # This is one API call instead of N
-        return self.search_issues('key in (' + ', '.join(issues) + ')') or None
+        if len(search_issues) == 1:
+            # If we only need one issue, avoid the risk of the extra call to grab fields
+            ret = [self.issue(search_issues[0])]
+        else:
+            # This is one API call instead of N (two if fields have not been cached)
+            ret = self.search_issues('key in (' + ', '.join(search_issues) + ')')
+        ret.extend(issue_objs)
+        return ret or None
 
     def transitions(self, issue):
         """Retrieve possible next-state transitions for an issue
@@ -458,25 +481,12 @@ class Jirate(object):
         Returns:
           list of successfully moved issues (list of string)
         """
-        if not isinstance(issue_aliases, list):
-            issue_aliases = [issue_aliases]
+        issues = self.issues(issue_aliases)
 
-        fails = []
-        moves = []
-        issues = []
-        for idx in issue_aliases:
-            issue = self.issue(idx)
-            if not issue:
-                fails.append(idx)
-                continue
-            if idx in moves:
-                continue
-            # Don't double-move (if someone specified the same item twice)
-            moves.append(idx)
-            issues.append(issue)
-
-        if fails:
+        if len(issues) < len(issue_aliases):
+            fails = list(set(issue_aliases) - set([issue.key for issue in issues]))
             raise ValueError('No such issue(s): ' + str(fails))
+
         for issue in issues:
             transition = self._find_transition(issue, status)
             if not transition:
@@ -485,7 +495,7 @@ class Jirate(object):
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
             self.jira._session.post(url, data={'transition': {'id': transition}})
-        return moves
+        return issues
 
     def link_types(self):
         """Wrapper for jira.issue_link_types()"""
@@ -502,9 +512,9 @@ class Jirate(object):
         Returns:
           ???
         """
-        left = self.issue(left_alias)
-        right = self.issue(right_alias)
-        return self.jira.create_issue_link(link_text, left.raw['key'], right.raw['key'])
+        left = _issue_key(left_alias)
+        right = _issue_key(right_alias)
+        return self.jira.create_issue_link(link_text, left, right)
 
     def remote_links(self, issue_alias):
         """Obtain all remote links (URLs) attached to an issue
@@ -515,9 +525,8 @@ class Jirate(object):
         Returns:
           list of jira.resources.RemoteLink
         """
-        issue = self.issue(issue_alias)
-        links = self.jira.remote_links(issue.raw['id'])
-        return links
+        issue = _issue_key(issue_alias)
+        return self.jira.remote_links(issue)
 
     def unlink(self, left_alias, right_alias):
         """Break all links between to issues
