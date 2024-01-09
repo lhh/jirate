@@ -968,6 +968,9 @@ def main():
         project = get_project(ns.project)
     except KeyError:
         sys.exit(1)
+    except FileNotFoundError:
+        print('Please create a configuration file (~/.jirate.json)')
+        sys.exit(1)
     except JIRAError as err:
         print(err)
         sys.exit(1)
