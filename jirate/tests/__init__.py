@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from jira.client import JIRA
 from jira.resources import Issue, dict2resource
 
 fake_user = {'self': 'https://domain.com/rest/api/2/user?username=porkchop', 'key': 'porkchop', 'name': 'porkchop', 'emailAddress': 'porkchop@domain.com', 'avatarUrls': {'48x48': 'https://domain.com/secure/useravatar?avatarId=1', '24x24': 'https://domain.com/secure/useravatar?size=small&avatarId=1', '16x16': 'https://domain.com/secure/useravatar?size=xsmall&avatarId=1', '32x32': 'https://domain.com/secure/useravatar?size=medium&avatarId=1'}, 'displayName': 'Chop Pork', 'active': True, 'deleted': False, 'timeZone': 'America/New_York', 'locale': 'en_US', 'groups': {'size': 9, 'items': []}, 'applicationRoles': {'size': 1, 'items': []}, 'expand': 'groups,applicationRoles'}
@@ -221,17 +222,24 @@ fake_issues = {
 
 
 class fake_jira_session():
-    def get(url):
+    def get(self, url):
         pass
 
-    def post(url, data=None):
+    def post(self, url, data=None):
         pass
 
-    def delete(url):
+    def delete(self, url):
+        pass
+
+    def close(self):
         pass
 
 
-class fake_jira():
+class fake_jira(JIRA):
+    def __init__(self, **kwargs):
+        self._fields_cache_value = {}
+        pass
+
     def _get_url(self, url_fragment):
         pass
 
