@@ -431,8 +431,12 @@ class Jirate(object):
             else:
                 search_issues.append(issue)
 
-        # This is one API call instead of N
-        ret = self.search_issues('key in (' + ', '.join(search_issues) + ')')
+        if len(search_issues) == 1:
+            # If we only need one issue, avoid the risk of the extra call to grab fields
+            ret = [self.issue(search_issues[0])]
+        else:
+            # This is one API call instead of N (two if fields have not been cached)
+            ret = self.search_issues('key in (' + ', '.join(search_issues) + ')')
         ret.extend(issue_objs)
         return ret or None
 
