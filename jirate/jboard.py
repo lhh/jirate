@@ -752,15 +752,14 @@ class JiraProject(Jirate):
         if not itype:
             return None
 
-        issue_type_id = itype.id
         fields = []
         start = 0
         chunk_len = 50
         while True:
-            data = {'startAt': start, 'maxResults': chunk_len}
-            new_fields = self.jira.createmeta_fieldtypes(self.project_name, issue_type_id, params=data)
-            fields.extend(new_fields['values'])
-            if new_fields['isLast']:
+            new_fields = self.jira.project_issue_fields(self.project_name, itype.id, startAt=start, maxResults=chunk_len)
+            for field in new_fields:
+                fields.append(field.raw)
+            if new_fields.isLast:
                 break
             start = start + chunk_len
 
