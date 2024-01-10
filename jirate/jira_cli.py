@@ -313,7 +313,7 @@ def new_issue(args):
 
 
 def print_creation_fields(metadata):
-    nlen = 0
+    nlen = 5
     fields = metadata['fields']
     ignore_fields = ('Reporter', 'Project', 'Issue Type')
     for field in fields:
@@ -323,6 +323,10 @@ def print_creation_fields(metadata):
             nlen = max(nlen, len(nym(fields[field]['name'])))
         else:
             nlen = max(nlen, len(nym(field)))
+
+    header = 'Field'.ljust(nlen) + '   R   ' + 'Allowed Values'
+    hbar_under(header)
+
     for field in fields:
         if fields[field]['name'] in ignore_fields:
             continue
