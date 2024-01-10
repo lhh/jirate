@@ -312,9 +312,47 @@ def new_issue(args):
     return (0, True)
 
 
+def print_creation_fields(metadata):
+    nlen = 0
+    fields = metadata['fields']
+    ignore_fields = ('Reporter', 'Project', 'Issue Type')
+    for field in fields:
+        if fields[field]['name'] in ignore_fields:
+            continue
+        if field.startswith('customfield_'):
+            nlen = max(nlen, len(nym(fields[field]['name'])))
+        else:
+            nlen = max(nlen, len(nym(field)))
+    for field in fields:
+        if fields[field]['name'] in ignore_fields:
+            continue
+        if field.startswith('customfield_'):
+            fname = nym(fields[field]['name'])
+        else:
+            fname = nym(field)
+        fvalue = ''
+        if fields[field]['required']:
+            req = '*'
+        else:
+            req = ' '
+        if 'allowedValues' in fields[field]:
+            values = []
+            for val in fields[field]['allowedValues']:
+                if 'archived' in val and val['archived']:
+                    continue
+                if 'name' in val:
+                    values.append(val['name'])
+                elif 'value' in val:
+                    values.append(val['value'])
+                else:
+                    values.append(val['id'])
+            fvalue = ', '.join(values)
+        vsep_print(' ', fname, nlen, req, 1, fvalue)
+
+
 # new_issue is way too easy. Let's make it *incredibly* complicated!
 def create_issue(args):
-    auto_fields = ['reporter']
+    auto_fields = ['reporter', 'issuetype', 'project']
     desc = None
     issuetype = args.type if args.type else 'Task'
 
@@ -340,6 +378,10 @@ def create_issue(args):
 
     values = {}
     argv = copy.copy(args.args)
+    if len(argv) == 0:
+        print_creation_fields(metadata)
+        return (0, False)
+
     while len(argv):
         key = argv.pop(0)
         value = argv.pop(0)
@@ -892,9 +934,9 @@ def create_parser():
     cmd.add_argument('text', nargs='*', help='Issue summary')
 
     cmd = parser.command('create', help='Create a new issue (advanced)', handler=create_issue)
-    cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent)')
+    cmd.add_argument('-t', '--type', default='task', help='Issue type (project-dependent; default is "Task")')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue ID after creation (for scripting)', action='store_true')
-    cmd.add_argument('args', nargs='*', help='field1 "value1" field2 "value2" ... fieldN "valueN"')
+    cmd.add_argument('args', nargs='*', help='field1 "value1" field2 "value2" ... fieldN "valueN".  If none specified, print out possible fields and (if applicable) allowed values. Fields marked with an asterisk are required.')
 
     cmd = parser.command('subtask', help='Create a new subtask', handler=new_subtask)
     cmd.add_argument('-q', '--quiet', default=False, help='Only print subtask ID after creation (for scripting)', action='store_true')
