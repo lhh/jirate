@@ -592,7 +592,7 @@ class JiraProject(Jirate):
         try:
             if str(int(alias)) == alias:
                 alias = f'{self.project_name}-{alias}'
-        except ValueError:
+        except (TypeError, ValueError):
             pass
         return super()._issue_key(alias)
 
