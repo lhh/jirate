@@ -541,12 +541,6 @@ def comment(args):
     return (0, False)
 
 
-def refresh(args):
-    args.project.refresh()
-    args.project.index_issues()
-    return (0, True)
-
-
 def display_comment(action, verbose, no_format):
     print(pretty_date(action['updated']), '•', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '• ID:', action['id'])
     if 'visibility' in action:

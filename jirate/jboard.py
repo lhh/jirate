@@ -661,15 +661,6 @@ class JiraProject(Jirate):
         for issue in issues:
             self._index_issue(issue)
 
-    def index_issues(self, status=None):
-        if status:
-            status_id = self.status_to_id(status)
-            open_issues = super().search_issues(f'PROJECT = {self.project_name} AND STATUS = {status_id}')
-        else:
-            open_issues = super().search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status}')
-        self._index_issues(open_issues)
-        return open_issues
-
     def search(self, text):
         if not text:
             return None
