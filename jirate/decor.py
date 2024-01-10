@@ -66,8 +66,8 @@ def jira2md(jira_text):
     return re.sub(r'({code(:java)?}|{noformat})', '```', jira_text)
 
 
-def md_print(markdown_text):
-    if _markdown:
+def md_print(markdown_text, noformat=False):
+    if _markdown and not noformat:
         fixed_text = jira2md(markdown_text)
         console.print(Markdown(fixed_text))
     else:

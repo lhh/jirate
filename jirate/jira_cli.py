@@ -547,12 +547,12 @@ def refresh(args):
     return (0, True)
 
 
-def display_comment(action, verbose):
+def display_comment(action, verbose, no_format):
     print(pretty_date(action['updated']), '•', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '• ID:', action['id'])
     if 'visibility' in action:
         print('🔒', action['visibility']['type'], '•', action['visibility']['value'])
     hbar(20)
-    md_print(action['body'])
+    md_print(action['body'], no_format)
     print()
 
 
@@ -675,7 +675,7 @@ def print_subtasks(issue):
     _print_issue_list('Sub-tasks', issue['subtasks'])
 
 
-def print_issue(project, issue_obj, verbose=False, no_comments=False):
+def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     issue = issue_obj.raw['fields']
     lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
     lsize = max(lsize, len('Next States'))
@@ -694,7 +694,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False):
 
     print()
     if issue['description']:
-        md_print(issue['description'])
+        md_print(issue['description'], no_format)
         print()
 
     if 'issuelinks' in issue and len(issue['issuelinks']):
@@ -719,7 +719,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False):
         hbar_under('Comments')
 
         for cmt in issue['comment']['comments']:
-            display_comment(cmt, verbose)
+            display_comment(cmt, verbose, no_format)
 
 
 def cat(args):
@@ -732,7 +732,7 @@ def cat(args):
         issues.append(issue)
 
     for issue in issues:
-        print_issue(args.project, issue, args.verbose, args.no_comments)
+        print_issue(args.project, issue, args.verbose, args.no_comments, args.no_format)
     return (0, False)
 
 
@@ -868,6 +868,7 @@ def create_parser():
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
     cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     cmd.add_argument('-N', '--no-comments', action='store_true', default=False, help='Skip comments')
+    cmd.add_argument('-n', '--no-format', action='store_true', help='Do not format output using Markdown')
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
 
     cmd = parser.command('view', help='Display issue in browser', handler=view_issue)
