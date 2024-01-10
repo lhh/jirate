@@ -603,7 +603,6 @@ class JiraProject(Jirate):
                             'issue_rev_map': {}}
 
         self.refresh_lists()
-        # self.index_issues()
 
     def refresh_lists(self):
         # DANGER DANGER - using private stuff because upstream doesn't have it
@@ -677,9 +676,20 @@ class JiraProject(Jirate):
         return self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
 
     def list(self, status=None, userid=None):
-        if userid == 'me':
-            userid = self.user['name']
-        return self.index_issues(status)
+        if userid in (None, 'none'):
+            assignee_selection = f'assignee is EMPTY'
+        else:
+            if userid == 'me':
+                userid = self.user['name']
+            assignee_selection = f'assignee = {userid}'
+
+        if status:
+            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} and STATUS = {status}')
+        else:
+            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} and STATUS != {self._closed_status}')
+
+        self._index_issues(issues)
+        return issues
 
     def issue(self, issue_alias, verbose=False):
         if isinstance(issue_alias, Issue):

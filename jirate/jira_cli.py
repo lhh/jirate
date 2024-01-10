@@ -108,14 +108,12 @@ def search_jira(args):
 
 def list_issues(args):
     # check for verbose
-    if args.mine:
-        userid = 'me'
-    elif args.unassigned:
-        userid = 'none'
+    if args.unassigned:
+        userid = None
     elif args.user:
         userid = args.user
     else:
-        userid = None
+        userid = 'me'
 
     issues = args.project.list(userid=userid)
     print_issues_by_state(issues, args)
@@ -856,7 +854,6 @@ def create_parser():
     cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
     cmd = parser.command('ls', help='List issue(s)', handler=list_issues)
-    cmd.add_argument('-m', '--mine', action='store_true', help='Display only issues assigned to me.')
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
