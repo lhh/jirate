@@ -681,6 +681,12 @@ class JiraProject(Jirate):
         else:
             if userid == 'me':
                 userid = self.user['name']
+            elif '@' in userid:
+                users = self.search_users(userid)
+                if len(users) > 1:
+                    raise ValueError(f'Ambiguous username: {userid}')
+                userid = users[0].key
+
             assignee_selection = f'assignee = {userid}'
 
         if status:
