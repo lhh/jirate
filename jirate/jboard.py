@@ -27,15 +27,6 @@ def _resolve_field_setup(jirate_obj, issue_obj):
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
 
 
-def _issue_key(alias):
-    if isinstance(alias, str):
-        return alias.upper()
-    elif isinstance(alias, Issue):
-        return alias.key
-    elif isinstance(alias, int):
-        return str(alias)
-    raise ValueError(f'Unhandled type for {alias}')
-
 
 class Jirate(object):
     """High-level wrapper for python-jira"""
@@ -43,6 +34,15 @@ class Jirate(object):
         self.jira = jira
         self._user = None
         self._field_map = None
+
+    def _issue_key(self, alias):
+        if isinstance(alias, str):
+            return alias.upper()
+        elif isinstance(alias, Issue):
+            return alias.key
+        elif isinstance(alias, int):
+            return str(alias)
+        raise ValueError(f'Unhandled type for {alias}')
 
     @property
     def user(self):
@@ -429,7 +429,7 @@ class Jirate(object):
             if isinstance(issue, Issue):
                 issue_objs.append(issue)
             else:
-                search_issues.append(issue)
+                search_issues.append(self._issue_key(issue))
 
         if len(search_issues) == 1:
             # If we only need one issue, avoid the risk of the extra call to grab fields
@@ -512,8 +512,8 @@ class Jirate(object):
         Returns:
           ???
         """
-        left = _issue_key(left_alias)
-        right = _issue_key(right_alias)
+        left = self._issue_key(left_alias)
+        right = self._issue_key(right_alias)
         return self.jira.create_issue_link(link_text, left, right)
 
     def remote_links(self, issue_alias):
@@ -525,7 +525,7 @@ class Jirate(object):
         Returns:
           list of jira.resources.RemoteLink
         """
-        issue = _issue_key(issue_alias)
+        issue = self._issue_key(issue_alias)
         return self.jira.remote_links(issue)
 
     def unlink(self, left_alias, right_alias):
@@ -587,6 +587,14 @@ class JiraProject(Jirate):
                     break
                 except KeyError:
                     pass
+
+    def _issue_key(self, alias):
+        try:
+            if str(int(alias)) == alias:
+                alias = f'{self.project_name}-{alias}'
+        except ValueError:
+            pass
+        return super()._issue_key(alias)
 
     def refresh(self):
         if not self._config:
