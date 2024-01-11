@@ -373,10 +373,10 @@ def apply_field_renderers(custom_field_defs=None):
                 custom_fields[field['id']] = bf
                 continue
             custom_fields[field['id']] = field
-            if 'display' in bf and 'display' not in field:
+            if 'display' in bf and 'display' not in field and 'code' not in field:
                 custom_fields[field['id']]['display'] = bf['display']
-        else:
-            custom_fields[field['id']] = field
+                continue
+        custom_fields[field['id']] = field
 
     for key in base_fields:
         if key not in custom_fields:
