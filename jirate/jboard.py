@@ -27,6 +27,16 @@ def _resolve_field_setup(jirate_obj, issue_obj):
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
 
 
+def _check_fields(issue, name):
+    if name in issue.raw['fields']:
+        return name
+    if nym(name) in issue.raw['fields']:
+        return nym(name)
+    for field in issue.raw['fields']:
+        if nym(name) == nym(field):
+            return field
+    return None
+
 
 class Jirate(object):
     """High-level wrapper for python-jira"""
@@ -81,7 +91,7 @@ class Jirate(object):
         users = self.jira.search_users(username)
         return users
 
-    def field_map(self, name):
+    def field_map(self, name, issue=None):
         if self._field_map is None:
             self._field_map = {}
             # JIRA already has some of this
@@ -102,7 +112,11 @@ class Jirate(object):
                 self._field_map[alias] = value
         if name in self._field_map:
             return self._field_map[name]
-        return name
+        if issue:
+            field = _check_fields(issue, name)
+            if field:
+                return field
+        return None
 
     def search_issues(self, search_query):
         """Run a JQL search and assemble the results into one list
@@ -130,8 +144,8 @@ class Jirate(object):
 
     def _field(self, issue, field_name):
         """Reconcile a field in an issue with custom field defs
-        on the jira server. Does not retrieve the issue from the
-        JIRA server.
+        on the jira server or an issue's fields. Does not retrieve
+        the issue from the JIRA server.
 
         Parameters:
           issue_alias: int or string, could be JIRA Issue ID or key
@@ -150,6 +164,9 @@ class Jirate(object):
         fname = self.field_map(field_name)
         if fname in issue.raw['fields']:
             return issue.raw['fields'][fname]
+        fname = _check_fields(issue, field_name)
+        if fname:
+            return fname
         raise AttributeError(str(issue) + f' has no field like {field_name}')
 
     def field(self, issue_alias, field_name):

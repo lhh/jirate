@@ -8,13 +8,15 @@ import yaml
 import editor
 
 from jira.exceptions import JIRAError
+from prettytable import PrettyTable
+from toolchest.strutil import list_or_splitstr
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
-from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
+from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
 
 
 def move(args):
@@ -36,6 +38,38 @@ def close_issues(args):
     return (ret, False)
 
 
+def print_issues_by_field(issue_list, args=None):
+    fields = list_or_splitstr(args.fields)
+    if 'key' in fields:
+        fields.remove('key')
+    output = PrettyTable()
+    fields.insert(0, 'key')
+    output.field_names = fields
+    output.align = 'l'
+    fields.remove('key')
+    for issue in issue_list:
+        row = []
+        row.append(issue.key)
+        for field in fields:
+            field_key = args.project.field_map(field, issue)
+            if not field_key:
+                row.append('N/A')
+                continue
+            try:
+                raw_fv = issue.field(field_key)
+            except AttributeError:
+                row.append('N/A')
+                continue
+            fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
+            if fk:
+                row.append(fv)
+            else:
+                row.append(raw_fv)
+        output.add_row(row)
+
+    print(output)
+
+
 def print_issues_by_state(issue_list, args=None):
     states = {}
 
@@ -46,7 +80,7 @@ def print_issues_by_state(issue_list, args=None):
         states[cstatus].append(issue)
 
     for key in states:
-        if args and args.status and nym(key) != nym(args.status):
+        if args and hasattr(args, 'status') and args.status and nym(key) != nym(args.status):
             continue
         hbar_under(key)
         for issue in states[key]:
@@ -55,6 +89,12 @@ def print_issues_by_state(issue_list, args=None):
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
         print()
+
+
+def print_issues(issue_list, args=None):
+    if args and hasattr(args, 'fields') and args.fields is not None:
+        return print_issues_by_field(issue_list, args)
+    return print_issues_by_state(issue_list, args)
 
 
 def print_users(users):
@@ -101,7 +141,7 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    print_issues_by_state(ret)
+    print_issues(ret, args)
     hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
@@ -116,7 +156,7 @@ def list_issues(args):
         userid = 'me'
 
     issues = args.project.list(userid=userid)
-    print_issues_by_state(issues, args)
+    print_issues(issues, args)
     return (0, True)
 
 
@@ -896,12 +936,14 @@ def create_parser():
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
+    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
     cmd = parser.command('search', help='Search issue(s)/user(s) with matching text', handler=search_jira)
     cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
+    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
