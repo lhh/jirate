@@ -51,7 +51,13 @@ def print_issues_by_field(issue_list, args=None):
     for issue in issue_list:
         row = []
         row.append(issue.key)
-        for field in fields:
+        for orig_field in fields:
+            field = orig_field
+            maxlen = 0
+            if ':' in field:
+                val = field.split(':')
+                field = val[0]
+                maxlen = max(3, int(val[1]))
             field_key = args.project.field_map(field, issue)
             if not field_key:
                 row.append('N/A')
@@ -61,13 +67,16 @@ def print_issues_by_field(issue_list, args=None):
             except AttributeError:
                 row.append('N/A')
                 continue
-            if field not in found_fields:
-                found_fields.append(field)
+            if orig_field not in found_fields:
+                found_fields.append(orig_field)
             fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
             if fk:
-                row.append(fv)
+                val = fv
             else:
-                row.append(raw_fv)
+                val = raw_fv
+            if val and maxlen and len(val) > maxlen:
+                val = val[:maxlen - 1] + '…'
+            row.append(val)
         output.add_row(row)
 
     delta = list(set(fields) - set(found_fields))
