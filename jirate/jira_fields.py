@@ -404,11 +404,11 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
       value: Rendered field value (string)
     """
     field = fields[field_key]
-    field_name = _fields[field_key]['name']
-    if field_key not in _fields:
-        return field_name, None
     if not field:
-        return field_name, None
+        return field_key, None
+    if field_key not in _fields:
+        return field_key, field
+    field_name = _fields[field_key]['name']
     field_config = _fields[field_key]
 
     if 'verbose' in field_config:
