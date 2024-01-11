@@ -3,6 +3,7 @@
 # Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
+import csv
 import re
 import shutil
 
@@ -59,6 +60,31 @@ def color_string(string, color=None, bgcolor=None):
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
     return ret_string
+
+
+def parse_params(arg):
+    if isinstance(arg, list):
+        return arg
+
+    ret = []
+    next_param = ['', '']
+    stuff = csv.reader(arg)
+    val = ''
+    for item in stuff:
+        if item == next_param:
+            ret.append(val)
+            val = ''
+            continue
+        val = val + ''.join(item)
+    if val:
+        ret.append(val)
+    return ret
+
+
+def truncate(arg, maxlen):
+    if arg and maxlen and len(arg) > maxlen:
+        arg = arg[:maxlen - 1] + '…'
+    return arg
 
 
 def jira2md(jira_text):

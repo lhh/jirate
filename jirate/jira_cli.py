@@ -7,13 +7,13 @@ import yaml
 
 import editor
 
+from collections import OrderedDict
 from jira.exceptions import JIRAError
 from prettytable import PrettyTable
-from toolchest.strutil import list_or_splitstr
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
@@ -39,18 +39,24 @@ def close_issues(args):
 
 
 def print_issues_by_field(issue_list, args=None):
-    # TODO: use CSV parser here; list_or_splitstr doesn't allow using e.g.
-    #       'Issue Type','components'
     # TODO: sort by column
-    # TODO: Output field columns headers should not :NN in them
-    fields = list_or_splitstr(args.fields)
-    if 'key' in fields:
-        fields.remove('key')
+    raw_fields = parse_params(args.fields)
+    fields = OrderedDict({'key': 0})
+    for field in raw_fields:
+        if ':' in field:
+            val = field.split(':')
+            field = val[0]
+            maxlen = max(3, int(val[1]))
+        else:
+            maxlen = 0
+        if field == 'key':
+            continue
+        fields[field] = maxlen
+
     output = PrettyTable()
-    fields.insert(0, 'key')
-    output.field_names = fields
+    output.field_names = list(fields.keys())
     output.align = 'l'
-    fields.remove('key')
+    del fields['key']
     found_fields = []
     for issue in issue_list:
         if args and hasattr(args, 'status') and args.status:
@@ -58,13 +64,7 @@ def print_issues_by_field(issue_list, args=None):
                 continue
         row = []
         row.append(issue.key)
-        for orig_field in fields:
-            field = orig_field
-            maxlen = 0
-            if ':' in field:
-                val = field.split(':')
-                field = val[0]
-                maxlen = max(3, int(val[1]))
+        for field in fields:
             field_key = args.project.field_map(field, issue)
             if not field_key:
                 row.append('N/A')
@@ -74,19 +74,17 @@ def print_issues_by_field(issue_list, args=None):
             except AttributeError:
                 row.append('N/A')
                 continue
-            if orig_field not in found_fields:
-                found_fields.append(orig_field)
+            if field not in found_fields:
+                found_fields.append(field)
             fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
             if fk:
                 val = fv
             else:
                 val = raw_fv
-            if val and maxlen and len(val) > maxlen:
-                val = val[:maxlen - 1] + '…'
-            row.append(val)
+            row.append(truncate(val, fields[field]))
         output.add_row(row)
 
-    delta = list(set(fields) - set(found_fields))
+    delta = list(set(list(fields.keys())) - set(found_fields))
     for kill in delta:
         output.del_column(kill)
 
