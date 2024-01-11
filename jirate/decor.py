@@ -248,3 +248,31 @@ def vsep_print(linesplit=None, *vals):
     if consumed < max_chunk_len and not newline:
         print()
     return screen_width
+
+
+def render_matrix(matrix):
+    # Renders a table with the right-most field truncated/wrapped if needed.
+    # Undefined if the screen width is too wide to accommodate all but the
+    # last field
+    col_widths = len(matrix[0]) * [0]
+    for row in matrix:
+        if len(row) != len(col_widths):
+            raise ValueError('Column count mismatch')
+        for val in range(0, len(col_widths)):
+            if isinstance(row[val], str):
+                vlen = len(row[val])
+            else:
+                vlen = len(str(row[val]))
+            col_widths[val] = max(col_widths[val], vlen)
+    line = []
+    for item in range(0, len(col_widths)):
+        line.extend([matrix[0][item], col_widths[item]])
+    line.pop()
+    width = vsep_print(' ', *line)
+    hbar(width)
+    for row in matrix[1:]:
+        line = []
+        for item in range(0, len(col_widths)):
+            line.extend([row[item], col_widths[item]])
+        line.pop()
+        vsep_print(' ', *line)

@@ -9,11 +9,10 @@ import editor
 
 from collections import OrderedDict
 from jira.exceptions import JIRAError
-from prettytable import PrettyTable
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate, render_matrix
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
@@ -53,9 +52,12 @@ def print_issues_by_field(issue_list, args=None):
             continue
         fields[field] = maxlen
 
-    output = PrettyTable()
-    output.field_names = list(fields.keys())
-    output.align = 'l'
+    #output = PrettyTable()
+    #output.field_names = list(fields.keys())
+    #output.align = 'l'
+    output = []
+    output.append(list(fields.keys()))
+
     del fields['key']
     found_fields = []
     for issue in issue_list:
@@ -82,13 +84,14 @@ def print_issues_by_field(issue_list, args=None):
             else:
                 val = raw_fv
             row.append(truncate(val, fields[field]))
-        output.add_row(row)
+        output.append(row)
 
-    delta = list(set(list(fields.keys())) - set(found_fields))
-    for kill in delta:
-        output.del_column(kill)
+    #delta = list(set(list(fields.keys())) - set(found_fields))
+    #for kill in delta:
+        #output.del_column(kill)
 
-    print(output)
+    #print(output)
+    render_matrix(output)
 
 
 def print_issues_by_state(issue_list, args=None):
