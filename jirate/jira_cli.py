@@ -47,6 +47,7 @@ def print_issues_by_field(issue_list, args=None):
     output.field_names = fields
     output.align = 'l'
     fields.remove('key')
+    found_fields = []
     for issue in issue_list:
         row = []
         row.append(issue.key)
@@ -60,12 +61,18 @@ def print_issues_by_field(issue_list, args=None):
             except AttributeError:
                 row.append('N/A')
                 continue
+            if field not in found_fields:
+                found_fields.append(field)
             fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
             if fk:
                 row.append(fv)
             else:
                 row.append(raw_fv)
         output.add_row(row)
+
+    delta = list(set(fields) - set(found_fields))
+    for kill in delta:
+        output.del_column(kill)
 
     print(output)
 
