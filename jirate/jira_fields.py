@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from jirate.decor import pretty_date, color_string, vsep_print
+from jirate.decor import pretty_date, vsep_print
 
 
 #
@@ -57,10 +57,6 @@ def _ratio(field, fields):
     if int(field) < 0:
         return None
     return str(field)
-
-
-def _status_colorized(field, fields):
-    return color_string(field['name'], 'white', field['statusCategory']['colorName'])
 
 
 def _priority(field, fields):
@@ -183,7 +179,7 @@ _base_fields = [
     {
         'id': 'status',
         'name': 'Status',
-        'display': _status_colorized
+        'display': 'name'
     },
     {
         'id': 'resolution',
