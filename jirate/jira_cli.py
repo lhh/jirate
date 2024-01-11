@@ -39,6 +39,10 @@ def close_issues(args):
 
 
 def print_issues_by_field(issue_list, args=None):
+    # TODO: use CSV parser here; list_or_splitstr doesn't allow using e.g.
+    #       'Issue Type','components'
+    # TODO: sort by column
+    # TODO: Output field columns headers should not :NN in them
     fields = list_or_splitstr(args.fields)
     if 'key' in fields:
         fields.remove('key')
@@ -49,6 +53,9 @@ def print_issues_by_field(issue_list, args=None):
     fields.remove('key')
     found_fields = []
     for issue in issue_list:
+        if args and hasattr(args, 'status') and args.status:
+            if nym(issue.field('status')['name']) != nym(args.status):
+                continue
         row = []
         row.append(issue.key)
         for orig_field in fields:
