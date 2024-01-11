@@ -219,6 +219,6 @@ def vsep_print(linesplit=None, *vals):
     # If we terminate on the edge of the screen, we already
     # print newline above, so just a check to avoid an erroneous
     # newline in output
-    if consumed < max_chunk_len:
+    if consumed < max_chunk_len and not newline:
         print()
     return screen_width
