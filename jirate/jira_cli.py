@@ -99,8 +99,17 @@ def print_issues_by_state(issue_list, args=None):
 
 
 def print_issues(issue_list, args=None):
-    if args and hasattr(args, 'fields') and args.fields is not None:
+    if not args:
+        return print_issues_by_state(issue_list, args)
+
+    if hasattr(args, 'fields') and args.fields is not None:
         return print_issues_by_field(issue_list, args)
+
+    fields = args.project.get_user_data('default_fields')
+    if fields:
+        setattr(args, 'fields', fields)
+        return print_issues_by_field(issue_list, args)
+
     return print_issues_by_state(issue_list, args)
 
 
@@ -923,6 +932,8 @@ def get_project(project=None, config=None, config_file=None):
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
+    if 'default_fields' in jconfig:
+        proj.set_user_data('default_fields', jconfig['default_fields'])
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
         apply_field_renderers(proj.custom_fields)
