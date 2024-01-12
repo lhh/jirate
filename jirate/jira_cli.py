@@ -131,6 +131,7 @@ def print_issues(issue_list, args=None):
 
 
 def print_users(users):
+    sep = f' {vseparator} '
     nsize = len('Name')
     ksize = len('User Name')
     msize = len('Email Address')
@@ -140,8 +141,9 @@ def print_users(users):
         ksize = max(ksize, len(user.name))
         msize = max(msize, len(user.emailAddress))
 
-    header = 'Name'.ljust(nsize) + '   ' + 'User Name'.ljust(ksize) + '   ' + 'Email Address'.ljust(msize)
-    hbar_under(header)
+    header = 'Name'.ljust(nsize) + sep + 'User Name'.ljust(ksize) + sep + 'Email Address'.ljust(msize)
+    print(header)
+    hbar(len(header), [nsize, ksize, msize])
     for user in users:
         vsep_print(None, user.displayName, nsize, user.name, ksize, user.emailAddress)
 
