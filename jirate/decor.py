@@ -105,15 +105,27 @@ def pretty_date(date_str):
     return date_obj.astimezone().strftime('%F %T %Z')
 
 
-def hbar(tl):
+def hbar(tl, widths=None):
     if tl == 1:
-        print('┄')
+        val = '┄'
     elif tl == 2:
-        print('┄┄')
+        val= '┄┄'
     elif tl == 3:
-        print('┄┉┄')
+        val = '┄┉┄'
     else:
-        print('┄┉' + '━' * (tl - 4) + '┉┄')
+        val = '┄┉' + '━' * (tl - 4) + '┉┄'
+
+    if not widths:
+        print(val)
+        return
+
+    ret = list(val)
+    pos = 0
+    for idx in range(0, len(widths)-1):
+        pos = pos + widths[idx] + 2
+        ret[pos-1] = '╋'
+        pos = pos + 1
+    print(''.join(ret))
 
 
 def hbar_over(text):
@@ -181,6 +193,10 @@ def vsep_print(linesplit=None, *vals):
         fields.append(val)
         widths.append(int(args.pop(0)))
     fields.append(args.pop(0))
+
+    if sum(widths) + (3 * len(widths)) + 1 > screen_width:
+        print('Screen too narrow.')
+        return 0
 
     #       field widths+ separators
     width = sum(widths) + (len(fields) - 1) * len(sep)
@@ -269,7 +285,9 @@ def render_matrix(matrix):
         line.extend([matrix[0][item], col_widths[item]])
     line.pop()
     width = vsep_print(' ', *line)
-    hbar(width)
+    if not width:
+        return
+    hbar(width, col_widths)
     for row in matrix[1:]:
         line = []
         for item in range(0, len(col_widths)):
