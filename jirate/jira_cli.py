@@ -2,6 +2,7 @@
 
 import copy
 import os
+import re
 import sys
 import yaml
 
@@ -921,6 +922,29 @@ def call_api(args):
     return (1, False)
 
 
+def component_list(args):
+    comps_data = args.project.jira.project_components(args.project.project_name)
+    comp_info = {}
+    for comp in comps_data:
+        if not args.search or re.search(args.search, comp.raw['name']) or not args.raw and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
+            if 'description' not in comp.raw:
+                comp_info[comp.raw['name']] = ''
+            else:
+                comp_info[comp.raw['name']] = comp.raw['description'].strip()
+    comp_names = sorted(list(comp_info.keys()))
+
+    if args.raw:
+        for name in comp_names:
+            print(name)
+    else:
+        matrix = [['name', 'description']]
+        for name in comp_names:
+            matrix.append([name, comp_info[name]])
+        render_matrix(matrix)
+
+    return (0, False)
+
+
 def get_project(project=None, config=None, config_file=None):
     # project: Project key
     # config: dict / pre-read JSON data
@@ -1071,6 +1095,10 @@ def create_parser():
     cmd = parser.command('call-api', help='Call an API directly and print the resulting JSON', handler=call_api)
     cmd.add_argument('--raw', help='Produce raw JSON instead of a Python object', default=False, action='store_true')
     cmd.add_argument('resource', help='Location sans host/REST version (e.g. self, issue/KEY-123')
+
+    cmd = parser.command('components', help='List components', handler=component_list)
+    cmd.add_argument('-r', '--raw', help='Just print component names', default=False, action='store_true')
+    cmd.add_argument('-s', '--search', help='Search by regular expression')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
