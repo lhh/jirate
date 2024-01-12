@@ -223,12 +223,14 @@ def vsep_print(linesplit=None, *vals):
     newline = False
     lsize = width - len(sep)
     consumed = 0
+
+    wrap_line = sep.join([' ' * width for width in widths]) + sep
     while len(chunks):
         chunk = chunks.pop(0)
         while len(chunk):
             if newline is True:
                 consumed = 0
-                print(' ' * lsize + sep, end='')
+                print(wrap_line, end='')
             # Assume we'll get to the next line
             newline = True
             if len(chunk) > max_chunk_len:
