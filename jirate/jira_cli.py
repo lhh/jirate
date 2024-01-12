@@ -52,13 +52,10 @@ def print_issues_by_field(issue_list, args=None):
             continue
         fields[field] = maxlen
 
-    #output = PrettyTable()
-    #output.field_names = list(fields.keys())
-    #output.align = 'l'
     output = []
     output.append(list(fields.keys()))
-
     del fields['key']
+
     found_fields = []
     for issue in issue_list:
         if args and hasattr(args, 'status') and args.status:
@@ -86,11 +83,19 @@ def print_issues_by_field(issue_list, args=None):
             row.append(truncate(val, fields[field]))
         output.append(row)
 
-    #delta = list(set(list(fields.keys())) - set(found_fields))
-    #for kill in delta:
-        #output.del_column(kill)
+    delta = list(set(list(fields.keys())) - set(found_fields))
+    for kill in delta:
+        column = None
+        for header in range(0, len(output[0])):
+            if kill == output[0][header]:
+                column = header
+                break
+        if column is None:
+            print(f'Bug: Tried to remove nonexistent column {kill}?')
+            continue
+        for row in output:
+            row.pop(column)
 
-    #print(output)
     render_matrix(output)
 
 

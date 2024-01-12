@@ -286,6 +286,7 @@ def render_matrix(matrix):
     for item in range(0, len(col_widths)):
         line.extend([matrix[0][item], col_widths[item]])
     line.pop()
+    # XXX Do we want to render full-width here?
     width = vsep_print(' ', *line)
     if not width:
         return
