@@ -882,6 +882,8 @@ def get_project(project=None, config=None, config_file=None):
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
         apply_field_renderers(proj.custom_fields)
+    else:
+        apply_field_renderers()
 
     return proj
 
