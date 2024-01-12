@@ -467,7 +467,7 @@ class Jirate(object):
                 return transitions[state_id]['id']
         return None
 
-    def move(self, issue_aliases, status):
+    def move(self, issue_list, status):
         """Execute a transition to move a set of issues to the desired status
 
         Jira doesn't have a status you can update; you have to retrieve possible
@@ -481,6 +481,7 @@ class Jirate(object):
         Returns:
           list of successfully moved issues (list of string)
         """
+        issue_aliases = list_or_splitstr(issue_list)
         issues = self.issues(issue_aliases)
 
         if len(issues) < len(issue_aliases):
