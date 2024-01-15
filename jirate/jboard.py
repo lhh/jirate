@@ -746,6 +746,10 @@ class JiraProject(Jirate):
 
     def create(self, **args):
         # override so we can index our value
+        if 'project' not in args:
+            args['project'] = self.project_name
+        if 'issuetype' not in args:
+            args['issuetype'] = 'Task'
         ret = super().create(**args)
         self._index_issue(ret)
         return ret

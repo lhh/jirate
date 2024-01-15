@@ -389,6 +389,8 @@ def create_issue(args):
     while len(argv):
         key = argv.pop(0)
         value = argv.pop(0)
+        if key in auto_fields:
+            continue
         values[key] = value
 
     # Bug - error checking isn't done until later, but we need a
@@ -403,11 +405,6 @@ def create_issue(args):
             return (1, False)
         values['summary'] = name
         values['description'] = desc
-
-    # Nope all the auto-populated things
-    for field in auto_fields:
-        if field in values:
-            del values[field]
 
     commit_values = {}
     errors = 0
