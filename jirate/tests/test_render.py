@@ -4,7 +4,13 @@ from jirate.jboard import Jirate
 from jirate.tests import fake_jira
 from jirate.jira_fields import apply_field_renderers, render_field_data
 
+import os
+import time
+
 import pytest
+
+os.environ['TZ'] = 'America/New_York'
+time.tzset()
 
 fake_jirate = Jirate(fake_jira())
 test_fielddefs = fake_jirate.jira.fields()
