@@ -7,3 +7,5 @@ jira>=3.6.0
 python-dateutil
 toolchest
 prettytable
+jsonschema>=4.18.0a1
+referencing

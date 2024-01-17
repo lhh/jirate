@@ -1,0 +1,29 @@
+issues:
+  - issue_type: "Story"
+    summary: "Set up Jirate templates on my machine"
+    # Description terminated by two newlines
+    description: |
+      * {*}This is a multi-line description.{*}
+       ** You can use any JIRA markup.
+       * {*}Make sure you keep indentation consistent.{*}
+       ** This block is indented 2 spaces ahead of the "description" key.
+       ** Any additional whitespace will be part of the issue description.
+       * {*}Termination{*}.
+       ** You can terminate multi-line strings with two newlines.
+
+
+    subtasks:
+      - summary: "Clone the repo and install it"
+        description: "Description for subtask 1"
+      - summary: "Try creating an issue from template and verify it worked"
+        description: "Description for subtask 2"
+      - summary: "Eat a snack as a reward for all my hard work"
+        description: "Description for subtask 3"
+  - issue_type: "Story"
+    summary: "Make sure I stop using the default template"
+    description: "People won't appreciate it if I keep filing the same issues over and over again."
+    subtasks:
+      - summary: "Obtain or create custom templates"
+        description: "Description for subtask 1"
+      - summary: "Take a well-deserved nap as a reward for all my hard work"
+        description: "Description for subtask 2"
