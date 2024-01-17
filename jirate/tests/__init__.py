@@ -298,7 +298,7 @@ fake_issues = {
                           'comment': [],
                           'components': ['porkchop'],
                           'created': '2023-08-03T10:28:48.366+0000',
-                          'customfield_1234567': 'build-2',
+                          'customfield_1234567': None,
                           'customfield_1234568': None,
                           'customfield_1234569': None,
                           'description': 'Test Description 2',
