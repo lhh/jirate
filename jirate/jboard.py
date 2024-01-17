@@ -682,7 +682,7 @@ class JiraProject(Jirate):
     def search(self, text):
         if not text:
             return None
-        return self.search_issues(f'PROJECT = {self.project_name} AND STATUS != {self._closed_status} AND (text ~ "{text}")')
+        return self.search_issues(f'PROJECT = {self.project_name} AND statusCategory NOT IN (Done) AND (text ~ "{text}")')
 
     def list(self, status=None, userid=None):
         if userid in (None, 'none'):
@@ -699,9 +699,9 @@ class JiraProject(Jirate):
             assignee_selection = f'assignee = "{userid}"'
 
         if status:
-            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} and STATUS = {status}')
+            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} AND STATUS = {status}')
         else:
-            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} and STATUS != {self._closed_status}')
+            issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} AND statusCategory NOT IN (Done)')
 
         self._index_issues(issues)
         return issues
