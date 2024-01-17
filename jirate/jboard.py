@@ -694,9 +694,9 @@ class JiraProject(Jirate):
                 users = self.search_users(userid)
                 if len(users) > 1:
                     raise ValueError(f'Ambiguous username: {userid}')
-                userid = users[0].key
+                userid = users[0].name
 
-            assignee_selection = f'assignee = {userid}'
+            assignee_selection = f'assignee = "{userid}"'
 
         if status:
             issues = super().search_issues(f'PROJECT = {self.project_name} AND {assignee_selection} and STATUS = {status}')
