@@ -109,7 +109,7 @@ def hbar(tl, widths=None):
     if tl == 1:
         val = '┄'
     elif tl == 2:
-        val= '┄┄'
+        val = '┄┄'
     elif tl == 3:
         val = '┄┉┄'
     else:
@@ -121,9 +121,9 @@ def hbar(tl, widths=None):
 
     ret = list(val)
     pos = 0
-    for idx in range(0, len(widths)-1):
+    for idx in range(0, len(widths) - 1):
         pos = pos + widths[idx] + 2
-        ret[pos-1] = '╋'
+        ret[pos - 1] = '╋'
         pos = pos + 1
     print(''.join(ret))
 
@@ -178,7 +178,6 @@ def vsep_print(linesplit=None, *vals):
     fields = []
     widths = []
     consumed = 0
-    maxwidth = 0  # Maxiumum width we printed (up to screen width)
 
     screen_width = shutil.get_terminal_size()[0]
     args = list(vals)
@@ -221,7 +220,6 @@ def vsep_print(linesplit=None, *vals):
     chunks = last.split(linesplit)
     # Start on first line
     newline = False
-    lsize = width - len(sep)
     consumed = 0
 
     wrap_line = sep.join([' ' * width for width in widths]) + sep

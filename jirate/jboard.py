@@ -686,7 +686,7 @@ class JiraProject(Jirate):
 
     def list(self, status=None, userid=None):
         if userid in (None, 'none'):
-            assignee_selection = f'assignee is EMPTY'
+            assignee_selection = 'assignee is EMPTY'
         else:
             if userid == 'me':
                 userid = self.user['name']
