@@ -21,7 +21,7 @@ def auto_field(field, fields):
     if isinstance(field, str):
         return field
     if isinstance(field, list):
-        return ', '.join(field)
+        return ', '.join([str(item) for item in field])
     if isinstance(field, dict):
         for key in ['name', 'value']:
             if key in field:
@@ -71,6 +71,10 @@ def name_list(field, fields):
 
 
 def date(field, fields):
+    return field
+
+
+def datetime(field, fields):
     return pretty_date(field)
 
 
@@ -119,12 +123,14 @@ _field_renderers = {
     'issuelinks': key,
     'value': value,
     'name': name,
+    'version': name,
     'user': user,
     'user_list': user_list,
     'array': array,
     'email_list': user_list,  # Is this duplicate needed?
     'value_list': value_list,
     'name_list': name_list,
+    'datetime': datetime,
     'date': date
 }
 
@@ -337,7 +343,8 @@ _fields = None
 _array_renderers = {
     'user': 'user_list',
     'option': 'value_list',
-    'version': 'name_list'
+    'version': 'name_list',
+    'group': 'name_list'
 }
 
 
@@ -448,12 +455,14 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
       field_name: Human-readable field name (string)
       value: Rendered field value (string)
     """
+    if field_key not in _fields:
+        return field_name, field
+    field_name = _fields[field_key]['name']
+    if field_key not in fields:
+        return field_name, None
     field = fields[field_key]
     if not field:
-        return field_key, None
-    if field_key not in _fields:
-        return field_key, field
-    field_name = _fields[field_key]['name']
+        return field_name, None
     field_config = _fields[field_key]
 
     if 'verbose' in field_config:
