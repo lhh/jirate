@@ -617,8 +617,7 @@ class JiraProject(Jirate):
     def refresh(self):
         if not self._config:
             self._config = {'states': {},
-                            'issue_map': {},
-                            'issue_rev_map': {}}
+                            'issue_map': {}}
 
         self.refresh_lists()
 
@@ -838,14 +837,14 @@ class JiraProject(Jirate):
         return copy.copy(self._config)
 
     def get_user_data(self, key):
-        if key in ('states', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         if key in self._config:
             return copy.copy(self._config[key])
         return None
 
     def set_user_data(self, key, userdata):
-        if key in ('states', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config[key] = copy.copy(userdata)
 
