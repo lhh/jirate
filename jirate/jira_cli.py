@@ -17,6 +17,7 @@ from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, 
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
+from jirate.jira_debug import debug_setup, debug_dump
 
 
 def move(args):
@@ -963,7 +964,7 @@ def component_list(args):
     return (0, False)
 
 
-def get_project(project=None, config=None, config_file=None):
+def get_project(project=None, config=None, config_file=None, debug=False):
     # project: Project key
     # config: dict / pre-read JSON data
     if not config:
@@ -995,6 +996,8 @@ def get_project(project=None, config=None, config_file=None):
         jconfig['proxies'] = {"http": "", "https": ""}
 
     jira = get_jira(jconfig)
+    if debug:
+        debug_setup(jira)
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
@@ -1013,6 +1016,7 @@ def create_parser():
     parser = ComplicatedArgs()
 
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
+    parser.add_argument('--debug', help='Enable debugging', default=False, action='store_true')
 
     cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
@@ -1136,7 +1140,7 @@ def main():
     ns = parser.parse_args()
 
     try:
-        project = get_project(ns.project)
+        project = get_project(ns.project, debug=ns.debug)
     except KeyError:
         sys.exit(1)
     except FileNotFoundError:
@@ -1152,6 +1156,8 @@ def main():
         rc = parser.finalize(ns)
     except JIRAError as err:
         print(err)
+        if ns.debug:
+            debug_dump()
         sys.exit(1)
     if rc:
         ret = rc[0]
@@ -1160,6 +1166,8 @@ def main():
         print('No command specified')
         ret = 0
         save = False  # NOQA
+    if ns.debug:
+        debug_dump()
     sys.exit(ret)
 
 
