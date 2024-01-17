@@ -944,7 +944,7 @@ def component_list(args):
     comps_data = args.project.components()
     comp_info = {}
     for comp in comps_data:
-        if not args.search or re.search(args.search, comp.raw['name']) or not args.raw and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
+        if not args.search or re.search(args.search, comp.raw['name']) or not args.quiet and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
             if 'description' not in comp.raw:
                 comp_info[comp.raw['name']] = ''
             else:
