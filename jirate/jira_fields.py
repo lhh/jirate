@@ -456,7 +456,7 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
       value: Rendered field value (string)
     """
     if field_key not in _fields:
-        return field_name, field
+        return field_key, fields[field_key]
     field_name = _fields[field_key]['name']
     if field_key not in fields:
         return field_name, None

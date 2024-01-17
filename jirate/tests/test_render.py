@@ -127,3 +127,12 @@ def test_render_null_auto_defs(field_id, field_name, value):
     fields = issue.raw['fields']
 
     assert render_field_data(field_id, fields, False, True) == (field_name, None)
+
+
+def test_render_no_field():
+    # Not all fields are in the schema
+    apply_field_renderers(test_fielddefs)
+    issue = fake_jirate.issue('TEST-2')
+    fields = issue.raw['fields']
+
+    assert render_field_data('summary', fields, False, True) == ('summary', 'Test 1')
