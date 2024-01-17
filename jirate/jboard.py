@@ -38,6 +38,15 @@ def _check_fields(issue, name):
     return None
 
 
+class JIRAWrapper(JIRA):
+    # Ensures we never call fields() twice, to save API calls
+
+    def fields(self):
+        if not hasattr(self, '_fields_cache_value_raw'):
+            self._fields_cache_value_raw = super().fields()
+        return self._fields_cache_value_raw
+
+
 class Jirate(object):
     """High-level wrapper for python-jira"""
     def __init__(self, jira):
@@ -856,7 +865,7 @@ def get_jira(jconfig):
       jconfig: dict of 3 keys: url, token, proxies (optional)
 
     Returns:
-      jira.JIRA
+      JIRAWrapper
     """
     if 'url' not in jconfig:
         print('No JIRA URL specified')
@@ -867,4 +876,4 @@ def get_jira(jconfig):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
-    return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
+    return JIRAWrapper(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
