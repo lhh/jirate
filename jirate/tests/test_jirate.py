@@ -34,11 +34,11 @@ def test_jirate_basicfields():
 
 
 def test_jirate_customfields():
-    issue = fake_jirate.issue('TEST-2')
+    issue = fake_jirate.issue('TEST-1')
 
     # change if you alter issue or above predefined fake issue
     # data
-    expected = 'build-2'
+    expected = 'test-build-1'
 
     assert issue.fields.customfield_1234567 == expected
     assert issue.raw['fields']['customfield_1234567'] == expected
@@ -48,9 +48,9 @@ def test_jirate_customfields():
         issue.fields.fixed_in_build
 
     # Test one-way
-    assert fake_jirate.field('TEST-2', 'fixed_in_build') == expected
-    assert fake_jirate.field('TEST-2', 'Fixed in Build') == expected
-    assert fake_jirate.field('TEST-2', 'customfield_1234567') == expected
+    assert fake_jirate.field('TEST-1', 'fixed_in_build') == expected
+    assert fake_jirate.field('TEST-1', 'Fixed in Build') == expected
+    assert fake_jirate.field('TEST-1', 'customfield_1234567') == expected
 
     # Negative test
     with pytest.raises(AttributeError):

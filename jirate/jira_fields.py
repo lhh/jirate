@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from jirate.decor import pretty_date, color_string, vsep_print
+from jirate.decor import pretty_date, vsep_print
 
 
 #
@@ -15,6 +15,27 @@ def _list_of_key(field, key):
 
 def string(field, fields):
     return field
+
+
+def auto_field(field, fields):
+    if isinstance(field, str):
+        return field
+    if isinstance(field, list):
+        return ', '.join([str(item) for item in field])
+    if isinstance(field, dict):
+        for key in ['name', 'value']:
+            if key in field:
+                return auto_field(field[key], fields)
+    if isinstance(field, float):
+        if str(field).endswith('.0'):
+            return str(int(field))
+    return str(field)
+
+
+def option_with_child(field, fields):
+    if 'child' in field:
+        return field['value'] + ' - ' + field['child']['value']
+    return field['value']
 
 
 def key(field, fields):
@@ -50,6 +71,10 @@ def name_list(field, fields):
 
 
 def date(field, fields):
+    return field
+
+
+def datetime(field, fields):
     return pretty_date(field)
 
 
@@ -57,10 +82,6 @@ def _ratio(field, fields):
     if int(field) < 0:
         return None
     return str(field)
-
-
-def _status_colorized(field, fields):
-    return color_string(field['name'], 'white', field['statusCategory']['colorName'])
 
 
 def _priority(field, fields):
@@ -94,15 +115,22 @@ def _votes(field, fields):
 # utilize custom fields.
 _field_renderers = {
     'string': string,
+    'any': auto_field,
+    'number': auto_field,
+    'option': value,
+    'option-with-child': option_with_child,
     'key': key,
+    'issuelinks': key,
     'value': value,
     'name': name,
+    'version': name,
     'user': user,
     'user_list': user_list,
     'array': array,
     'email_list': user_list,  # Is this duplicate needed?
     'value_list': value_list,
     'name_list': name_list,
+    'datetime': datetime,
     'date': date
 }
 
@@ -183,7 +211,7 @@ _base_fields = [
     {
         'id': 'status',
         'name': 'Status',
-        'display': _status_colorized
+        'display': 'name'
     },
     {
         'id': 'resolution',
@@ -312,6 +340,28 @@ _ignore_fields = [
 _fields = None
 
 
+_array_renderers = {
+    'user': 'user_list',
+    'option': 'value_list',
+    'version': 'name_list',
+    'group': 'name_list'
+}
+
+
+def apply_schema_renderer(field):
+    schema = field['schema']
+    if schema['type'] == 'array':
+        try:
+            field['display'] = _array_renderers[schema['items']]
+        except KeyError:
+            field['display'] = array
+    else:
+        try:
+            field['display'] = _field_renderers[schema['type']]
+        except KeyError:
+            field['display'] = string
+
+
 def eval_custom_field(__code__, field, fields):
     """Proof of concept: Execute inline code to render a field
 
@@ -373,10 +423,12 @@ def apply_field_renderers(custom_field_defs=None):
                 custom_fields[field['id']] = bf
                 continue
             custom_fields[field['id']] = field
-            if 'display' in bf and 'display' not in field:
+            if 'display' in bf and 'display' not in field and 'code' not in field:
                 custom_fields[field['id']]['display'] = bf['display']
-        else:
-            custom_fields[field['id']] = field
+                continue
+        custom_fields[field['id']] = field
+        if 'display' not in field and 'code' not in field and 'schema' in field:
+            apply_schema_renderer(field)
 
     for key in base_fields:
         if key not in custom_fields:
@@ -403,10 +455,12 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
       field_name: Human-readable field name (string)
       value: Rendered field value (string)
     """
-    field = fields[field_key]
-    field_name = _fields[field_key]['name']
     if field_key not in _fields:
+        return field_key, fields[field_key]
+    field_name = _fields[field_key]['name']
+    if field_key not in fields:
         return field_name, None
+    field = fields[field_key]
     if not field:
         return field_name, None
     field_config = _fields[field_key]

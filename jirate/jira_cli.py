@@ -2,19 +2,21 @@
 
 import copy
 import os
+import re
 import sys
 import yaml
 
 import editor
 
+from collections import OrderedDict
 from jira.exceptions import JIRAError
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate, render_matrix
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
-from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width
+from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
 
 
 def move(args):
@@ -36,6 +38,68 @@ def close_issues(args):
     return (ret, False)
 
 
+def print_issues_by_field(issue_list, args=None):
+    # TODO: sort by column
+    raw_fields = parse_params(args.fields)
+    fields = OrderedDict({'key': 0})
+    for field in raw_fields:
+        if ':' in field:
+            val = field.split(':')
+            field = val[0]
+            maxlen = max(3, int(val[1]))
+        else:
+            maxlen = 0
+        if field == 'key':
+            continue
+        fields[field] = maxlen
+
+    output = []
+    output.append(list(fields.keys()))
+    del fields['key']
+
+    found_fields = []
+    for issue in issue_list:
+        if args and hasattr(args, 'status') and args.status:
+            if nym(issue.field('status')['name']) != nym(args.status):
+                continue
+        row = []
+        row.append(issue.key)
+        for field in fields:
+            field_key = args.project.field_map(field, issue)
+            if not field_key:
+                row.append('N/A')
+                continue
+            try:
+                raw_fv = issue.field(field_key)
+            except AttributeError:
+                row.append('N/A')
+                continue
+            if field not in found_fields:
+                found_fields.append(field)
+            fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
+            if fk:
+                val = fv
+            else:
+                val = raw_fv
+            row.append(truncate(val, fields[field]))
+        output.append(row)
+
+    delta = list(set(list(fields.keys())) - set(found_fields))
+    for kill in delta:
+        column = None
+        for header in range(0, len(output[0])):
+            if kill == output[0][header]:
+                column = header
+                break
+        if column is None:
+            print(f'Bug: Tried to remove nonexistent column {kill}?')
+            continue
+        for row in output:
+            row.pop(column)
+
+    render_matrix(output)
+
+
 def print_issues_by_state(issue_list, args=None):
     states = {}
 
@@ -46,7 +110,7 @@ def print_issues_by_state(issue_list, args=None):
         states[cstatus].append(issue)
 
     for key in states:
-        if args and args.status and nym(key) != nym(args.status):
+        if args and hasattr(args, 'status') and args.status and nym(key) != nym(args.status):
             continue
         hbar_under(key)
         for issue in states[key]:
@@ -57,7 +121,23 @@ def print_issues_by_state(issue_list, args=None):
         print()
 
 
+def print_issues(issue_list, args=None):
+    if not args:
+        return print_issues_by_state(issue_list, args)
+
+    if hasattr(args, 'fields') and args.fields is not None:
+        return print_issues_by_field(issue_list, args)
+
+    fields = args.project.get_user_data('default_fields')
+    if fields:
+        setattr(args, 'fields', fields)
+        return print_issues_by_field(issue_list, args)
+
+    return print_issues_by_state(issue_list, args)
+
+
 def print_users(users):
+    sep = f' {vseparator} '
     nsize = len('Name')
     ksize = len('User Name')
     msize = len('Email Address')
@@ -67,8 +147,9 @@ def print_users(users):
         ksize = max(ksize, len(user.name))
         msize = max(msize, len(user.emailAddress))
 
-    header = 'Name'.ljust(nsize) + '   ' + 'User Name'.ljust(ksize) + '   ' + 'Email Address'.ljust(msize)
-    hbar_under(header)
+    header = 'Name'.ljust(nsize) + sep + 'User Name'.ljust(ksize) + sep + 'Email Address'.ljust(msize)
+    print(header)
+    hbar(len(header), [nsize, ksize, msize])
     for user in users:
         vsep_print(None, user.displayName, nsize, user.name, ksize, user.emailAddress)
 
@@ -101,7 +182,7 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    print_issues_by_state(ret)
+    print_issues(ret, args)
     hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
@@ -116,7 +197,7 @@ def list_issues(args):
         userid = 'me'
 
     issues = args.project.list(userid=userid)
-    print_issues_by_state(issues, args)
+    print_issues(issues, args)
     return (0, True)
 
 
@@ -830,6 +911,24 @@ def user_info(args):
     return (0, False)
 
 
+def component_ops(args):
+    if args.remove:
+        # Explicitly one at a time
+        ret = args.project.remove_component(args.remove[0])
+        return (0, False)
+
+    if args.add:
+        if len(args.add) == 1:
+            ret = args.project.add_component(args.add[0])
+        else:
+            ret = args.project.add_component(args.add[0], ' '.join(args.add[1:]))
+        if ret:
+            return (0, False)
+        return (1, False)
+
+    return (1, False)
+
+
 def call_api(args):
     data = args.project.api_call(args.resource, args.raw)
     if data:
@@ -839,6 +938,29 @@ def call_api(args):
             pretty_print(data)
         return (0, False)
     return (1, False)
+
+
+def component_list(args):
+    comps_data = args.project.components()
+    comp_info = {}
+    for comp in comps_data:
+        if not args.search or re.search(args.search, comp.raw['name']) or not args.raw and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
+            if 'description' not in comp.raw:
+                comp_info[comp.raw['name']] = ''
+            else:
+                comp_info[comp.raw['name']] = comp.raw['description'].strip()
+    comp_names = sorted(list(comp_info.keys()))
+
+    if args.quiet:
+        for name in comp_names:
+            print(name)
+    else:
+        matrix = [['name', 'description']]
+        for name in comp_names:
+            matrix.append([name, comp_info[name]])
+        render_matrix(matrix)
+
+    return (0, False)
 
 
 def get_project(project=None, config=None, config_file=None):
@@ -876,6 +998,8 @@ def get_project(project=None, config=None, config_file=None):
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     if 'searches' in jconfig:
         proj.set_user_data('searches', jconfig['searches'])
+    if 'default_fields' in jconfig:
+        proj.set_user_data('default_fields', jconfig['default_fields'])
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
         apply_field_renderers(proj.custom_fields)
@@ -896,12 +1020,14 @@ def create_parser():
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
+    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
     cmd = parser.command('search', help='Search issue(s)/user(s) with matching text', handler=search_jira)
     cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
+    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
@@ -987,6 +1113,14 @@ def create_parser():
     cmd = parser.command('call-api', help='Call an API directly and print the resulting JSON', handler=call_api)
     cmd.add_argument('--raw', help='Produce raw JSON instead of a Python object', default=False, action='store_true')
     cmd.add_argument('resource', help='Location sans host/REST version (e.g. self, issue/KEY-123')
+
+    cmd = parser.command('component', help='Modify component(s)', handler=component_ops)
+    cmd.add_argument('-a', '--add', help='Component to add', nargs='+')
+    cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
+
+    cmd = parser.command('components', help='List components', handler=component_list)
+    cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
+    cmd.add_argument('-s', '--search', help='Search by regular expression')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')

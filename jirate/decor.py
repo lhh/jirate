@@ -3,6 +3,7 @@
 # Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
+import csv
 import re
 import shutil
 
@@ -61,6 +62,31 @@ def color_string(string, color=None, bgcolor=None):
     return ret_string
 
 
+def parse_params(arg):
+    if isinstance(arg, list):
+        return arg
+
+    ret = []
+    next_param = ['', '']
+    stuff = csv.reader(arg)
+    val = ''
+    for item in stuff:
+        if item == next_param:
+            ret.append(val)
+            val = ''
+            continue
+        val = val + ''.join(item)
+    if val:
+        ret.append(val)
+    return ret
+
+
+def truncate(arg, maxlen):
+    if arg and maxlen and len(arg) > maxlen:
+        arg = arg[:maxlen - 1] + '…'
+    return arg
+
+
 def jira2md(jira_text):
     # Replace code/noformat blocks with triple-backticks
     return re.sub(r'({code(:java)?}|{noformat})', '```', jira_text)
@@ -79,15 +105,27 @@ def pretty_date(date_str):
     return date_obj.astimezone().strftime('%F %T %Z')
 
 
-def hbar(tl):
+def hbar(tl, widths=None):
     if tl == 1:
-        print('┄')
+        val = '┄'
     elif tl == 2:
-        print('┄┄')
+        val= '┄┄'
     elif tl == 3:
-        print('┄┉┄')
+        val = '┄┉┄'
     else:
-        print('┄┉' + '━' * (tl - 4) + '┉┄')
+        val = '┄┉' + '━' * (tl - 4) + '┉┄'
+
+    if not widths:
+        print(val)
+        return
+
+    ret = list(val)
+    pos = 0
+    for idx in range(0, len(widths)-1):
+        pos = pos + widths[idx] + 2
+        ret[pos-1] = '╋'
+        pos = pos + 1
+    print(''.join(ret))
 
 
 def hbar_over(text):
@@ -156,6 +194,10 @@ def vsep_print(linesplit=None, *vals):
         widths.append(int(args.pop(0)))
     fields.append(args.pop(0))
 
+    if sum(widths) + (3 * len(widths)) + 1 > screen_width:
+        print('Screen too narrow.')
+        return 0
+
     #       field widths+ separators
     width = sum(widths) + (len(fields) - 1) * len(sep)
     for idx in range(0, len(widths)):
@@ -181,12 +223,14 @@ def vsep_print(linesplit=None, *vals):
     newline = False
     lsize = width - len(sep)
     consumed = 0
+
+    wrap_line = sep.join([' ' * width for width in widths]) + sep
     while len(chunks):
         chunk = chunks.pop(0)
         while len(chunk):
             if newline is True:
                 consumed = 0
-                print(' ' * lsize + sep, end='')
+                print(wrap_line, end='')
             # Assume we'll get to the next line
             newline = True
             if len(chunk) > max_chunk_len:
@@ -222,3 +266,34 @@ def vsep_print(linesplit=None, *vals):
     if consumed < max_chunk_len and not newline:
         print()
     return screen_width
+
+
+def render_matrix(matrix):
+    # Renders a table with the right-most field truncated/wrapped if needed.
+    # Undefined if the screen width is too wide to accommodate all but the
+    # last field
+    col_widths = len(matrix[0]) * [0]
+    for row in matrix:
+        if len(row) != len(col_widths):
+            raise ValueError('Column count mismatch')
+        for val in range(0, len(col_widths)):
+            if isinstance(row[val], str):
+                vlen = len(row[val])
+            else:
+                vlen = len(str(row[val]))
+            col_widths[val] = max(col_widths[val], vlen)
+    line = []
+    for item in range(0, len(col_widths)):
+        line.extend([matrix[0][item], col_widths[item]])
+    line.pop()
+    # XXX Do we want to render full-width here?
+    width = vsep_print(' ', *line)
+    if not width:
+        return
+    hbar(width, col_widths)
+    for row in matrix[1:]:
+        line = []
+        for item in range(0, len(col_widths)):
+            line.extend([row[item], col_widths[item]])
+        line.pop()
+        vsep_print(' ', *line)
