@@ -1,6 +1,6 @@
 ---
 $schema: "https://json-schema.org/draft/2020-12/schema"
-$id: "file://schemas/template.yaml"
+$id: "jirate:template.yaml"
 type: object
 description: Template used to file Jira issues.
 required:
@@ -12,7 +12,7 @@ properties:
     type: array
     items:
       oneOf:
-        - $ref: issue.yaml
+        - $ref: "jirate:issue.yaml"
 
 # Fail validation if template sets values not defined in the schema
 additionalProperties: False

@@ -5,11 +5,14 @@ import os
 import re
 import sys
 import yaml
+from importlib.resources import files
 
 import editor
 
 from collections import OrderedDict
 from jira.exceptions import JIRAError
+from referencing import Registry, Resource
+import jsonschema
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
@@ -537,6 +540,12 @@ def create_from_template(args):
     with open(args.template_file, 'r') as yaml_file:
         template = yaml.safe_load(yaml_file)
 
+    try:
+        validate_template(args)
+    except jsonschema.exceptions.ValidationError as e:
+        print(f"Provided template file is not valid: {args.template_file}")
+        raise e
+
     for issue in template['issues']:
         filed = {}
         if 'description' not in issue:
@@ -564,6 +573,26 @@ def create_from_template(args):
                 print(filed['parent'])
         else:
             print_issue(args.project, args.project.issue(filed['parent']), False)
+    return (0, True)
+
+
+def validate_template(args):
+    with open(args.template_file, 'r') as yaml_file:
+        template = yaml.safe_load(yaml_file)
+
+    schema_dir = files('jirate').joinpath('schemas')
+    schemas = {}
+    for schema_file in ('template.yaml', 'issue.yaml', 'subtask.yaml'):
+        schemas[f"jirate:{schema_file}"] = yaml.safe_load(
+            schema_dir.joinpath(schema_file).read_text())
+
+    registry = Registry().with_contents([(k, v) for k, v in schemas.items()])
+    validator = jsonschema.Draft202012Validator(schema=schemas['jirate:template.yaml'], registry=registry)
+
+    # Will raise a ValidationError with details on what failed:
+    validator.validate(template)
+    # If we get here it means validation succeeded.
+    print(f"Template {args.template_file} is valid.")
     return (0, True)
 
 
@@ -1125,6 +1154,10 @@ def create_parser():
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
+
+    cmd = parser.command('validate', help='Validate a YAML template for use with the "template" command',
+                         handler=validate_template)
+    cmd.add_argument('template_file', help='Path to the template file')
 
     # TODO: build template from existing issue(s)
 
