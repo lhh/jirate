@@ -11,7 +11,7 @@ import editor
 
 from collections import OrderedDict
 from jira.exceptions import JIRAError
-from referencing import Registry, Resource
+from referencing import Registry
 import jsonschema
 
 from jirate.args import ComplicatedArgs, GenericArgs
