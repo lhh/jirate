@@ -20,6 +20,7 @@ from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, 
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
+from jirate.jira_input import transmogrify_input
 
 
 def move(args):
@@ -161,7 +162,7 @@ def search_jira(args):
     if args.user:
         users = args.project.search_users(args.user)
         if not users:
-            print('No users match "f{args.user}"')
+            print(f'No users match "{args.user}"')
             return (1, False)
         print_users(users)
         return (0, False)
@@ -293,71 +294,35 @@ def issue_fields(args):
             vsep_print(' ', fname, nlen, fvalue)
         return (0, False)
 
-    field = None
-    for _field in fields:
-        if args.name not in (fields[_field]['name'], nym(fields[_field]['name']), fields[_field]['fieldId'], nym(fields[_field]['fieldId'])):
-            continue
-        field = fields[_field]
-        break
+    # TODO multi-field sets?
+    # transmogrify_input - should this be done in jboard.update_issue?
+    # Note that if answer is yes, we have to fetch field metadata there,
+    # so we'll want to cache it or pass it down to avoid extra API calls
+    field_args = {args.name: ' '.join(args.values)}
+    output_args = transmogrify_input(fields, **field_args)
 
-    if not field:
-        key = issue.raw['key']
-        print(f'No field like \'{args.name}\' field in {key}')
+    if not output_args:
+        print(f'No field like {args.name} in {issue.key}')
         return (1, False)
+
+    # Set up for the rest
+    field_ids = [key for key in output_args.keys()]
+    field_id = field_ids[0]
+    field = fields[field_id]
+    send_val = output_args[field_id]
 
     ops = field['operations']
     if args.operation not in ops:
         print(f'Cannot perform {args.operation} on {args.issue}; try: {ops}')
         return (1, False)
 
-    # Join stuff if it's not an array
-    if 'schema' in field and field['schema']['type'] == 'array':
-        start_val = args.values
-    else:
-        start_val = [' '.join(args.values)]
-
-    # okay time to update them
-    found = False
-    send_val = []
-
-    # Parse allowedValues and look for name, value, and ID, and their nyms
-    if 'allowedValues' in field:
-        # Validate that the name or value exists and create our array of IDs
-        # corresponding to them.
-        for val in start_val:
-            found = False
-            for av in field['allowedValues']:
-                if 'archived' in av and av['archived']:
-                    continue
-                for key in ['name', 'value']:
-                    if key not in av:
-                        continue
-                    if val not in (av[key], nym(av[key])):
-                        continue
-                    send_val.append({'id': av['id']})
-                    found = True
-                    break
-                if found:
-                    break
-            if not found:
-                print(f'Value {val} not allowed for {args.name}')
-                return (1, False)
-
-    # Start with our basic input otherwise; no validation done
-    else:
-        send_val = start_val
-
-    update_args = []
-    # If it's not an array, assume a string for now
-    if 'schema' not in field or field['schema']['type'] != 'array':
-        send_val = send_val[0]
-
     # Add and remove use a different format than 'set'.
     # There's also 'modify', but ... that one's even more complicated.
     if args.operation in ['add', 'remove']:
-        update_args = {field['fieldId']: [{args.operation: val} for val in send_val]}
+        update_args = {field_id: [{args.operation: val} for val in send_val]}
     else:
-        update_args = {field['fieldId']: [{args.operation: send_val}]}
+        update_args = {field_id: [{args.operation: send_val}]}
+
     args.project.update_issue(issue.raw['key'], **update_args)
     return (0, False)
 
@@ -440,7 +405,6 @@ def print_creation_fields(metadata):
 
 # new_issue is way too easy. Let's make it *incredibly* complicated!
 def create_issue(args):
-    auto_fields = ['reporter', 'issuetype', 'project']
     desc = None
     issuetype = args.type if args.type else 'Task'
 
@@ -450,7 +414,7 @@ def create_issue(args):
         return (1, False)
 
     try:
-        metadata = args.project.issue_metadata(args.type)
+        metadata = args.project.issue_metadata(issuetype)
     except JIRAError as e:
         if 'text: Issue Does Not Exist' in str(e):
             print('The createmeta API does not exist on this JIRA instance.')
@@ -473,8 +437,6 @@ def create_issue(args):
     while len(argv):
         key = argv.pop(0)
         value = argv.pop(0)
-        if key in auto_fields:
-            continue
         values[key] = value
 
     # Bug - error checking isn't done until later, but we need a
@@ -488,44 +450,13 @@ def create_issue(args):
             print('Canceled')
             return (1, False)
         values['summary'] = name
-        values['description'] = desc
+        if desc:
+            values['description'] = desc
 
-    commit_values = {}
-    errors = 0
-
-    issuetype = metadata['name']
-    values['issuetype'] = issuetype
+    values['issuetype'] = metadata['name']
     values['project'] = args.project.project_name
 
-    # resolve field names
-    for field in metadata['fields']:
-        if field in auto_fields:
-            continue
-        fieldname = metadata['fields'][field]['name']
-        if field not in values and fieldname not in values and nym(fieldname) not in values:
-            if metadata['fields'][field]['required']:
-                print(f'Missing required field for {args.project.project_name}/{issuetype}: ' + nym(fieldname))
-                errors = errors + 1
-            continue
-        if field in values:
-            commit_values[field] = values[field]
-            del values[field]
-        if fieldname in values:
-            commit_values[field] = values[fieldname]
-            del values[fieldname]
-        if nym(fieldname) in values:
-            commit_values[field] = values[nym(fieldname)]
-            del values[nym(fieldname)]
-
-    if values:
-        print('WARNING: Input fields is not empty:')
-        pretty_print(values)
-
-    if errors:
-        print(f'{errors} errors; can\'t create issue')
-        return (1, False)
-
-    issue = args.project.create(**commit_values)
+    issue = args.project.create(metadata['fields'], **values)
     if args.quiet:
         print(issue.raw['key'])
     else:

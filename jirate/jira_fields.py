@@ -401,6 +401,9 @@ def apply_field_renderers(custom_field_defs=None):
     custom_fields = OrderedDict()
     ret = OrderedDict()
 
+    # NOTE: Don't feed in field definitions acquired from getting
+    # createmeta or editmeta; the resulting dictionary is subtly
+    # different in an important way: field['id'] is field['fieldId']
     if not custom_field_defs:
         for field in _base_fields:
             if field['id'] in _ignore_fields:
