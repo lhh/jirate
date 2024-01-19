@@ -12,6 +12,12 @@ JIRA:
 - searching/listing with component(s)?
 - sorting by column in ls/search output
 - Editing components / other component fields
+- Date/Datetime processing on input: right now, it's just a string.
+  e.g. 23-Oct-2023, 2023-Oct-23, 2023-10-23 should all work for dates,
+  for example
+- All table outputs should have configurable field widths
+- All table outputs should be able to avoid truncating to the width
+  of the terminal
 
 Attachments
 - add File attachments

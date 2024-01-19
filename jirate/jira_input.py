@@ -39,7 +39,10 @@ _input_renderers = {
     'priority': in_name,
     'version': in_name,
     'securitylevel': in_name,
-    'option-with-child': in_owc
+    'option-with-child': in_owc,
+    'user': in_string   # When setting array, you specify 'name': name
+                        # When setting assignee, you just give the name
+                        # as a string
 }
 
 
@@ -132,6 +135,17 @@ def transmogrify_value(value, field_info):
 
 # Channelling ... Calvin
 def transmogrify_input(field_definitions, **args):
+    """ Translate text input into something Jira understands natively when
+    pasting to the API.
+
+    Parameters:
+        field_definitions: Create/Update metadata or /field dictionary
+        args: User-provided key,value pairs (strings)
+
+    Returns:
+        Updated dictionary with JIRA field IDs and values corresponding to
+        metadata in field_definitions
+    """
     drop_fields = ['attachment', 'reporter', 'issuelinks']  # These are not set during create/update
     simple_fields = ['project', 'issuetype']                # Don't process these fields at all
     output = {}
