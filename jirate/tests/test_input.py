@@ -100,6 +100,11 @@ def test_trans_array_any():
 # but are strings
 
 
+def test_trans_issuelink():
+    inp = {'related_issue': 'TEST-2'}
+    out = {'customfield_1234577': {'name': 'TEST-2'}}
+
+
 def test_trans_option():
     inp = {'option_value': 'one'}
     out = {'customfield_1234578': {'value': 'One'}}

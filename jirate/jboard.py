@@ -346,19 +346,19 @@ class Jirate(object):
         """Create a new issue using key/value pairs
 
         Parameters:
+          field_definitions: List of creation definitions for the
+                             issue type.
           **args: Dictionary of key/value pairs (dict)
 
         Returns:
           jira.resources.Issue
         """
-        # Structures for certain things need to be adjusted, because JIRA.
-        # parent key is special because we do our own shortcuts.  Overwrite
-        # project if we're creating a subtask
+        # Make sure we create in correct project if we're creating
+        # a subtask. Also resolve parent issue.
         if 'parent' in args and isinstance(args['parent'], str):
             parent_issue = self.issue(args['parent'])
-            parent_key = parent_issue.raw['key']
             project = parent_issue.raw['fields']['project']['key']
-            args['parent'] = {'key': parent_key}
+            args['parent'] = parent_issue.key
             args['project'] = project
 
         # Transmogrify other fields
@@ -774,6 +774,10 @@ class JiraProject(Jirate):
             args['project'] = self.project_name
         if 'issuetype' not in args:
             args['issuetype'] = 'Task'
+
+        if not field_definitions:
+            metadata = self.issue_metadata(args['issuetype'])
+            field_definitions = metadata['fields']
         ret = super().create(field_definitions, **args)
         self._index_issue(ret)
         return ret

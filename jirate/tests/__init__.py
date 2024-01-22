@@ -363,7 +363,7 @@ fake_issues = {
                           'customfield_1234574': ['one', 2.0],
                           'customfield_1234575': '2022-08-01',
                           'customfield_1234576': '2019-12-25T02:10:00.000+0000',
-                          'customfield_1234577': 'TEST-2',
+                          'customfield_1234577': {'key': 'TEST-2'},
                           'customfield_1234578': {'name': 'Option1', 'value': 'option_one'},
                           'customfield_1234579': {'name': 'Option1', 'value': 'option_one', 'child': {'name': 'child1', 'value': 'child_value'}},
                           'customfield_1234580': {
