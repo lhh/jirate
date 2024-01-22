@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from jirate.decor import pretty_date, vsep_print
+from jirate.decor import pretty_date, vsep_print, comma_separated
 
 
 #
@@ -10,7 +10,7 @@ from jirate.decor import pretty_date, vsep_print
 # suppressed.
 #
 def _list_of_key(field, key):
-    return ', '.join([item[key] for item in field])
+    return comma_separated([item[key] for item in field])
 
 
 def string(field, fields):
@@ -21,7 +21,7 @@ def auto_field(field, fields):
     if isinstance(field, str):
         return field
     if isinstance(field, list):
-        return ', '.join([str(item) for item in field])
+        return comma_separated([str(item) for item in field])
     if isinstance(field, dict):
         for key in ['name', 'value']:
             if key in field:
@@ -55,11 +55,13 @@ def user(field, fields):
 
 
 def user_list(field, fields):
-    return _list_of_key(field, 'emailAddress')
+    # Until we take email addresses as input, we should use
+    # user names only when presenting lists of users
+    return _list_of_key(field, 'name')
 
 
 def array(field, fields):
-    return ', '.join(field)
+    return comma_separated(field)
 
 
 def value_list(field, fields):
@@ -401,6 +403,9 @@ def apply_field_renderers(custom_field_defs=None):
     custom_fields = OrderedDict()
     ret = OrderedDict()
 
+    # NOTE: Don't feed in field definitions acquired from getting
+    # createmeta or editmeta; the resulting dictionary is subtly
+    # different in an important way: field['id'] is field['fieldId']
     if not custom_field_defs:
         for field in _base_fields:
             if field['id'] in _ignore_fields:

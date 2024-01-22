@@ -38,6 +38,15 @@ def _check_fields(issue, name):
     return None
 
 
+class JIRAWrapper(JIRA):
+    # Ensures we never call fields() twice, to save API calls
+
+    def fields(self):
+        if not hasattr(self, '_fields_cache_value_raw'):
+            self._fields_cache_value_raw = super().fields()
+        return self._fields_cache_value_raw
+
+
 class Jirate(object):
     """High-level wrapper for python-jira"""
     def __init__(self, jira):
@@ -215,7 +224,7 @@ class Jirate(object):
         if '@' not in username:
             return username
 
-        users = self.jira.search_users(username)
+        users = self.jira.search_users(query=username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
         elif not users:
@@ -333,7 +342,7 @@ class Jirate(object):
         """
         return self.move(issues, 'Closed')
 
-    def create(self, **args):
+    def create(self, field_definitions=None, **args):
         """Create a new issue using key/value pairs
 
         Parameters:
@@ -353,12 +362,11 @@ class Jirate(object):
             args['project'] = project
 
         # Transmogrify other fields
-        new_args = transmogrify_input(**args)
-
+        new_args = transmogrify_input(field_definitions, **args)
         ret = self.jira.create_issue(**new_args)
         return ret
 
-    def update_issue(self, issue_alias, **kwargs):
+    def update_issue(self, issue_alias, field_definitions=None, **kwargs):
         """Update an issue using key/value pairs
 
         Parameters:
@@ -617,8 +625,7 @@ class JiraProject(Jirate):
     def refresh(self):
         if not self._config:
             self._config = {'states': {},
-                            'issue_map': {},
-                            'issue_rev_map': {}}
+                            'issue_map': {}}
 
         self.refresh_lists()
 
@@ -761,13 +768,13 @@ class JiraProject(Jirate):
 
         return self.create(**args)
 
-    def create(self, **args):
+    def create(self, field_definitions=None, **args):
         # override so we can index our value
         if 'project' not in args:
             args['project'] = self.project_name
         if 'issuetype' not in args:
             args['issuetype'] = 'Task'
-        ret = super().create(**args)
+        ret = super().create(field_definitions, **args)
         self._index_issue(ret)
         return ret
 
@@ -838,14 +845,14 @@ class JiraProject(Jirate):
         return copy.copy(self._config)
 
     def get_user_data(self, key):
-        if key in ('states', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         if key in self._config:
             return copy.copy(self._config[key])
         return None
 
     def set_user_data(self, key, userdata):
-        if key in ('states', 'issue_map', 'issue_rev_map'):
+        if key in ('states', 'issue_map'):
             return KeyError('Reserved configuration keyword: ' + key)
         self._config[key] = copy.copy(userdata)
 
@@ -857,7 +864,7 @@ def get_jira(jconfig):
       jconfig: dict of 3 keys: url, token, proxies (optional)
 
     Returns:
-      jira.JIRA
+      JIRAWrapper
     """
     if 'url' not in jconfig:
         print('No JIRA URL specified')
@@ -868,4 +875,4 @@ def get_jira(jconfig):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
-    return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
+    return JIRAWrapper(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])

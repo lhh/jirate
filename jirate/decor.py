@@ -72,13 +72,23 @@ def parse_params(arg):
     val = ''
     for item in stuff:
         if item == next_param:
-            ret.append(val)
+            ret.append(val.strip())
             val = ''
             continue
         val = val + ''.join(item)
     if val:
-        ret.append(val)
+        ret.append(val.strip())
     return ret
+
+
+def comma_separated(item_list):
+    out = []
+    for item in item_list:
+        if item and ',' in item:
+            out.append(f'"{item}"')
+        else:
+            out.append(item)
+    return ', '.join(out)
 
 
 def truncate(arg, maxlen):
@@ -144,10 +154,30 @@ def hbar_under(text):
     hbar(tl)
 
 
-def nym(s):
-    z = s.lower().replace(' ', '_')
-    z.replace('\t', '_')
-    return z
+def nym(arg, underscore='+-. !?;:\'",\t', remove='()[]{}?<>/='):
+    '''
+    This is for allowing case and quote flexibility for strings when
+    searching dictionaries or other data sets based on user input (esp.
+    from the command line) where the likelihood of key collisions is
+    low. For example, if we want to search a dictionary, we'd check the
+    nym of the value provided with the nym of the key to see if they
+    match. This should not be used when likelihood of collisions is high.
+    (Origin: Greek word meaning "name")
+
+    Parameters:
+        arg (string): A string to create the nym for
+        underscore (string): A set of characters to replace with underscores
+        remove (string): A set of characters to remove from the return value
+
+    Returns:
+        ret (string): A lower-case string with characters translated
+                      or removed.
+    '''
+    if (ret := arg) not in ('', None):
+        tr = str.maketrans(underscore, '_' * len(underscore), remove)
+        ret = str(arg).lower().translate(tr) or '_'
+
+    return ret
 
 
 _pretty_print = PrettyPrinter(indent=4)

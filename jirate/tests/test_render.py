@@ -69,6 +69,7 @@ def test_render_code_override():
 
 field_test_params = 'field_id,field_name,value'
 field_test_info = [
+    pytest.param('components', 'Component/s', '"food, pork", "food, carrot"'),
     # Fixed in build (string)
     pytest.param('customfield_1234567', 'Fixed in Build', 'test-build-1'),
 
@@ -81,11 +82,12 @@ field_test_info = [
     # Array of Versions (names),
     pytest.param('customfield_1234570', 'Array of Versions', 'Version1, Version2'),
 
-    # Array of Users (email addresses),
-    pytest.param('customfield_1234571', 'Array of Users', 'one@two.com, two@two.com'),
+    # Array of Users (user names),
+    # TODO: Support setting arrays of users by email address
+    pytest.param('customfield_1234571', 'Array of Users', 'user-one, two@other.eml'),
 
     # Array of strings
-    pytest.param('customfield_1234572', 'Array of Strings', 'one, two, three'),
+    pytest.param('customfield_1234572', 'Array of Strings', 'one, two, "three, and four"'),
 
     # Array of groups (name?),
     pytest.param('customfield_1234573', 'Array of Groups', 'group1, group2'),
