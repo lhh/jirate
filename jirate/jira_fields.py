@@ -2,7 +2,7 @@
 
 import re  # NOQA
 from collections import OrderedDict
-from jirate.decor import pretty_date, vsep_print
+from jirate.decor import pretty_date, vsep_print, comma_separated
 
 
 #
@@ -10,7 +10,7 @@ from jirate.decor import pretty_date, vsep_print
 # suppressed.
 #
 def _list_of_key(field, key):
-    return ', '.join([item[key] for item in field])
+    return comma_separated([item[key] for item in field])
 
 
 def string(field, fields):
@@ -21,7 +21,7 @@ def auto_field(field, fields):
     if isinstance(field, str):
         return field
     if isinstance(field, list):
-        return ', '.join([str(item) for item in field])
+        return comma_separated([str(item) for item in field])
     if isinstance(field, dict):
         for key in ['name', 'value']:
             if key in field:
@@ -61,7 +61,7 @@ def user_list(field, fields):
 
 
 def array(field, fields):
-    return ', '.join(field)
+    return comma_separated(field)
 
 
 def value_list(field, fields):

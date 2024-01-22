@@ -16,7 +16,7 @@ import jsonschema
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate, render_matrix
+from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate, render_matrix, comma_separated
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
@@ -290,7 +290,7 @@ def issue_fields(args):
                         values.append(val['value'])
                     else:
                         values.append(val['id'])
-                fvalue = ', '.join(values)
+                fvalue = comma_separated(values)
             vsep_print(' ', fname, nlen, fvalue)
         return (0, False)
 
@@ -399,7 +399,7 @@ def print_creation_fields(metadata):
                     values.append(val['value'])
                 else:
                     values.append(val['id'])
-            fvalue = ', '.join(values)
+            fvalue = comma_separated(values)
         vsep_print(' ', fname, nlen, req, 1, fvalue)
 
 

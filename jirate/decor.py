@@ -81,6 +81,16 @@ def parse_params(arg):
     return ret
 
 
+def comma_separated(item_list):
+    out = []
+    for item in item_list:
+        if item and ',' in item:
+            out.append(f'"{item}"')
+        else:
+            out.append(item)
+    return ', '.join(out)
+
+
 def truncate(arg, maxlen):
     if arg and maxlen and len(arg) > maxlen:
         arg = arg[:maxlen - 1] + '…'
