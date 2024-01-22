@@ -12,6 +12,10 @@ def in_number(value):
     return float(value)
 
 
+def in_key(value):
+    return {'key': value}
+
+
 def in_name(value):
     return {'name': value}
 
@@ -40,6 +44,7 @@ _input_renderers = {
     'version': in_name,
     'securitylevel': in_name,
     'option-with-child': in_owc,
+    'issuelink': in_key,
     'user': in_string   # When setting array, you specify 'name': name
                         # When setting assignee, you just give the name
                         # as a string

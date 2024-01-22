@@ -101,8 +101,8 @@ field_test_info = [
     # Datetime value
     pytest.param('customfield_1234576', 'Datetime Value', '2019-12-24 21:10:00 EST'),
 
-    # Related Issue (issue key) - TODO
-    # assert render_field_data('customfield_1234577','TEST-2', ???),
+    # Related Issue (issue key)
+    pytest.param('customfield_1234577', 'Related Issue', 'TEST-2'),
 
     # Option (value),
     pytest.param('customfield_1234578', 'Option Value', 'option_one'),
