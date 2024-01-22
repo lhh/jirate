@@ -55,7 +55,9 @@ def user(field, fields):
 
 
 def user_list(field, fields):
-    return _list_of_key(field, 'emailAddress')
+    # Until we take email addresses as input, we should use
+    # user names only when presenting lists of users
+    return _list_of_key(field, 'name')
 
 
 def array(field, fields):

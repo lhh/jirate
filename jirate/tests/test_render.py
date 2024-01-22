@@ -81,8 +81,9 @@ field_test_info = [
     # Array of Versions (names),
     pytest.param('customfield_1234570', 'Array of Versions', 'Version1, Version2'),
 
-    # Array of Users (email addresses),
-    pytest.param('customfield_1234571', 'Array of Users', 'one@two.com, two@two.com'),
+    # Array of Users (user names),
+    # TODO: Support setting arrays of users by email address
+    pytest.param('customfield_1234571', 'Array of Users', 'user-one, two@other.eml'),
 
     # Array of strings
     pytest.param('customfield_1234572', 'Array of Strings', 'one, two, three'),
