@@ -72,12 +72,12 @@ def parse_params(arg):
     val = ''
     for item in stuff:
         if item == next_param:
-            ret.append(val)
+            ret.append(val.strip())
             val = ''
             continue
         val = val + ''.join(item)
     if val:
-        ret.append(val)
+        ret.append(val.strip())
     return ret
 
 

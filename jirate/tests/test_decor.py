@@ -9,6 +9,7 @@ def test_parse_simple():
 
 def test_parse_commas():
     assert parse_params('arg,barg') == ['arg', 'barg']
+    assert parse_params('"Comma,Test, ", 2') == ['Comma,Test,', "2"]
 
 
 def test_parse_spaces():
