@@ -45,6 +45,7 @@ _input_renderers = {
     'securitylevel': in_name,
     'option-with-child': in_owc,
     'issuelink': in_key,
+    'resolution': in_name,
     'user': in_string   # When setting array, you specify 'name': name
                         # When setting assignee, you just give the name
                         # as a string
