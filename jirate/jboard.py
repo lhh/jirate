@@ -478,7 +478,6 @@ class Jirate(object):
         """
         if isinstance(issue, str):
             issue = self.issue(issue)
-        possible = {}
         url = os.path.join(issue.raw['self'], 'transitions?expand=transitions.fields')
         transitions = json_loads(self.jira._session.get(url))
         if transitions:

@@ -104,7 +104,7 @@ def allowed_value_validate(field_name, values, allowed_values=None):
             for key in ['name', 'value']:
                 if key not in av:
                     continue
-                if val not in (av[key], nym(av[key])):
+                if val not in (av[key], nym(av[key]), av[key].lower()):
                     continue
                 ret.append(av[key])
                 found = True
