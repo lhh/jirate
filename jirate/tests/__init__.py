@@ -264,6 +264,23 @@ fake_fields = [
 fake_metadata = {val['id']: val for val in fake_fields}
 
 
+fake_transitions = {'expand': 'transitions',
+                    'transitions': [{'id': '11', 'name': 'New', 'to': {'name': 'New', 'id': '10000'}},
+                                    {'id': '12', 'name': 'In Progress', 'to': {'name': 'In Progres', 'id': '10001'}},
+                                    {'id': '13', 'name': 'Done', 'to': {'name': 'Done', 'id': '10002'},
+                                     'fields':
+                                         {'resolution': {
+                                             'name': 'Resolution',
+                                             'fieldId': 'resolution',
+                                             'schema': {
+                                                 'type': 'resolution',
+                                                 'system': 'resolution'},
+                                             'operations': ['set'],
+                                             'allowedValues': [{'name': 'Done'}, {'name': 'Won\'t Do'}, {'name': 'Duplicate'}]}}},
+                                    {'id': '14', 'name': 'New', 'to': {'name': 'New', 'id': '10003'}}]
+                    }
+
+
 fake_issues = {
     'TEST-1': {'expand': 'renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations',
                'fields': {'aggregateprogress': {'progress': 0, 'total': 0},
@@ -468,17 +485,25 @@ fake_issues = {
 
 
 class fake_jira_session():
+    def __init__(self):
+        self.get_urls = []
+        self.post_urls = {}
+        self.delete_urls = []
+
     def get(self, url):
-        pass
+        self.get_urls.append(url)
 
     def post(self, url, data=None):
-        pass
+        self.post_urls[url] = data
 
     def delete(self, url):
-        pass
+        self.delete_urls.append(url)
 
     def close(self):
         pass
+
+    def reset(self):
+        self.__init__()
 
 
 class fake_jira(JIRA):
