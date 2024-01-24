@@ -144,21 +144,11 @@ def print_issues(issue_list, args=None):
 
 
 def print_users(users):
-    sep = f' {vseparator} '
-    nsize = len('Name')
-    ksize = len('User Name')
-    msize = len('Email Address')
+    matrix = [['Name', 'User Name', 'Email Address']]
 
     for user in users:
-        nsize = max(nsize, len(user.displayName))
-        ksize = max(ksize, len(user.name))
-        msize = max(msize, len(user.emailAddress))
-
-    header = 'Name'.ljust(nsize) + sep + 'User Name'.ljust(ksize) + sep + 'Email Address'.ljust(msize)
-    print(header)
-    hbar(len(header), [nsize, ksize, msize])
-    for user in users:
-        vsep_print(None, user.displayName, nsize, user.name, ksize, user.emailAddress)
+        matrix.append([user.displayName, user.name, user.emailAddress])
+    render_matrix(matrix)
 
 
 def search_jira(args):
