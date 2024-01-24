@@ -861,19 +861,26 @@ def component_list(args):
     comp_info = {}
     for comp in comps_data:
         if not args.search or re.search(args.search, comp.raw['name']) or not args.quiet and 'description' in comp.raw and re.search(args.search, comp.raw['description']):
+            name = comp.raw['name']
             if 'description' not in comp.raw:
-                comp_info[comp.raw['name']] = ''
+                comp_info[name] = {'name': name, 'description': ''}
             else:
-                comp_info[comp.raw['name']] = comp.raw['description'].strip()
+                comp_info[name] = {'name': name, 'description': comp.raw['description'].strip()}
     comp_names = sorted(list(comp_info.keys()))
+
+    if args.fields:
+        fields = parse_field_widths(args.fields, allowed_fields=['name', 'description'])
+    else:
+        fields = OrderedDict({'name': 0, 'description': 0})
 
     if args.quiet:
         for name in comp_names:
             print(name)
     else:
-        matrix = [['name', 'description']]
+        keys = [fk for fk in fields.keys()]
+        matrix = [keys]
         for name in comp_names:
-            matrix.append([name, comp_info[name]])
+            matrix.append([truncate(comp_info[name][fk], fields[fk]) for fk in keys])
         render_matrix(matrix)
 
     return (0, False)
@@ -1036,6 +1043,7 @@ def create_parser():
     cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
 
     cmd = parser.command('components', help='List components', handler=component_list)
+    cmd.add_argument('-f', '--fields', help='Field delimiters', default=None)
     cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
     cmd.add_argument('-s', '--search', help='Search by regular expression')
 
