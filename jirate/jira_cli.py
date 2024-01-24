@@ -45,10 +45,13 @@ def close_issues(args):
     return (ret, False)
 
 
-def print_issues_by_field(issue_list, args=None):
-    # TODO: sort by column
-    raw_fields = parse_params(args.fields)
-    fields = OrderedDict({'key': 0})
+def parse_field_widths(field_string, allowed_fields=None, ignore_fields=None, starting_fields=None):
+    if not starting_fields:
+        fields = OrderedDict()
+    else:
+        fields = starting_fields
+
+    raw_fields = parse_params(field_string)
     for field in raw_fields:
         if ':' in field:
             val = field.split(':')
@@ -56,9 +59,18 @@ def print_issues_by_field(issue_list, args=None):
             maxlen = max(3, int(val[1]))
         else:
             maxlen = 0
-        if field == 'key':
+        if ignore_fields and field in ignore_fields:
+            continue
+        if allowed_fields and field not in allowed_fields:
             continue
         fields[field] = maxlen
+    return fields
+
+
+def print_issues_by_field(issue_list, args=None):
+    # TODO: sort by column
+    fields = OrderedDict({'key': 0})
+    fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
 
     output = []
     output.append(list(fields.keys()))
