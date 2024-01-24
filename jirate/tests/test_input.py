@@ -126,7 +126,7 @@ def test_trans_missing_field():
 
 def test_trans_user_value():
     inp = {'User Value': 'user1'}
-    out = {'customfield_1234580': 'user1'}
+    out = {'customfield_1234580': {'name': 'user1'}}
 
     assert transmogrify_input(fake_metadata, **inp) == out
 
