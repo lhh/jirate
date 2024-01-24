@@ -1,12 +1,21 @@
 #!/usr/bin/env python
 
 from jirate.jboard import Jirate
-from jirate.tests import fake_jira, fake_user
+from jirate.tests import fake_jira, fake_user, fake_transitions
 
 import pytest  # NOQA
+import types
 
 
 fake_jirate = Jirate(fake_jira())
+
+
+def transitions_override(obj, issue):
+    return fake_transitions['transitions']
+
+
+# XXX we don't have subs in at the level we need, so fake transitions this way
+fake_jirate.transitions = types.MethodType(transitions_override, fake_jirate)
 
 
 def test_jirate_myself():
@@ -72,3 +81,29 @@ def test_jirate_customfields():
     # Negative test
     with pytest.raises(AttributeError):
         issue.field('arglebargle')
+
+
+def test_transition_resolutions():
+    issue = fake_jirate.issue('TEST-1')
+    assert fake_jirate.transitions(issue) == fake_transitions['transitions']
+
+    fake_jirate.jira._session.reset()
+    assert fake_jirate.move('TEST-1', 'done') == [issue]
+    assert fake_jirate.jira._session.post_urls == {'https://domain.com/rest/api/2/issue/1000001/transitions': {'transition': {'id': '13'}}}
+
+    fake_jirate.jira._session.reset()
+    assert fake_jirate.move('TEST-1', 'done', resolution='won\'t do') == [issue]
+    assert fake_jirate.jira._session.post_urls == {'https://domain.com/rest/api/2/issue/1000001/transitions': {'fields': {'resolution': {'name': 'Won\'t Do'}}, 'transition': {'id': '13'}}}
+
+    fake_jirate.jira._session.reset()
+    assert fake_jirate.move('TEST-1', 'done', resolution='done') == [issue]
+    assert fake_jirate.jira._session.post_urls == {'https://domain.com/rest/api/2/issue/1000001/transitions': {'fields': {'resolution': {'name': 'Done'}}, 'transition': {'id': '13'}}}
+
+
+def test_transition_bad_field():
+    issue = fake_jirate.issue('TEST-1')
+    assert fake_jirate.transitions(issue) == fake_transitions['transitions']
+
+    fake_jirate.jira._session.reset()
+    with pytest.raises(ValueError):
+        assert fake_jirate.move('TEST-1', 'done', beastly_fido='odif_yltsaeb') == [issue]

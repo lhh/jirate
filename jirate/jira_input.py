@@ -45,6 +45,7 @@ _input_renderers = {
     'securitylevel': in_name,
     'option-with-child': in_owc,
     'issuelink': in_key,
+    'resolution': in_name,
     'user': in_string   # When setting array, you specify 'name': name
                         # When setting assignee, you just give the name
                         # as a string
@@ -103,7 +104,7 @@ def allowed_value_validate(field_name, values, allowed_values=None):
             for key in ['name', 'value']:
                 if key not in av:
                     continue
-                if val not in (av[key], nym(av[key])):
+                if val not in (av[key], nym(av[key]), av[key].lower()):
                     continue
                 ret.append(av[key])
                 found = True

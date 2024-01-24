@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from jirate.tests import fake_metadata
+from jirate.tests import fake_metadata, fake_transitions
 from jirate.jira_input import transmogrify_input
 
 import os
@@ -141,3 +141,7 @@ def test_trans_version_value():
 def test_trans_missing_version():
     with pytest.raises(ValueError):
         transmogrify_input(fake_metadata, **{'version_value': '999'})
+
+
+def test_trans_metadata():
+    transition_fields = fake_transitions

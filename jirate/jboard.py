@@ -325,7 +325,7 @@ class Jirate(object):
                 ret.append(issue)
         return ret
 
-    def close(self, issues):
+    def close(self, issues, **args):
         """Close an issue
 
         XXX this might not be a usable API and/or may be a higher
@@ -336,11 +336,13 @@ class Jirate(object):
 
         Parameters:
           issues: list of issue keys or IDs (list of string)
+          args: dictionary of fields to set on transition
+                (resolution only really known right now)
 
         Returns:
           requests.Response
         """
-        return self.move(issues, 'Closed')
+        return self.move(issues, 'Closed', **args)
 
     def create(self, field_definitions=None, **args):
         """Create a new issue using key/value pairs
@@ -472,27 +474,25 @@ class Jirate(object):
           issue_alias: key or issue ID (string)
 
         Returns:
-          dict - {'state': 'id', 'state2': 'id2'}
+          list of transitions w/ metadata
         """
         if isinstance(issue, str):
             issue = self.issue(issue)
-        possible = {}
-        url = os.path.join(issue.raw['self'], 'transitions')
+        url = os.path.join(issue.raw['self'], 'transitions?expand=transitions.fields')
         transitions = json_loads(self.jira._session.get(url))
-        for transition in transitions['transitions']:
-            possible[transition['to']['id']] = {'id': transition['id'], 'name': transition['to']['name']}
-        if not possible:
-            return None
-        return possible
+        if transitions:
+            return transitions['transitions']
 
     def _find_transition(self, issue, status):
         transitions = self.transitions(issue)
-        for state_id in transitions:
-            if transitions[state_id]['name'] == status or nym(transitions[state_id]['name']) == status or str(state_id) == str(status):
-                return transitions[state_id]['id']
+        for transition in transitions:
+            trans_state = transition['to']['name']
+            trans_state_id = transition['to']['id']
+            if trans_state == status or nym(trans_state) == status or str(status) == str(trans_state_id):
+                return transition
         return None
 
-    def move(self, issue_list, status):
+    def move(self, issue_list, status, **args):
         """Execute a transition to move a set of issues to the desired status
 
         Jira doesn't have a status you can update; you have to retrieve possible
@@ -502,6 +502,7 @@ class Jirate(object):
         Parameters:
           issue_aliases: list keys or issue IDs (list of string)
           status: Desired status
+          **args: field=value pairs to set on transition
 
         Returns:
           list of successfully moved issues (list of string)
@@ -518,9 +519,17 @@ class Jirate(object):
             if not transition:
                 continue
 
+            data = {'transition': {'id': transition['id']}}
+            if args and 'fields' in transition:
+                new_args = transmogrify_input(transition['fields'], **args)
+                data['fields'] = new_args
+                if new_args == {}:
+                    oops = [args.keys()]
+                    raise ValueError(f'field(s) not allowed in transition: {oops}')
+
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
-            self.jira._session.post(url, data={'transition': {'id': transition}})
+            self.jira._session.post(url, data=data)
         return issues
 
     def link_types(self):

@@ -36,8 +36,11 @@ def move(args):
 
 def close_issues(args):
     ret = 0
+    close_args = {}
+    if args.resolution:
+        close_args['resolution'] = args.resolution
     for issue in args.target:
-        if not args.project.close(issue):
+        if not args.project.close(issue, **close_args):
             ret = 1
     return (ret, False)
 
@@ -766,7 +769,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         vsep_print(None, 'URL', lsize, issue_obj.permalink())
         trans = project.transitions(issue_obj.raw['key'])
         if trans:
-            vsep_print(' ', 'Next States', lsize, [tr['name'] for tr in trans.values()])
+            vsep_print(' ', 'Next States', lsize, [tr['name'] for tr in trans])
         else:
             vsep_print(None, 'Next States', lsize, 'No valid transitions; cannot alter status')
 
@@ -1068,6 +1071,7 @@ def create_parser():
     cmd.add_argument('issue', help='Existing Issue (more fields available here)', nargs='?')
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
+    cmd.add_argument('-r', '--resolution', help='Set resolution on transition')
     cmd.add_argument('target', nargs='+', help='Target issue(s)')
 
     cmd = parser.command('call-api', help='Call an API directly and print the resulting JSON', handler=call_api)
