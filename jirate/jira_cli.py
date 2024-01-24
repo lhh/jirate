@@ -200,13 +200,10 @@ def list_issues(args):
 
 def list_link_types(args):
     ltypes = args.project.link_types()
-    namelen = len('Outward')
+    matrix = [['Outward', 'Inward']]
     for lt in ltypes:
-        namelen = max(namelen, len(lt.outward))
-    blen = vsep_print(None, 'Outward', namelen, 'Inward')
-    hbar(blen)
-    for lt in ltypes:
-        vsep_print(None, lt.outward, namelen, lt.inward)
+        matrix.append([lt.outward, lt.inward])
+    render_matrix(matrix)
     return (0, True)
 
 
@@ -216,7 +213,7 @@ def list_states(args):
     for name in states:
         namelen = max(namelen, len(name))
     for name in states:
-        vsep_print(None, name, namelen, states[name]['name'])
+        vsep_print(None, 0, name, namelen, states[name]['name'])
     return (0, False)
 
 
@@ -260,12 +257,7 @@ def issue_fields(args):
         display = True
 
     if display:
-        nlen = 0
-        for field in fields:
-            if field.startswith('customfield_'):
-                nlen = max(nlen, len(nym(fields[field]['name'])))
-            else:
-                nlen = max(nlen, len(nym(field)))
+        matrix = [['Field', 'Allowed Values']]
         for field in fields:
             if field.startswith('customfield_'):
                 fname = nym(fields[field]['name'])
@@ -284,7 +276,8 @@ def issue_fields(args):
                     else:
                         values.append(val['id'])
                 fvalue = comma_separated(values)
-            vsep_print(' ', fname, nlen, fvalue)
+            matrix.append([fname, fvalue])
+        render_matrix(matrix)
         return (0, False)
 
     # TODO multi-field sets?
@@ -366,8 +359,7 @@ def print_creation_fields(metadata):
         else:
             nlen = max(nlen, len(nym(field)))
 
-    header = 'Field'.ljust(nlen) + '   R   ' + 'Allowed Values'
-    hbar_under(header)
+    matrix = [['Field', 'R', 'Allowed Values']]
 
     for field in fields:
         if fields[field]['name'] in ignore_fields:
@@ -393,7 +385,8 @@ def print_creation_fields(metadata):
                 else:
                     values.append(val['id'])
             fvalue = comma_separated(values)
-        vsep_print(' ', fname, nlen, req, 1, fvalue)
+        matrix.append([fname, req, fvalue])
+    render_matrix(matrix)
 
 
 # new_issue is way too easy. Let's make it *incredibly* complicated!
@@ -649,57 +642,32 @@ def print_labels(issue, prefix='Labels: '):
 
 def print_issue_links(issue):
     hbar_under('Issue Links')
-    # pass 1: Get the lengths so we can draw separators
-    sep = f' {vseparator} '
-    lsize = 0
-    rsize = 0
+    matrix = []
     for link in issue['issuelinks']:
         if 'outwardIssue' in link:
             text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
             status = link['outwardIssue']['fields']['status']['name']
-        elif 'inwardIssue' in link:
-            text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
-            status = link['inwardIssue']['fields']['status']['name']
-
-        if len(text) > lsize:
-            lsize = len(text)
-        if len(status) > rsize:
-            rsize = len(status)
-    # pass 2: print the stuff
-    for link in issue['issuelinks']:
-        if 'outwardIssue' in link:
-            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
-            status = link['outwardIssue']['fields']['status']
             desc = link['outwardIssue']['fields']['summary']
         elif 'inwardIssue' in link:
             text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
-            status = link['inwardIssue']['fields']['status']
+            status = link['inwardIssue']['fields']['status']['name']
             desc = link['inwardIssue']['fields']['summary']
         # color_string throws off length calculations
-        vsep_print(' ', text.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, desc)
+        matrix.append([text, status, desc])
+    render_matrix(matrix, False, False)
     print()
 
 
 def print_remote_links(links):
     hbar_under('External Links')
-
-    # pass 1: Get the lengths so we can draw separators
-    lsize = 0
-    rsize = 0
-    for link in links:
-        text = link.raw['object']['title']
-        lid = str(link.raw['id'])
-        if len(lid) > lsize:
-            lsize = len(lid)
-        if len(text) > rsize:
-            rsize = len(text)
-    # pass 2: print the stuff
+    matrix = []
     for link in links:
         # color_string throws off length calculations
         text = link.raw['object']['title']
         lid = str(link.raw['id'])
         url = link.raw['object']['url']
-        vsep_print(' ', lid.ljust(lsize), lsize, text.ljust(rsize), rsize, url)
+        matrix.append([lid, text, url])
+    render_matrix(matrix, False, False)
     print()
 
 
@@ -708,37 +676,20 @@ def _print_issue_list(header, issues):
     if not issues:
         return
     hbar_under(header)
-    # pass 1: Get the lengths so we can draw separators
-    sep = f' {vseparator} '
-    lsize = 0
-    rsize = 0
+    matrix = []
     for task in issues:
         if isinstance(task, str):
             task = issues[task]
         try:
             task_key = task.key
             status = task.raw['fields']['status']['name']
-        except AttributeError:
-            task_key = task['key']
-            status = task['fields']['status']['name']
-        if len(task_key) > lsize:
-            lsize = len(task_key)
-        if len(status) > rsize:
-            rsize = len(status)
-    # pass 2: print the stuff
-    for task in issues:
-        if isinstance(task, str):
-            task = issues[task]
-        try:
-            task_key = task.key
-            status = task.raw['fields']['status']
             summary = task.raw['fields']['summary']
         except AttributeError:
             task_key = task['key']
-            status = task['fields']['status']
+            status = task['fields']['status']['name']
             summary = task['fields']['summary']
-        # color_string throws off length calculations
-        vsep_print(' ', task_key.ljust(lsize) + sep + color_string(status['name'].ljust(rsize), status['statusCategory']['colorName']), lsize + rsize + 3, summary)
+        matrix.append([task_key, status, summary])
+    render_matrix(matrix, False, False)
     print()
 
 
@@ -751,17 +702,17 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
     lsize = max(lsize, len('Next States'))
 
-    vsep_print(' ', issue_obj.raw['key'], lsize, issue['summary'])
+    vsep_print(' ', 0, issue_obj.raw['key'], lsize, issue['summary'])
     render_issue_fields(issue, verbose, project.allow_code, lsize)
 
     if verbose:
-        vsep_print(' ', 'ID', lsize, issue_obj.raw['id'])
+        vsep_print(' ', 0, 'ID', lsize, issue_obj.raw['id'])
         vsep_print(None, 'URL', lsize, issue_obj.permalink())
         trans = project.transitions(issue_obj.raw['key'])
         if trans:
-            vsep_print(' ', 'Next States', lsize, [tr['name'] for tr in trans])
+            vsep_print(' ', 0, 'Next States', lsize, [tr['name'] for tr in trans])
         else:
-            vsep_print(None, 'Next States', lsize, 'No valid transitions; cannot alter status')
+            vsep_print(None, 0, 'Next States', lsize, 'No valid transitions; cannot alter status')
 
     print()
     if issue['description']:
