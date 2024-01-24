@@ -919,10 +919,10 @@ def get_project(project=None, config=None, config_file=None):
 
     jira = get_jira(jconfig)
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
-    if 'searches' in jconfig:
-        proj.set_user_data('searches', jconfig['searches'])
-    if 'default_fields' in jconfig:
-        proj.set_user_data('default_fields', jconfig['default_fields'])
+    for key in jconfig:
+        if key not in ['custom_fields', 'proxies', 'here_there_be_dragons', 'url', 'token', 'default_project', 'proxies']:
+            proj.set_user_data(key, jconfig[key])
+
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
         apply_field_renderers(proj.custom_fields)
