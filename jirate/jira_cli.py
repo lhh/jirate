@@ -56,7 +56,7 @@ def parse_field_widths(field_string, allowed_fields=None, ignore_fields=None, st
         if ':' in field:
             val = field.split(':')
             field = val[0]
-            maxlen = max(3, int(val[1]))
+            maxlen = int(val[1])
         else:
             maxlen = 0
         if ignore_fields and field in ignore_fields:

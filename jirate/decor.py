@@ -92,8 +92,11 @@ def comma_separated(item_list):
 
 
 def truncate(arg, maxlen):
-    if arg and maxlen and len(arg) > maxlen:
-        arg = arg[:maxlen - 1] + '…'
+    if arg and maxlen:
+        if maxlen > 0 and len(arg) > maxlen:
+            arg = arg[:maxlen - 1] + '…'
+        if maxlen < 0 and len(arg) > abs(maxlen):
+            arg = '…' + arg[maxlen:]
     return arg
 
 
