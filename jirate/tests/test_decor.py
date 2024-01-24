@@ -32,6 +32,11 @@ def test_truncate_exceed():
     assert truncate('abcd', 3) == 'ab…'
 
 
+def test_truncate_negative():
+    assert truncate('abc', -3) == 'abc'
+    assert truncate('abcd', -3) == '…cd'
+
+
 def test_comma_separated():
     str_val = 'one, two, "three, and four"'
     list_val = ['one', 'two', 'three, and four']

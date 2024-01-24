@@ -96,7 +96,7 @@ def truncate(arg, maxlen):
         if maxlen > 0 and len(arg) > maxlen:
             arg = arg[:maxlen - 1] + '…'
         if maxlen < 0 and len(arg) > abs(maxlen):
-            arg = '…' + arg[maxlen:]
+            arg = '…' + arg[maxlen+1:]
     return arg
 
 
