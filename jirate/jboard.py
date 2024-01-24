@@ -523,6 +523,9 @@ class Jirate(object):
             if args and 'fields' in transition:
                 new_args = transmogrify_input(transition['fields'], **args)
                 data['fields'] = new_args
+                if new_args == {}:
+                    oops = [args.keys()]
+                    raise ValueError(f'field(s) not allowed in transition: {oops}')
 
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
