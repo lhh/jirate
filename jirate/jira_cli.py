@@ -16,7 +16,7 @@ import jsonschema
 
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
-from jirate.decor import md_print, pretty_date, color_string, hbar_under, hbar, hbar_over, nym, vsep_print, vseparator, parse_params, truncate, render_matrix, comma_separated
+from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym, vsep_print, parse_params, truncate, render_matrix, comma_separated
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
