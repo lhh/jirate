@@ -869,7 +869,12 @@ def component_list(args):
     comp_names = sorted(list(comp_info.keys()))
 
     if args.fields:
-        fields = parse_field_widths(args.fields, allowed_fields=['name', 'description'])
+        field_arg = args.fields
+    else:
+        field_arg = args.project.get_user_data('component_fields')
+
+    if field_arg:
+        fields = parse_field_widths(field_arg, allowed_fields=['name', 'description'])
     else:
         fields = OrderedDict({'name': 0, 'description': 0})
 
