@@ -2,6 +2,10 @@
 
 from jira.client import JIRA
 from jira.resources import Issue, dict2resource
+from jirate.args import GenericArgs
+from jirate.decor import pretty_print
+
+testx = 1
 
 fake_user = {'self': 'https://domain.com/rest/api/2/user?username=porkchop', 'key': 'porkchop', 'name': 'porkchop', 'emailAddress': 'porkchop@domain.com', 'avatarUrls': {'48x48': 'https://domain.com/secure/useravatar?avatarId=1', '24x24': 'https://domain.com/secure/useravatar?size=small&avatarId=1', '16x16': 'https://domain.com/secure/useravatar?size=xsmall&avatarId=1',
                                                                                                                                                                           '32x32': 'https://domain.com/secure/useravatar?size=medium&avatarId=1'}, 'displayName': 'Chop Pork', 'active': True, 'deleted': False, 'timeZone': 'America/New_York', 'locale': 'en_US', 'groups': {'size': 9, 'items': []}, 'applicationRoles': {'size': 1, 'items': []}, 'expand': 'groups,applicationRoles'}
@@ -530,7 +534,16 @@ class fake_jira(JIRA):
         pass
 
     def create_issue(self, **args):
-        pass
+        global testx
+
+        ret = GenericArgs()
+        proj = args['project']
+        ret.key = f'{proj}-{testx}'
+        testx = testx + 1
+        ret.raw = {'fields': args}
+        ret.raw['fields']['project'] = {'key': proj}
+        pretty_print(ret)
+        return ret
 
     def issue(self, issue_key):
         if issue_key.upper() not in fake_issues:
