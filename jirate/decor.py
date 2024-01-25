@@ -92,8 +92,11 @@ def comma_separated(item_list):
 
 
 def truncate(arg, maxlen):
-    if arg and maxlen and len(arg) > maxlen:
-        arg = arg[:maxlen - 1] + '…'
+    if arg and maxlen:
+        if maxlen > 0 and len(arg) > maxlen:
+            arg = arg[:maxlen - 1] + '…'
+        if maxlen < 0 and len(arg) > abs(maxlen):
+            arg = '…' + arg[maxlen+1:]
     return arg
 
 
@@ -115,7 +118,7 @@ def pretty_date(date_str):
     return date_obj.astimezone().strftime('%F %T %Z')
 
 
-def hbar(tl, widths=None):
+def hbar(tl, widths=None, separator='╋'):
     if tl == 1:
         val = '┄'
     elif tl == 2:
@@ -133,7 +136,7 @@ def hbar(tl, widths=None):
     pos = 0
     for idx in range(0, len(widths) - 1):
         pos = pos + widths[idx] + 2
-        ret[pos - 1] = '╋'
+        ret[pos - 1] = separator
         pos = pos + 1
     print(''.join(ret))
 
@@ -194,12 +197,12 @@ def pretty_print(obj):
 # linesplit: None = trail off with '..', or separator
 #            character (space, comma, etc.)
 #
-# vsep_print(arg1, width1, arg2, width2, ... argN)
+# vsep_print(arg1, screen_width, width1, arg2, width2, ... argN)
 #
 vseparator = '┃'
 
 
-def vsep_print(linesplit=None, *vals):
+def vsep_print(linesplit=None, screen_width=0, *vals):
     global _termsize
     global vseparator
 
@@ -209,7 +212,8 @@ def vsep_print(linesplit=None, *vals):
     widths = []
     consumed = 0
 
-    screen_width = shutil.get_terminal_size()[0]
+    if not screen_width:
+        screen_width = shutil.get_terminal_size()[0]
     args = list(vals)
 
     if not args:
@@ -296,7 +300,8 @@ def vsep_print(linesplit=None, *vals):
     return screen_width
 
 
-def render_matrix(matrix):
+def render_matrix(matrix, header=True, header_bar=True):
+    screen_width = shutil.get_terminal_size()[0]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
     # last field
@@ -310,18 +315,28 @@ def render_matrix(matrix):
             else:
                 vlen = len(str(row[val]))
             col_widths[val] = max(col_widths[val], vlen)
-    line = []
-    for item in range(0, len(col_widths)):
-        line.extend([matrix[0][item], col_widths[item]])
-    line.pop()
-    # XXX Do we want to render full-width here?
-    width = vsep_print(' ', *line)
-    if not width:
-        return
-    hbar(width, col_widths)
-    for row in matrix[1:]:
+    if header:
+        start = 1
+        line = []
+        for item in range(0, len(col_widths)):
+            line.extend([matrix[0][item], col_widths[item]])
+        line.pop()
+        # XXX Do we want to render full-width here?
+        width = vsep_print(' ', screen_width, *line)
+        if not width:
+            return
+    else:
+        width = min(sum(col_widths) + 3 * len(col_widths) + 1, screen_width)
+        start = 0
+    if header_bar:
+        if header:
+            sep = '╋'
+        else:
+            sep = '┳'
+        hbar(width, col_widths, sep)
+    for row in matrix[start:]:
         line = []
         for item in range(0, len(col_widths)):
             line.extend([row[item], col_widths[item]])
         line.pop()
-        vsep_print(' ', *line)
+        vsep_print(' ', screen_width, *line)

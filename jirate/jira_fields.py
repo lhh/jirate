@@ -532,5 +532,5 @@ def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
         field_name, val = render_field_data(field_key, issue, verbose, allow_code)
         if not val:
             continue
-        vsep_print(' ', field_name, width, val)
+        vsep_print(' ', 0, field_name, width, val)
         # print(field_name.ljust(width), sep, val)
