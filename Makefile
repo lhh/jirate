@@ -1,8 +1,12 @@
 all: container-build jirate-c
 
 container-build:
-	podman images | grep '^localhost/jirate' && echo "Please remove existing image: podman image rm localhost/jirate" && false
-	podman build . -t jirate
+	if podman images | grep -q '^localhost/jirate'; then \
+		echo "Please remove existing container first"; \
+		echo "  podman image rm -f localhost/jirate"; \
+	else \
+		podman build . -t jirate; \
+	fi
 
 jirate-c: jirate-c.in
 	cat $^ > $@
