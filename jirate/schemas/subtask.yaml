@@ -14,5 +14,5 @@ properties:
     description: Description for the JIRA sub-task. Can be multiple lines and use JIRA markup.
     type: string
 
-# Fail validation if template sets values not defined in the schema
-additionalProperties: False
+# Don't fail validation if template sets values not defined in the schema for now
+additionalProperties: True

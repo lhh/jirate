@@ -61,7 +61,9 @@ setuptools.setup(
     author_email='lhh@redhat.com',
     maintainer='Lon Hohberger',
     maintainer_email='lon@metamorphism.com',
-    packages=['jirate'],
+    packages=['jirate', 'jirate.schemas'],
+    package_data={'jirate.schemas': ['jirate/schemas/*']},
+    include_package_data=True,
     url='http://github.com/lhh/jirate',
     data_files=[("", ["LICENSE.txt"])],
     entry_points={
