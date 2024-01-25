@@ -365,8 +365,7 @@ class Jirate(object):
 
         # Transmogrify other fields
         new_args = transmogrify_input(field_definitions, **args)
-        ret = self.jira.create_issue(**new_args)
-        return ret
+        return self.jira.create_issue(**new_args)
 
     def update_issue(self, issue_alias, field_definitions=None, **kwargs):
         """Update an issue using key/value pairs
@@ -685,8 +684,8 @@ class JiraProject(Jirate):
         return ret
 
     def _index_issue(self, issue):
-        if issue.raw['key'] not in self._config['issue_map']:
-            self._config['issue_map'][issue.raw['key']] = issue
+        if issue.key not in self._config['issue_map']:
+            self._config['issue_map'][issue.key] = issue
 
     def _index_issues(self, issues):
         if 'issue_map' not in self._config:
