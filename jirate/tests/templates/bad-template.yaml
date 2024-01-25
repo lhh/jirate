@@ -20,10 +20,9 @@ issues:
       - summary: "Eat a snack as a reward for all my hard work"
         description: "Description for subtask 3"
   - issue_type: "Story"
-    summary: "Make sure I stop using the default template"
-    deception: "<<<----- that's not how you spell 'description'!"
+    summery: "Make sure I stop using the default template"
     subtasks:
-      - summary: "Obtain or create custom templates"
+      - summery: "Obtain or create custom templates"
         description: "Description for subtask 1"
       - summary: "Take a well-deserved nap as a reward for all my hard work"
         description: "Description for subtask 2"
