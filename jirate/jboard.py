@@ -830,7 +830,9 @@ class JiraProject(Jirate):
         return self._issue_types
 
     # Returns a dict that JIRA should just give us.
-    def issue_metadata(self, issue_type_or_id):
+    def issue_metadata(self, issue_type_or_id, project_key=None):
+        if not project_key:
+            project_key = self.project_name
         itype = None
         for issuetype in self.issue_types:
             if issuetype.id == issue_type_or_id or nym(issuetype.name) == nym(issue_type_or_id):
@@ -842,7 +844,7 @@ class JiraProject(Jirate):
         start = 0
         chunk_len = 50
         while True:
-            new_fields = self.jira.project_issue_fields(self.project_name, itype.id, startAt=start, maxResults=chunk_len)
+            new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
             for field in new_fields:
                 fields.append(field.raw)
             if new_fields.isLast:
