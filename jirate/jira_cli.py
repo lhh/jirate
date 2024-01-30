@@ -719,7 +719,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
 
     if verbose:
         vsep_print(' ', 0, 'ID', lsize, issue_obj.raw['id'])
-        vsep_print(None, 'URL', lsize, issue_obj.permalink())
+        vsep_print(None, 0, 'URL', lsize, issue_obj.permalink())
         trans = project.transitions(issue_obj.raw['key'])
         if trans:
             vsep_print(' ', 0, 'Next States', lsize, [tr['name'] for tr in trans])
