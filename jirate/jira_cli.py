@@ -507,12 +507,8 @@ def create_from_template(args):
     for issue in template['issues']:
         reserved_fields = ['subtasks']
         required_fields = ['summary']
-        translate_fields = {'issue_type': 'issuetype'}
 
-        # These may be overridden
-        start_fields = {'issuetype': 'Task', 'project': args.project.project_name}
-
-        creation_fields = _parse_creation_args(issue, required_fields, reserved_fields, translate_fields, start_fields)
+        creation_fields = _parse_creation_args(issue, required_fields, reserved_fields)
 
         # Cache all metadata now (so we can debug subtask creation if needed.
         issuetype = creation_fields['issuetype']
@@ -523,7 +519,6 @@ def create_from_template(args):
         metadata = metadata_by_type[issuetype]
 
         filed = {}
-        # args.project.jira = fake_jira()  # debugging
         parent = args.project.create(metadata['fields'], **creation_fields)
         filed['parent'] = parent.key
 
