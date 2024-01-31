@@ -488,13 +488,6 @@ def _parse_creation_args(issue_data, required_fields=None, reserved_fields=None,
 
 
 def create_from_template(args):
-    # Cache for issue createmeta information
-    metadata_by_type = {}
-    _subtask = 'Sub-task'  # To prevent case / typos / etc
-
-    # TODO: consider using Jira's bulk issue creation
-    # TODO: support reading arbitrary fields from the template
-    all_filed = []  # We keep issue keys here because we'll need to refresh anyway
     with open(args.template_file, 'r') as yaml_file:
         template = yaml.safe_load(yaml_file)
 
@@ -503,6 +496,32 @@ def create_from_template(args):
     except jsonschema.exceptions.ValidationError as e:
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
+
+    all_filed = _create_from_template(args, template)
+
+    # Need to refresh to that issues get re-fetched to include subtasks
+    # TODO: Have subtask() update parent issues in _config['issue_map']
+    args.project.delete_issue_map()
+    for filed in all_filed:
+        if args.quiet:
+            if 'subtasks' in filed:
+                print(filed['parent'] + ': ' + ', '.join(filed['subtasks']))
+            else:
+                print(filed['parent'])
+        else:
+            print_issue(args.project, args.project.issue(filed['parent']), False)
+    return (0, True)
+
+
+
+def _create_from_template(args, template):
+    # Cache for issue createmeta information
+    metadata_by_type = {}
+    _subtask = 'Sub-task'  # To prevent case / typos / etc
+
+    # TODO: consider using Jira's bulk issue creation
+    # TODO: support reading arbitrary fields from the template
+    all_filed = []  # We keep issue keys here because we'll need to refresh anyway
 
     for issue in template['issues']:
         reserved_fields = ['subtasks']
@@ -536,18 +555,7 @@ def create_from_template(args):
                 filed['subtasks'].append(child.key)
         all_filed.append(filed)
 
-    # Need to refresh to that issues get re-fetched to include subtasks
-    # TODO: Have subtask() update parent issues in _config['issue_map']
-    args.project.delete_issue_map()
-    for filed in all_filed:
-        if args.quiet:
-            if 'subtasks' in filed:
-                print(filed['parent'] + ': ' + ', '.join(filed['subtasks']))
-            else:
-                print(filed['parent'])
-        else:
-            print_issue(args.project, args.project.issue(filed['parent']), False)
-    return (0, True)
+    return all_filed
 
 
 def validate_template(args):
