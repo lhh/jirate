@@ -169,3 +169,37 @@ def test_create_from_template_customfield():
     assert issue == [{'parent': 'TEST-2'}]
     issue = fake_jirate.issue('TEST-2')
     assert issue == {'key': 'TEST-2', 'raw': {'fields': {'description': 'Test of custom field transmogrify', 'issuetype': 'Task', 'customfield_1234567': 'abc123', 'project': {'key': 'TEST'}, 'summary': 'custom field test'}}}
+
+
+def test_create_from_template_subtasks():
+    # TEST-3/4 pop out because we are reusing the above fake_jirate
+    template = {'issues': [
+                {'summary': 'Sub Tasks Check',
+                 'issuetype': 'Task',
+                 'subtasks': [
+                     {'summary': 'Child Task'}
+                 ]}]}
+
+    _create_from_template(args, template)
+    # Creates TEST-3 and TEST-4
+    assert fake_jirate.issue('TEST-3') == {'key': 'TEST-3', 'raw': {'fields': {'issuetype': 'Task', 'project': {'key': 'TEST'}, 'summary': 'Sub Tasks Check'}}}
+    assert fake_jirate.issue('TEST-4') == {'key': 'TEST-4', 'raw': {'fields': {'issuetype': 'Sub-task', 'parent': 'TEST-3', 'project': {'key': 'TEST'}, 'summary': 'Child Task'}}}
+
+
+def test_create_from_template_multiple_types():
+    # TEST-5/6 pop out because we are reusing the above fake_jirate
+    template = {'issues': [
+                {'summary': 'Multitype1',
+                 'issuetype': 'Task'
+                 },
+                {'summary': 'Multitype2',
+                 'issuetype': 'Bug',
+                 'subtasks': [
+                     {'summary': 'Bug Subtask'}
+                 ]}]}
+
+    _create_from_template(args, template)
+    # Creates TEST-5 and TEST-6
+    assert fake_jirate.issue('TEST-5') == {'key': 'TEST-5', 'raw': {'fields': {'issuetype': 'Task', 'project': {'key': 'TEST'}, 'summary': 'Multitype1'}}}
+    assert fake_jirate.issue('TEST-6') == {'key': 'TEST-6', 'raw': {'fields': {'issuetype': 'Bug', 'project': {'key': 'TEST'}, 'summary': 'Multitype2'}}}
+    assert fake_jirate.issue('TEST-7') == {'key': 'TEST-7', 'raw': {'fields': {'issuetype': 'Sub-task', 'project': {'key': 'TEST'}, 'parent': 'TEST-6', 'summary': 'Bug Subtask'}}}
