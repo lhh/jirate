@@ -151,7 +151,7 @@ def transmogrify_input(field_definitions, **args):
         metadata in field_definitions
     """
     drop_fields = ['attachment', 'reporter', 'issuelinks']  # These are not set during create/update
-    simple_fields = ['project', 'issuetype']                # Don't process these fields at all
+    simple_fields = ['project', 'issuetype', 'summary', 'description']                # Don't process these fields at all
     output = {}
     def_map = {}
 
@@ -163,13 +163,13 @@ def transmogrify_input(field_definitions, **args):
 
     for field in args:
         value = args[field]
+        if field in simple_fields:
+            output[field] = value
+            continue
         if field not in def_map:
             continue
         field_id = def_map[field]
         if field_id in drop_fields:
-            continue
-        if field_id in simple_fields:
-            output[field_id] = value
             continue
         output[field_id] = transmogrify_value(value, field_definitions[field_id])
     return output
