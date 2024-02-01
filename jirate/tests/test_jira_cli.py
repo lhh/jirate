@@ -1,8 +1,32 @@
 #!/usr/bin/env python
 
-from jirate.jira_cli import _parse_creation_args
+from jirate.tests import fake_jira, fake_user, fake_transitions, fake_metadata, fake_fields
+from jirate.args import GenericArgs
+from jirate.jira_cli import _parse_creation_args, _create_from_template
+from jirate.jboard import JiraProject
+from jirate.jira_fields import apply_field_renderers
+
+import jirate
+jirate.json_loads = lambda val: val
 
 import pytest  # NOQA
+import types
+
+
+fake_jirate = JiraProject(fake_jira(), 'TEST', closed_status='Done', allow_code=True)
+
+# These are used in the create_from_template tests below
+args = GenericArgs()
+args.project = fake_jirate
+
+
+# XXX This metadata shouldn't just be fields? Fix later.
+def _fake_metadata(obj, issuetype, **args):
+    return {'fields': fake_metadata}
+
+
+fake_jirate.issue_metadata = types.MethodType(_fake_metadata, fake_jirate)
+apply_field_renderers(fake_fields)
 
 
 def test_creation_args_bare():
@@ -117,3 +141,31 @@ def test_creation_args_defaults_override():
     expected = {'pork': 'bacon', 'summary': 'Summary', 'issuetype': 'other_issuetype', 'other': 'value'}
 
     assert _parse_creation_args(issue_data, required_fields=required_fields, reserved_fields=reserved_fields, start_vals=start_vals) == expected
+
+
+def test_create_from_template_simple():
+    template = {'issues': [
+                {'summary': 'whatever',
+                 'issuetype': 'Task',
+                 'description': 'Description'}
+                ]}
+
+    issue = _create_from_template(args, template)
+    assert issue == [{'parent': 'TEST-1'}]
+    issue = fake_jirate.issue('TEST-1')
+    assert issue == {'key': 'TEST-1', 'raw': {'fields': {'description': 'Description', 'issuetype': 'Task', 'project': {'key': 'TEST'}, 'summary': 'whatever'}}}
+
+
+def test_create_from_template_customfield():
+    # TEST-2 pops out because we are reusing the above fake_jirate
+    template = {'issues': [
+                {'summary': 'custom field test',
+                 'issuetype': 'Task',
+                 'fixed_in_build': 'abc123',
+                 'description': 'Test of custom field transmogrify'}
+                ]}
+
+    issue = _create_from_template(args, template)
+    assert issue == [{'parent': 'TEST-2'}]
+    issue = fake_jirate.issue('TEST-2')
+    assert issue == {'key': 'TEST-2', 'raw': {'fields': {'description': 'Test of custom field transmogrify', 'issuetype': 'Task', 'customfield_1234567': 'abc123', 'project': {'key': 'TEST'}, 'summary': 'custom field test'}}}
