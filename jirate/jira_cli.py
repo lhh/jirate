@@ -526,16 +526,22 @@ def _create_from_template(args, template):
     for issue in template['issues']:
         reserved_fields = ['subtasks']
         required_fields = ['summary']
+        if 'project' in issue:
+            pname = issue['project']
+        else:
+            pname = args.project.project_name
+        if pname not in metadata_by_type:
+            metadata_by_type[pname] = {}
 
         creation_fields = _parse_creation_args(issue, required_fields, reserved_fields)
 
         # Cache all metadata now (so we can debug subtask creation if needed.
         issuetype = creation_fields['issuetype']
         if issuetype not in metadata_by_type:
-            metadata_by_type[issuetype] = _metadata_by_type(args.project, issuetype)
+            metadata_by_type[pname][issuetype] = _metadata_by_type(args.project, issuetype)
         if 'subtasks' in issue and issue['subtasks']:
-            metadata_by_type[_subtask] = _metadata_by_type(args.project, _subtask)
-        metadata = metadata_by_type[issuetype]
+            metadata_by_type[pname][_subtask] = _metadata_by_type(args.project, _subtask)
+        metadata = metadata_by_type[pname][issuetype]
 
         filed = {}
         parent = args.project.create(metadata['fields'], **creation_fields)
@@ -543,13 +549,14 @@ def _create_from_template(args, template):
 
         if 'subtasks' in issue and issue['subtasks']:
             # Set once
-            metadata = metadata_by_type[_subtask]
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
+                metadata = metadata_by_type[pname][_subtask]
                 reserved_fields = ['subtasks', 'issuetype', 'parent']
-                # required_fields and translate_fields is same
-                start_fields = {'issuetype': _subtask, 'parent': parent.key}
-                creation_fields = _parse_creation_args(subtask, required_fields, reserved_fields, translate_fields, start_fields)
+                # required_fields are the same
+                start_fields = {'issuetype': _subtask, 'project': pname}
+                start_fields['parent'] = parent.key
+                creation_fields = _parse_creation_args(subtask, required_fields, reserved_fields, start_vals=start_fields)
 
                 child = args.project.create(metadata['fields'], **creation_fields)
                 filed['subtasks'].append(child.key)
