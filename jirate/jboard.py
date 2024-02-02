@@ -224,7 +224,7 @@ class Jirate(object):
         if '@' not in username:
             return username
 
-        users = self.jira.search_users(query=username)
+        users = self.jira.search_users(username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
         elif not users:
