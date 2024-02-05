@@ -5,7 +5,7 @@ type: object
 description: JIRA issue.
 required:
   - summary
-  - issue_type
+  - issuetype
 
 properties:
   summary:
@@ -14,7 +14,7 @@ properties:
   description:
     description: Description for the JIRA issue. Can be multiple lines and use JIRA markup.
     type: string
-  issue_type:
+  issuetype:
     description: JIRA issue type like Story, Epic, etc. Possible values vary between projects.
     type: string
   subtasks:
