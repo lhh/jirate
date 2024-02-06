@@ -365,8 +365,7 @@ class Jirate(object):
 
         # Transmogrify other fields
         new_args = transmogrify_input(field_definitions, **args)
-        ret = self.jira.create_issue(**new_args)
-        return ret
+        return self.jira.create_issue(**new_args)
 
     def update_issue(self, issue_alias, field_definitions=None, **kwargs):
         """Update an issue using key/value pairs
@@ -685,8 +684,8 @@ class JiraProject(Jirate):
         return ret
 
     def _index_issue(self, issue):
-        if issue.raw['key'] not in self._config['issue_map']:
-            self._config['issue_map'][issue.raw['key']] = issue
+        if issue.key not in self._config['issue_map']:
+            self._config['issue_map'][issue.key] = issue
 
     def _index_issues(self, issues):
         if 'issue_map' not in self._config:
@@ -831,7 +830,9 @@ class JiraProject(Jirate):
         return self._issue_types
 
     # Returns a dict that JIRA should just give us.
-    def issue_metadata(self, issue_type_or_id):
+    def issue_metadata(self, issue_type_or_id, project_key=None):
+        if not project_key:
+            project_key = self.project_name
         itype = None
         for issuetype in self.issue_types:
             if issuetype.id == issue_type_or_id or nym(issuetype.name) == nym(issue_type_or_id):
@@ -843,7 +844,7 @@ class JiraProject(Jirate):
         start = 0
         chunk_len = 50
         while True:
-            new_fields = self.jira.project_issue_fields(self.project_name, itype.id, startAt=start, maxResults=chunk_len)
+            new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
             for field in new_fields:
                 fields.append(field.raw)
             if new_fields.isLast:

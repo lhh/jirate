@@ -401,6 +401,23 @@ def print_creation_fields(metadata):
     render_matrix(matrix)
 
 
+def _metadata_by_type(project, issuetype):
+    try:
+        metadata = project.issue_metadata(issuetype)
+    except JIRAError as e:
+        if 'text: Issue Does Not Exist' in str(e):
+            print('The createmeta API does not exist on this JIRA instance.')
+        else:
+            print(e)
+        return (1, False)
+
+    if not metadata:
+        print(f'Valid issue types for {project.project_name}:')
+        list_issue_types(project.issue_types)
+        raise ValueError(f'Invalid issue type: {issuetype}')
+    return metadata
+
+
 # new_issue is way too easy. Let's make it *incredibly* complicated!
 def create_issue(args):
     desc = None
@@ -411,20 +428,7 @@ def create_issue(args):
         print('Incorrect number of arguments (not divisible by 2)')
         return (1, False)
 
-    try:
-        metadata = args.project.issue_metadata(issuetype)
-    except JIRAError as e:
-        if 'text: Issue Does Not Exist' in str(e):
-            print('The createmeta API does not exist on this JIRA instance.')
-        else:
-            print(e)
-        return (1, False)
-
-    if not metadata:
-        print('Invalid issue type:', issuetype)
-        print(f'Valid issue types for {args.project.project_name}:')
-        list_issue_types(args)
-        return (1, False)
+    metadata = _metadata_by_type(args.project, issuetype)
 
     values = {}
     argv = copy.copy(args.args)
@@ -462,10 +466,28 @@ def create_issue(args):
     return (0, True)
 
 
+def _parse_creation_args(issue_data, required_fields=None, reserved_fields=None, translate_fields=None, start_vals=None):
+    ret = {}
+    if start_vals:
+        ret = start_vals
+
+    for key in issue_data:
+        actual_key = key
+        if translate_fields and key in translate_fields:
+            actual_key = translate_fields[key]
+        if not reserved_fields or actual_key not in reserved_fields:
+            ret[actual_key] = issue_data[key]
+    missing = []
+    if required_fields:
+        for key in required_fields:
+            if key not in ret:
+                missing.append(key)
+        if missing:
+            raise ValueError(f'Missing required fields: {missing}')
+    return ret
+
+
 def create_from_template(args):
-    # TODO: consider using Jira's bulk issue creation
-    # TODO: support reading arbitrary fields from the template
-    all_filed = []  # We keep issue keys here because we'll need to refresh anyway
     with open(args.template_file, 'r') as yaml_file:
         template = yaml.safe_load(yaml_file)
 
@@ -475,21 +497,7 @@ def create_from_template(args):
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
 
-    for issue in template['issues']:
-        filed = {}
-        if 'description' not in issue:
-            issue['description'] = ""
-        parent = args.project.new(issue['summary'], description=issue['description'], issue_type=issue['issue_type'])
-        filed['parent'] = parent.raw['key']
-
-        if issue['subtasks']:
-            filed['subtasks'] = []
-            for subtask in issue['subtasks']:
-                if 'description' not in subtask:
-                    subtask['description'] = ""
-                child = args.project.subtask(parent.raw['key'], subtask['summary'], subtask['description'])
-                filed['subtasks'].append(child.raw['key'])
-        all_filed.append(filed)
+    all_filed = _create_from_template(args, template)
 
     # Need to refresh to that issues get re-fetched to include subtasks
     # TODO: Have subtask() update parent issues in _config['issue_map']
@@ -503,6 +511,58 @@ def create_from_template(args):
         else:
             print_issue(args.project, args.project.issue(filed['parent']), False)
     return (0, True)
+
+
+
+def _create_from_template(args, template):
+    # Cache for issue createmeta information
+    metadata_by_type = {}
+    _subtask = 'Sub-task'  # To prevent case / typos / etc
+
+    # TODO: consider using Jira's bulk issue creation
+    # TODO: support reading arbitrary fields from the template
+    all_filed = []  # We keep issue keys here because we'll need to refresh anyway
+
+    for issue in template['issues']:
+        reserved_fields = ['subtasks']
+        required_fields = ['summary']
+        if 'project' in issue:
+            pname = issue['project']
+        else:
+            pname = args.project.project_name
+        if pname not in metadata_by_type:
+            metadata_by_type[pname] = {}
+
+        creation_fields = _parse_creation_args(issue, required_fields, reserved_fields)
+
+        # Cache all metadata now (so we can debug subtask creation if needed.
+        issuetype = creation_fields['issuetype']
+        if issuetype not in metadata_by_type:
+            metadata_by_type[pname][issuetype] = _metadata_by_type(args.project, issuetype)
+        if 'subtasks' in issue and issue['subtasks']:
+            metadata_by_type[pname][_subtask] = _metadata_by_type(args.project, _subtask)
+        metadata = metadata_by_type[pname][issuetype]
+
+        filed = {}
+        parent = args.project.create(metadata['fields'], **creation_fields)
+        filed['parent'] = parent.key
+
+        if 'subtasks' in issue and issue['subtasks']:
+            # Set once
+            filed['subtasks'] = []
+            for subtask in issue['subtasks']:
+                metadata = metadata_by_type[pname][_subtask]
+                reserved_fields = ['subtasks', 'issuetype', 'parent']
+                # required_fields are the same
+                start_fields = {'issuetype': _subtask, 'project': pname}
+                start_fields['parent'] = parent.key
+                creation_fields = _parse_creation_args(subtask, required_fields, reserved_fields, start_vals=start_fields)
+
+                child = args.project.create(metadata['fields'], **creation_fields)
+                filed['subtasks'].append(child.key)
+        all_filed.append(filed)
+
+    return all_filed
 
 
 def validate_template(args):

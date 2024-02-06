@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
+import jira.utils
+# Hack to paste input to output
+jira.utils.json_loads = lambda val: val
+
 from jira.client import JIRA
-from jira.resources import Issue, dict2resource
+from jira.resources import Issue, dict2resource, Project
+from jirate.args import GenericArgs
+from jirate.decor import pretty_print
+
+testx = 1
 
 fake_user = {'self': 'https://domain.com/rest/api/2/user?username=porkchop', 'key': 'porkchop', 'name': 'porkchop', 'emailAddress': 'porkchop@domain.com', 'avatarUrls': {'48x48': 'https://domain.com/secure/useravatar?avatarId=1', '24x24': 'https://domain.com/secure/useravatar?size=small&avatarId=1', '16x16': 'https://domain.com/secure/useravatar?size=xsmall&avatarId=1',
                                                                                                                                                                           '32x32': 'https://domain.com/secure/useravatar?size=medium&avatarId=1'}, 'displayName': 'Chop Pork', 'active': True, 'deleted': False, 'timeZone': 'America/New_York', 'locale': 'en_US', 'groups': {'size': 9, 'items': []}, 'applicationRoles': {'size': 1, 'items': []}, 'expand': 'groups,applicationRoles'}
@@ -297,7 +305,7 @@ fake_issues = {
                                        'self': 'https://domain.com/rest/api/2/user?username=rory',
                                        'timeZone': 'America/New_York'},
                           'attachment': [],
-                          'comment': [],
+                          'comment': {'comments': []},
                           'components': [{'name': 'food, pork'}, {'name': 'food, carrot'}],
                           'created': '2023-08-03T10:28:48.366+0000',
                           'description': 'Test Description 1',
@@ -405,7 +413,7 @@ fake_issues = {
                           'archiveddate': None,
                           'assignee': None,
                           'attachment': [],
-                          'comment': [],
+                          'comment': {'comments': []},
                           'components': [],
                           'created': '2023-08-03T10:28:48.366+0000',
                           'customfield_1234567': None,
@@ -484,6 +492,116 @@ fake_issues = {
 }
 
 
+fake_statuses = [
+        {'id': '12363',
+         'name': 'Bug',
+         'subtask': False,
+         'statuses': [{'id': '10000', 'name': 'New', 'statusCategory': { 'id': 2, 'name': 'To Do'}},
+                      {'id': '10001', 'name': 'In Progress', 'statusCategory': { 'id': 4, 'name': 'In Progress' }},
+                      {'id': '10002', 'name': 'Done', 'statusCategory': { 'id': 6, 'name': 'Done'}}
+                     ]
+         }
+        ]
+
+fake_project = {   'archived': False,
+    'assigneeType': 'UNASSIGNED',
+    'components': [   {   'description': 'Comp1',
+                          'id': '12392576',
+                          'isAssigneeTypeValid': False,
+                          'name': 'aardvark',
+                          'self': 'https://issues.pie.com/rest/api/2/component/12392576'},
+                      {   'description': 'anteater',
+                          'id': '12392393',
+                          'isAssigneeTypeValid': False,
+                          'name': 'anteater',
+                          'self': 'https://issues.pie.com/rest/api/2/component/12392393'},
+                      {   'description': 'yellow belly',
+                          'id': '12392577',
+                          'isAssigneeTypeValid': False,
+                          'name': 'marmot',
+                          'self': 'https://issues.pie.com/rest/api/2/component/12392577'}],
+    'description': 'The Test Project',
+    'expand': 'description,lead,url,projectKeys',
+    'id': '12336920',
+    'issueTypes': [   {
+                          'description': '',
+                          'iconUrl': 'https://issues.pie.com/secure/viewavatar?size=xsmall&avatarId=13275&avatarType=issuetype',
+                          'id': '20',
+                          'name': 'Bug',
+                          'self': 'https://issues.pie.com/rest/api/2/issuetype/20',
+                          'subtask': False},
+                      {   'avatarId': 13267,
+                          'description': 'Created by Jira Software - do not '
+                                         'edit or delete. Issue type for a big '
+                                         'user story that needs to be broken '
+                                         'down.',
+                          'iconUrl': 'https://issues.pie.com/secure/viewavatar?size=xsmall&avatarId=13267&avatarType=issuetype',
+                          'id': '16',
+                          'name': 'Epic',
+                          'self': 'https://issues.pie.com/rest/api/2/issuetype/16',
+                          'subtask': False},
+                      {   'avatarId': 13275,
+                          'description': 'Created by Jira Software - do not '
+                                         'edit or delete. Issue type for a '
+                                         'user story.',
+                          'iconUrl': 'https://issues.pie.com/secure/viewavatar?size=xsmall&avatarId=13275&avatarType=issuetype',
+                          'id': '17',
+                          'name': 'Story',
+                          'self': 'https://issues.pie.com/rest/api/2/issuetype/17',
+                          'subtask': False},
+                      {   'avatarId': 13278,
+                          'description': 'A task that needs to be done.',
+                          'iconUrl': 'https://issues.pie.com/secure/viewavatar?size=xsmall&avatarId=13278&avatarType=issuetype',
+                          'id': '3',
+                          'name': 'Task',
+                          'self': 'https://issues.pie.com/rest/api/2/issuetype/3',
+                          'subtask': False},
+                      {   'avatarId': 13276,
+                          'description': 'The sub-task of the issue',
+                          'iconUrl': 'https://issues.pie.com/secure/viewavatar?size=xsmall&avatarId=13276&avatarType=issuetype',
+                          'id': '5',
+                          'name': 'Sub-task',
+                          'self': 'https://issues.pie.com/rest/api/2/issuetype/5',
+                          'subtask': True}],
+    'key': 'TEST',
+    'lead': {   'active': True,
+                'displayName': "Pork Chop",
+                'key': 'pchop',
+                'name': 'pchop@pie.com',
+                'self': 'https://issues.pie.com/rest/api/2/user?username=pchop@pie.com'},
+    'name': 'Test Project',
+    'projectCategory': {   'description': 'The Project Category',
+                           'id': '10730',
+                           'name': 'Category',
+                           'self': 'https://issues.pie.com/rest/api/2/projectCategory/10730'},
+    'projectTypeKey': 'software',
+    'versions': [   {   'archived': False,
+                        'description': '1.0',
+                        'id': '12416509',
+                        'name': 'version-1.0',
+                        'overdue': False,
+                        'projectId': 12336920,
+                        'releaseDate': '2032-01-01',
+                        'released': False,
+                        'self': 'https://issues.pie.com/rest/api/2/version/12416509',
+                        'startDate': '2024-01-01',
+                        'userReleaseDate': '2024/06/01',
+                        'userStartDate': '2024/01/01'},
+                    {   'archived': False,
+                        'description': '2.0',
+                        'id': '12416345',
+                        'name': 'version-2.0',
+                        'overdue': False,
+                        'projectId': 12336920,
+                        'releaseDate': '2024-03-05',
+                        'released': False,
+                        'self': 'https://issues.pie.com/rest/api/2/version/12416345',
+                        'startDate': '2023-12-01',
+                        'userReleaseDate': '2024/12/01',
+                        'userStartDate': '2024/12/01'}]
+}
+
+
 class fake_jira_session():
     def __init__(self):
         self.get_urls = []
@@ -492,6 +610,8 @@ class fake_jira_session():
 
     def get(self, url):
         self.get_urls.append(url)
+        if url.endswith('statuses'):
+            return fake_statuses
 
     def post(self, url, data=None):
         self.post_urls[url] = data
@@ -509,12 +629,14 @@ class fake_jira_session():
 class fake_jira(JIRA):
     def __init__(self, **kwargs):
         self._fields_cache_value = {}
+        self.deploymentType = 'Server'
+        self._version = (9, 0, 0)
+        self._options = {'async': False}
+
+    def _get_url(self, url_fragment, **args):
         pass
 
-    def _get_url(self, url_fragment):
-        pass
-
-    def _get_json(self, url_fragment):
+    def _get_json(self, url_fragment, **args):
         pass
 
     def add_simple_link(self, issue, link):
@@ -530,7 +652,16 @@ class fake_jira(JIRA):
         pass
 
     def create_issue(self, **args):
-        pass
+        global testx
+
+        ret = GenericArgs()
+        proj = args['project']
+        ret.key = f'{proj}-{testx}'
+        testx = testx + 1
+        ret.raw = {'fields': args}
+        ret.raw['fields']['project'] = {'key': proj}
+        pretty_print(ret)
+        return ret
 
     def issue(self, issue_key):
         if issue_key.upper() not in fake_issues:
@@ -556,7 +687,10 @@ class fake_jira(JIRA):
         pass
 
     def project(self, project_key):
-        pass
+        ret = Project({'server': 'issues.pie.com', 'rest_path': 'rest/api/2', 'rest_api_version': 2, 'async': False}, None)
+        ret.raw = fake_project
+        dict2resource(fake_project, ret)
+        return ret
 
     def myself(self):
         return fake_user

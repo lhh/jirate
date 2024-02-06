@@ -2,7 +2,7 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "jirate:subtask.yaml"
 type: object
-description: JIRA sub-task. Similar to an issue, but can't set the issue_type or add sub-tasks to it.
+description: JIRA sub-task. Similar to an issue, but can't set the issuetype or add sub-tasks to it.
 required:
   - summary
 

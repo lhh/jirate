@@ -1,5 +1,5 @@
 issues:
-  - issue_type: "Story"
+  - issuetype: "Story"
     summary: "Set up Jirate templates on my machine"
     # Description terminated by two newlines
     description: |
@@ -19,7 +19,7 @@ issues:
         description: "Description for subtask 2"
       - summary: "Eat a snack as a reward for all my hard work"
         description: "Description for subtask 3"
-  - issue_type: "Story"
+  - issuetype: "Story"
     summary: "Make sure I stop using the default template"
     description: "People won't appreciate it if I keep filing the same issues over and over again."
     subtasks:
