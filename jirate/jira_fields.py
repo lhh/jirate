@@ -25,7 +25,9 @@ def auto_field(field, fields):
     if isinstance(field, dict):
         for key in ['name', 'value']:
             if key in field:
-                return auto_field(field[key], fields)
+                if 'id' in field:
+                    return f"{field[key]} (ID: {field['id']})"
+                return str(field[key])
     if isinstance(field, float):
         if str(field).endswith('.0'):
             return str(int(field))
