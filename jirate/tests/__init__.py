@@ -16,6 +16,12 @@ fake_user = {'self': 'https://domain.com/rest/api/2/user?username=porkchop', 'ke
 
 
 fake_fields = [
+    {'clauseNames': ['parent', 'Parent'],
+        'custom': False,
+        'id': 'parent',
+        'name': 'Parent',
+        'schema': {'system': 'parent', 'type': 'issuelink'}
+     },
     {'clauseNames': ['priority', 'Priority'],
         'custom': False,
         'id': 'priority',
