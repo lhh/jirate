@@ -52,7 +52,9 @@ class Jirate(object):
     def __init__(self, jira):
         self.jira = jira
         self._user = None
-        self._field_map = None
+        self._field_to_id = None
+        self._field_to_alias = None
+        self._field_to_human = None
 
     def _issue_key(self, alias):
         if isinstance(alias, str):
@@ -100,32 +102,87 @@ class Jirate(object):
         users = self.jira.search_users(username)
         return users
 
-    def field_map(self, name, issue=None):
-        if self._field_map is None:
-            self._field_map = {}
-            # JIRA already has some of this
-            fields = self.jira._fields_cache
-            for field in fields:
-                if re.match('^cf\\[[0-9]+\\]$', field):
-                    continue
-                value = fields[field]
-                self._field_map[field] = value
-                alias = nym(field)
-                # if they're the same, don't store
-                if alias == field:
-                    continue
-                # append underscores for collisions
-                # XXX hopefully this is extremely rare
-                while alias in self._field_map:
-                    alias = alias + '_'
-                self._field_map[alias] = value
-        if name in self._field_map:
-            return self._field_map[name]
-        if issue:
-            field = _check_fields(issue, name)
-            if field:
-                return field
+    def field_to_id(self, alias_or_human):
+        """
+        Maps alias and human-readable field names to internal field identifiers.
+
+        Parameters:
+          alias_or_human: human-readable field name like "Story Points" or field alias like "story_points" (string)
+
+        Returns:
+          field ID like "customfield_12310243" (string)
+        """
+        if self._field_to_id is None:
+            self._field_map_init()
+        if alias_or_human in self._field_to_id:
+            return self._field_to_id[alias_or_human]
         return None
+
+    def field_to_alias(self, id_or_human):
+        """
+        Maps internal field identifiers and full human-readable names to field aliases
+
+        Parameters:
+          id_or_human: field ID like "customfield_12310243" or human-readable name like "Story Points" (string)
+
+        Returns:
+          field alias like "story_points" (string)
+        """
+        if self._field_to_alias is None:
+            self._field_map_init()
+        if id_or_human in self._field_to_alias:
+            return self._field_to_alias[id_or_human]
+        return None
+
+    def field_to_human(self, id_or_alias):
+        """
+        Maps internal field identifiers and field aliases to human-readable field names
+
+        Parameters:
+          id_or_alias: field ID like "customfield_12310243" or alias like "story_points" (string)
+
+        Returns:
+          human-readable field name like "Story Points" (string)
+        """
+        if self._field_to_human is None:
+            self._field_map_init()
+        if id_or_alias in self._field_to_human:
+            return self._field_to_human[id_or_alias]
+        return None
+
+    def _field_map_init(self):
+        # For inscrutable reasons Jira returns all possible fields via the /field API...
+        # ...all but one: the "parent" field. We hardcode the translation so higher-level
+        # code doesn't need to deal with that.
+        self._field_to_id = {"parent": "parent",
+                             "Parent": "parent"}
+        self._field_to_alias = {"parent": "parent",
+                                "Parent": "parent"}
+        self._field_to_human = {"parent": "Parent",
+                                "Parent": "Parent"}
+        fields = self.jira.fields()
+        for field in fields:
+            field_id = field['id']
+            name = field['name']
+            alias = nym(name)
+            # append underscores for collisions
+            # XXX hopefully this is extremely rare
+            while alias in self._field_to_id:
+                alias = alias + '_'
+            # Everything maps to everything. _field_to_id can return a field ID when fed
+            # either the human name, the alias, or even the ID itself.
+            for val in (field_id, name, alias):
+                self._field_to_id[val] = field_id
+                self._field_to_human[val] = name
+                self._field_to_alias[val] = alias
+            for clause_name in field['clauseNames']:
+                if (re.match('^cf\\[[0-9]+\\]$', clause_name) or
+                        clause_name in self._field_to_id):
+                    # Skip nonsense and duplicate alternative names
+                    continue
+                self._field_to_id[clause_name] = field_id
+                self._field_to_human[clause_name] = name
+                self._field_to_alias[clause_name] = alias
 
     def search_issues(self, search_query):
         """Run a JQL search and assemble the results into one list
@@ -170,7 +227,7 @@ class Jirate(object):
         # obvious match
         if field_name in issue.raw['fields']:
             return issue.raw['fields'][field_name]
-        fname = self.field_map(field_name)
+        fname = self.field_to_id(field_name)
         if fname in issue.raw['fields']:
             return issue.raw['fields'][fname]
         fname = _check_fields(issue, field_name)
@@ -382,7 +439,7 @@ class Jirate(object):
 
         args = {}
         for field in kwargs:
-            args[self.field_map(field)] = kwargs[field]
+            args[self.field_to_id(field)] = kwargs[field]
         return issue.update(**kwargs)
 
     def update(self, issue_list, **kwargs):
@@ -398,7 +455,7 @@ class Jirate(object):
         args = {}
 
         for field in kwargs:
-            args[self.field_map(field)] = kwargs[field]
+            args[self.field_to_id(field)] = kwargs[field]
         issues = list_or_splitstr(issue_list)
         for issue_alias in issues:
             issue = self.issue(issue_alias)

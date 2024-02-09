@@ -107,3 +107,27 @@ def test_transition_bad_field():
     fake_jirate.jira._session.reset()
     with pytest.raises(ValueError):
         assert fake_jirate.move('TEST-1', 'done', beastly_fido='odif_yltsaeb') == [issue]
+
+
+@pytest.mark.parametrize("param,expected", [
+    ('Fixed in Build', 'customfield_1234567'),
+    ('fixed_in_build', 'customfield_1234567'),
+    ('customfield_1234567', 'customfield_1234567')])
+def test_field_to_id(param, expected):
+    assert fake_jirate.field_to_id(param) == expected
+
+
+@pytest.mark.parametrize("param,expected", [
+    ('Fixed in Build', 'fixed_in_build'),
+    ('fixed_in_build', 'fixed_in_build'),
+    ('customfield_1234567', 'fixed_in_build')])
+def test_field_to_alias(param, expected):
+    assert fake_jirate.field_to_alias(param) == expected
+
+
+@pytest.mark.parametrize("param,expected", [
+    ('Fixed in Build', 'Fixed in Build'),
+    ('fixed_in_build', 'Fixed in Build'),
+    ('customfield_1234567', 'Fixed in Build')])
+def test_field_to_human(param, expected):
+    assert fake_jirate.field_to_human(param) == expected
