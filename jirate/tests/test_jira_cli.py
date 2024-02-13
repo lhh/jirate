@@ -2,7 +2,8 @@
 
 from jirate.tests import fake_jira, fake_user, fake_transitions, fake_metadata, fake_fields
 from jirate.args import GenericArgs
-from jirate.jira_cli import _parse_creation_args, _create_from_template
+from jirate.jira_cli import _parse_creation_args, _create_from_template, _serialize_issue, _generate_template, \
+    validate_template
 from jirate.jboard import JiraProject
 from jirate.jira_fields import apply_field_renderers
 
@@ -11,13 +12,16 @@ jirate.json_loads = lambda val: val
 
 import pytest  # NOQA
 import types
+from jsonschema.exceptions import ValidationError
+from pathlib import Path
 
 
 fake_jirate = JiraProject(fake_jira(), 'TEST', closed_status='Done', allow_code=True)
 
-# These are used in the create_from_template tests below
+# These are used in the template tests below
 args = GenericArgs()
 args.project = fake_jirate
+TEMPLATE_DIR = Path('jirate/tests/templates').absolute()
 
 
 # XXX This metadata shouldn't just be fields? Fix later.
@@ -203,3 +207,69 @@ def test_create_from_template_multiple_types():
     assert fake_jirate.issue('TEST-5') == {'key': 'TEST-5', 'raw': {'fields': {'issuetype': 'Task', 'project': {'key': 'TEST'}, 'summary': 'Multitype1'}}}
     assert fake_jirate.issue('TEST-6') == {'key': 'TEST-6', 'raw': {'fields': {'issuetype': 'Bug', 'project': {'key': 'TEST'}, 'summary': 'Multitype2'}}}
     assert fake_jirate.issue('TEST-7') == {'key': 'TEST-7', 'raw': {'fields': {'issuetype': 'Sub-task', 'project': {'key': 'TEST'}, 'parent': {'key': 'TEST-6'}, 'summary': 'Bug Subtask'}}}
+
+
+def test_generate_template_simple():
+    # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
+    actual = {'issues': [
+                {'summary': 'Test 1',
+                 'issue_type': 'Bug',
+                 'description': 'Test Description 1'}
+                ]}
+    allow_fields = list(actual['issues'][0].keys())
+    generated = _generate_template(fake_jira().issue('TEST-1').raw['fields'],
+                                   fake_jirate.field_to_alias,
+                                   allow_fields=allow_fields)
+    generated = {'issues': [generated]}
+
+    assert actual == generated
+
+
+def test_generate_template_customfield():
+    # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
+    actual = {'issues': [
+                {'summary': 'Test 1',
+                 'issue_type': 'Bug',
+                 'description': 'Test Description 1',
+                 'fixed_in_build': 'test-build-1'}
+                ]}
+    allow_fields = list(actual['issues'][0].keys())
+
+    generated = _generate_template(fake_jira().issue('TEST-1').raw['fields'],
+                                   fake_jirate.field_to_alias,
+                                   allow_fields=allow_fields)
+    generated = {'issues': [generated]}
+    assert actual == generated
+
+
+def test_generate_template_subtasks():
+    # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
+    actual = {'issues': [
+                {'summary': 'Test 3 (parent task)',
+                 'issue_type': 'Bug',
+                 'sub_tasks': [
+                     {'summary': 'Test 4 (subtask of Test 3)',
+                      'issue_type': 'Sub-task'}
+                 ]}]}
+    allow_fields = list(actual['issues'][0].keys())
+
+    generated = _generate_template(fake_jira().issue('TEST-3').raw['fields'],
+                                   fake_jirate.field_to_alias,
+                                   allow_fields=allow_fields,
+                                   fetch_issue=fake_jira().issue)
+    generated = {'issues': [generated]}
+
+    assert actual == generated
+
+
+def test_validate_templates_good():
+    # Validating a known-good template should succeed
+    args.template_file = f"{TEMPLATE_DIR / 'good-template.yaml'}"
+    validate_template(args)
+
+
+def test_validate_templates_bad():
+    # Validating a known-bad template should fail
+    args.template_file = f"{TEMPLATE_DIR / 'bad-template.yaml'}"
+    with pytest.raises(ValidationError):
+        validate_template(args)
