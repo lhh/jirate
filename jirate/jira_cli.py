@@ -84,7 +84,7 @@ def print_issues_by_field(issue_list, args=None):
         row = []
         row.append(issue.key)
         for field in fields:
-            field_key = args.project.field_map(field, issue)
+            field_key = args.project.field_to_id(field)
             if not field_key:
                 row.append('N/A')
                 continue
