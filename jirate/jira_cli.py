@@ -523,7 +523,8 @@ def _create_from_template(args, template):
     # TODO: support reading arbitrary fields from the template
     all_filed = []  # We keep issue keys here because we'll need to refresh anyway
 
-    for issue in template['issues']:
+    for raw_issue in template['issues']:
+        issue = {args.project.field_to_id(name): value for name, value in raw_issue.items()}
         reserved_fields = ['subtasks']
         required_fields = ['summary']
         if 'project' in issue:
@@ -569,6 +570,9 @@ def validate_template(args):
     with open(args.template_file, 'r') as yaml_file:
         template = yaml.safe_load(yaml_file)
 
+    for i, issue in enumerate(template['issues']):
+        template['issues'][i] = {args.project.field_to_id(name): value for name, value in issue.items()}
+
     schema_dir = files('jirate').joinpath('schemas')
     schemas = {}
     for schema_file in ('template.yaml', 'issue.yaml', 'subtask.yaml'):
@@ -583,6 +587,107 @@ def validate_template(args):
     # If we get here it means validation succeeded.
     print(f"Template {args.template_file} is valid.")
     return (0, True)
+
+
+def generate_template(args):
+    template = {}
+    issue = args.project.issue(args.issue_id)
+
+    # TODO: allow customizing allow_fields in the config
+    template = _generate_template(issue.raw['fields'], args.project.field_to_alias, args.project.issue, args.all_fields)
+
+    yaml.representer.SafeRepresenter.add_representer(str, _str_presenter)
+    print(yaml.safe_dump({'issues': [template]}, allow_unicode=True))
+    return (0, True)
+
+
+def _generate_template(raw_issue, translate_fields, fetch_issue=None, all_fields=False, allow_fields=None):
+    template = _serialize_issue(raw_issue, translate_fields, fetch_issue)
+
+    if not all_fields:
+        if allow_fields is not None:
+            # Ensure these are in alias form, if set. Makes writing configs easier.
+            allow_fields = [translate_fields(field) for field in allow_fields]
+        template = _trim_template(template, allow_fields)
+    return template
+
+
+def _serialize_issue(raw_issue, translate_fields, fetch_issue=None):
+    """
+    Serializes raw JIRA issue fields for use in Jirate templates.
+
+    Parameters:
+      raw_issue: issue fields (typically issue.raw['fields']) (dict)
+      translate_fields: field name translator (typically a JiraProject's field_to_alias method) (function)
+      fetch_issue: issue data fetcher, used to get subtask data (typically a JiraProject's issue method) (function)
+
+    Returns:
+      Processed issue dict ready to be dumped as part of a YAML template (dict)
+    """
+    template = {}
+    _subtasks = 'subtasks'  # ID form
+
+    for field, value in raw_issue.items():
+        if field == _subtasks and value:
+            # The parent issue only includes some of the subtask data, so we need to fetch the rest.
+            template[translate_fields(_subtasks)] = []
+            for subtask_stub in raw_issue[_subtasks]:
+                subtask = fetch_issue(subtask_stub['key'])
+                template[translate_fields(_subtasks)].append(_serialize_issue(subtask.raw['fields'], translate_fields))
+        else:
+            _, template[translate_fields(field)] = render_field_data(field, raw_issue, as_object=True)
+
+    return template
+
+
+def _str_presenter(dumper, data):
+    """
+    Makes PyYAML print multiline strings in a sensible way
+    """
+    if data.count('\n') > 0:
+        data = data.replace('\r\n', '\n')  # CRLFs confuse and anger PyYAML
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
+def _trim_template(template, allow_fields=None):
+    """
+    Returns a trimmed template containing only the fields from the input template that
+    are both in an allowlist and initialized (not empty).
+    """
+    # Field names are already translated to aliases so we don't need to
+    # deal with customfield_ nonsense here.
+    if allow_fields is None:
+        allow_fields = [
+            'fixversions',
+            'priority',
+            'issue_type',
+            'summary',
+            'description',
+            'story_points',
+            'components',
+            'versions',
+            'labels',
+            'sub_tasks',
+        ]
+    _subtasks = 'sub_tasks'  # Alias form, see above comment
+
+    trimmed_fields = {}
+    for field, value in template.items():
+        if field not in allow_fields:
+            continue
+        # We can't just check truthiness because False or 0 could be a legitimate value
+        if value is None:
+            continue
+        if (isinstance(value, list) or isinstance(value, dict)) and len(value) == 0:
+            continue
+
+        # We want the field and it isn't empty-ish
+        if field == _subtasks and len(value) > 0:
+            trimmed_fields[_subtasks] = [_trim_template(subtask, allow_fields) for subtask in value]
+        else:
+            trimmed_fields[field] = value
+    return trimmed_fields
 
 
 def new_subtask(args):
@@ -1120,7 +1225,11 @@ def create_parser():
                          handler=validate_template)
     cmd.add_argument('template_file', help='Path to the template file')
 
-    # TODO: build template from existing issue(s)
+    cmd = parser.command('generate-template', help='Generate YAML template from existing issue', handler=generate_template)
+    cmd.add_argument('issue_id', help='Issue to generate the template from', type=str.upper)
+    cmd.add_argument('-a', '--all-fields', default=False, help='Include all fields, even ones that may not make sense for a '
+                                                               'template',
+                     action='store_true')
 
     return parser
 

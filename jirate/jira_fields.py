@@ -9,98 +9,115 @@ from jirate.decor import pretty_date, vsep_print, comma_separated
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
 #
-def _list_of_key(field, key):
+def _list_of_key(field, key, as_object=False):
+    if as_object:
+        return list([item[key] for item in field])
     return comma_separated([item[key] for item in field])
 
 
-def string(field, fields):
+def string(field, fields, as_object=False):
     return field
 
 
-def auto_field(field, fields):
+def floating(field, fields, as_object=False):
+    if str(field).endswith('.0'):
+        field = int(field)
+    if not as_object:
+        field = str(field)
+    return field
+
+
+def auto_field(field, fields, as_object=False):
     if isinstance(field, str):
         return field
-    if isinstance(field, list):
-        return comma_separated([str(item) for item in field])
-    if isinstance(field, dict):
+    elif isinstance(field, list):
+        return array(field, fields, as_object)
+    elif isinstance(field, dict):
         for key in ['name', 'value']:
             if key in field:
-                if 'id' in field:
+                if 'id' in field and not as_object:
                     return f"{field[key]} (ID: {field['id']})"
-                return str(field[key])
-    if isinstance(field, float):
-        if str(field).endswith('.0'):
-            return str(int(field))
-    return str(field)
+                return auto_field(field[key], fields, as_object)
+    elif isinstance(field, float):
+        return floating(field, fields, as_object)
+
+    if as_object:
+        return field
+    else:
+        return str(field)
 
 
-def option_with_child(field, fields):
+def option_with_child(field, fields, as_object=False):
     if 'child' in field:
         return field['value'] + ' - ' + field['child']['value']
     return field['value']
 
 
-def key(field, fields):
+def key(field, fields, as_object=False):
     return field['key']
 
 
-def value(field, fields):
+def value(field, fields, as_object=False):
     return field['value']
 
 
-def name(field, fields):
+def name(field, fields, as_object=False):
     return field['name']
 
 
-def user(field, fields):
+def user(field, fields, as_object=False):
     return field['displayName'] + ' - ' + field['emailAddress']
 
 
-def user_list(field, fields):
+def user_list(field, fields, as_object=False):
     # Until we take email addresses as input, we should use
     # user names only when presenting lists of users
-    return _list_of_key(field, 'name')
+    return _list_of_key(field, 'name', as_object)
 
 
-def array(field, fields):
-    return comma_separated(field)
+def array(field, fields, as_object=False):
+    if as_object:
+        return list(field)
+    return comma_separated([str(item) for item in field])
 
 
-def value_list(field, fields):
-    return _list_of_key(field, 'value')
+def value_list(field, fields, as_object=False):
+    return _list_of_key(field, 'value', as_object)
 
 
-def name_list(field, fields):
-    return _list_of_key(field, 'name')
+def name_list(field, fields, as_object=False):
+    return _list_of_key(field, 'name', as_object)
 
 
-def date(field, fields):
+def date(field, fields, as_object=False):
     return field
 
 
-def datetime(field, fields):
+def datetime(field, fields, as_object=False):
     return pretty_date(field)
 
 
-def _ratio(field, fields):
+def _ratio(field, fields, as_object=False):
     if int(field) < 0:
         return None
+    if as_object:
+        return field
     return str(field)
 
 
-def _priority(field, fields):
+def _priority(field, fields, as_object=False):
     if field['name'] not in ('Undefined', 'undefined'):
         return field['name']
     return None
 
 
-def _reporter(field, fields):
+def _reporter(field, fields, as_object=False):
     if field['emailAddress'] != fields['creator']['emailAddress']:
         return user(field, fields)
     return None
 
 
-def _created_updated(field, fields):
+def _created_updated(field, fields, as_object=False):
     created = pretty_date(field)
     if field != fields['updated']:
         updated = pretty_date(fields['updated'])
@@ -108,10 +125,10 @@ def _created_updated(field, fields):
     return created
 
 
-def _votes(field, fields):
+def _votes(field, fields, as_object=False):
     if field['votes'] in (0, '0'):
         return None
-    return str(field['votes'])
+    return auto_field(field['votes'], fields, as_object)
 
 
 # these can functions can be referenced in custom user
@@ -447,7 +464,7 @@ def apply_field_renderers(custom_field_defs=None):
     _fields = ret
 
 
-def render_field_data(field_key, fields, verbose=False, allow_code=False):
+def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False):
     """Render the field using custom-renderers or user-supplied code
     Note: you must first configure the rendering engine using apply_field_renderers()
 
@@ -457,6 +474,7 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
       verbose: Passed to field rendering function
       allow_code: Allow eval() during execution (dangerous whenever source
                   is untrusted)
+      as_object: Return a Python object instead of a string representation
 
     Returns:
       field_name: Human-readable field name (string)
@@ -484,24 +502,28 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False):
             if not r_info:
                 return field_name, None
             else:
+                if as_object:
+                    return field_name, field
                 return field_name, str(field)
         if isinstance(r_info, str):
             if r_info not in _field_renderers:
                 return field_name, f'<invalid renderer: {r_info} for {field_key}>'
             else:
                 try:
-                    ret = _field_renderers[r_info](field, fields)
+                    ret = _field_renderers[r_info](field, fields, as_object)
                 except Exception as exc:
                     ret = '<' + str(exc) + '>'
                 return field_name, ret
         else:
-            return field_name, r_info(field, fields)
+            return field_name, r_info(field, fields, as_object)
     if 'code' in field_config and allow_code:
         try:
             ret = eval_custom_field(field_config['code'], field, fields)
         except Exception as exc:
             ret = '<' + str(exc) + '>'
         return field_name, ret
+    if as_object:
+        return field_name, field
     return field_name, str(field)
 
 

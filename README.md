@@ -53,3 +53,7 @@ High-level CLI for Trello and JIRA
   - `jirate -p OTHERPROJECT components`
 - Search component names and descriptions for a regex:
   - `jirate components -s kernel`
+- Generate a template from an existing issue:
+  - `jirate generate-template MYISSUE-123 > my-template.yaml`
+- File a new issue from a template:
+  - `jirate template my-template.yaml`
