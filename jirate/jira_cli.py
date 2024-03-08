@@ -134,7 +134,7 @@ def print_issues_by_state(issue_list, args=None):
         hbar_under(key)
         for issue in states[key]:
             print('  ', issue.key, end=' ')
-            if args and args.labels:
+            if args and hasattr(args, 'labels') and args.labels:
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
         print()
