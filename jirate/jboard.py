@@ -503,6 +503,8 @@ class Jirate(object):
         Returns:
           list of jira.resources.Issue or None
         """
+        if not issue_list:
+            return []
         if isinstance(issue_list, Issue):
             return issue_list
         issues = list_or_splitstr(issue_list)
