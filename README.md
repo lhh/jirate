@@ -2,8 +2,14 @@
 High-level CLI for Trello and JIRA
 
 # Installation
-`pip install -r requirements.txt`
-`pip install .`
+- From source:
+  - `pip install -r requirements.txt`
+  - `pip install .`
+- From PyPi:
+  - `pip install jirate`
+- In a locally-built container:
+  - `make`
+  - `./jirate-c [args]`
 
 # Notes - Jira
 - You must configure your default project, token, and URL by creating ~/.jirate.json
@@ -24,6 +30,8 @@ High-level CLI for Trello and JIRA
   - `jirate new -t Bug This is my Bug Summary`
   - `jirate new -t Bug "This is my Bug Summary"`
   - `jirate -p myissue new -t Task "This is my Task Summary"`
+- Same as above but using the new `create` call:
+  - `jirate create -t Bug summary "This is my Bug Summary"`
 - Print out the fields and allowed values (if applicable) to be used when creating a new Epic:
   - `jirate create -t epic`
 - Create an issue (advanced) with custom fields:
