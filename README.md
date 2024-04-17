@@ -16,6 +16,14 @@ High-level CLI for JIRA and Trello
 Configuration is a JSON document stored as `~/.jirate.json` - an example can be found in the `contrib/jirate.json` file in this repository. Some notes:
 - `project`, `token`, and `url` are required
 - Proxies are not required for JIRA
+### JIRA configuration fields
+- `url` (Required) - URL to your JIRA instance
+- `token` (Required) - A valid personal access token for your account
+- `default_project` (Required) - Default project to use when interacting with JIRA
+- `here_there_be_dragons` (Optional) - Set to `true` if you intend to use custom code to render JIRA custom field data
+- `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
+- `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
+- `custom_fields` (Optional) - Raw (or cooked, if you prefer) field definitions following the same conventions as the jira `/field` data.
 
 ## Operation
 - Trello support is somewhat unmaintained as the maintainers do not have access to a commercial Trello instance any longer. Taking patches.
@@ -71,11 +79,13 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
   - `jirate field MYISSUE-123 add|remove contributors user1,user2`
 
 ## Searching issues
-- Search for all unresolved issues assigned to you:
+- Search for all unresolved issues assigned to you (unless you overrode the search named `default` in your configuration file):
   - `jirate search`
+- Execute the search named `foo`:
+  - `jirate search -n foo`
 - Search for all issues assigned to you and display the a table with key (always displayed on left), status, priority, and summary (with width limited to 20 characters):
   - `jirate search --fields status,priority,summary:20`
-- Execute a raw search and display just the priority:
+- Execute a raw search and display just the key and priority:
   - `jirate search -r "field1 is not EMPTY" --fields priority`
 
 - Comment on an issue (spawns editor):
