@@ -12,6 +12,7 @@
 		"default": "assignee = currentUser() and status not in (Done, closed, resolved)",
 		"closed": "assignee = currentUser() and status in (Done, closed, resolved)"
 	},
+	"default_fields": "issuetype,priority,status,summary",
 	"_comment": "Below could be gathered from issues.mycompany.com/rest/api/v2/field and pasted in, but remember that every field defaults to on unless 'display' is set to false",
 	"custom_fields": [
 		{"name": "Epic Link", "id": "customfield_12311140" },
