@@ -28,9 +28,11 @@ def move(args):
         args.project.assign(args.src, args.user)
     if args.mine:
         args.project.assign(args.src, 'me')
-    if args.project.move(args.src, args.target):
-        print('Moved', args.src, 'to', args.target)
+    ret = args.project.move(args.src, args.target)
+    if ret:
+        print('Moved', [issue.key for issue in ret], 'to', args.target)
         return (0, False)
+    print('No issue(s) moved')
     return (1, False)
 
 

@@ -536,6 +536,8 @@ class Jirate(object):
         """
         if isinstance(issue, str):
             issue = self.issue(issue)
+        if not issue:
+            return None
         url = os.path.join(issue.raw['self'], 'transitions?expand=transitions.fields')
         transitions = json_loads(self.jira._session.get(url))
         if transitions:
@@ -572,7 +574,10 @@ class Jirate(object):
             fails = list(set(issue_aliases) - set([issue.key for issue in issues]))
             raise ValueError('No such issue(s): ' + str(fails))
 
+        moved = []
         for issue in issues:
+            if not issue:
+                continue
             transition = self._find_transition(issue, status)
             if not transition:
                 continue
@@ -588,7 +593,8 @@ class Jirate(object):
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
             self.jira._session.post(url, data=data)
-        return issues
+            moved.append(issue)
+        return moved
 
     def link_types(self):
         """Wrapper for jira.issue_link_types()"""
