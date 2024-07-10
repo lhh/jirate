@@ -742,6 +742,7 @@ class JiraProject(Jirate):
 
     def search_issues(self, text):
         # Override so we can index our return values
+        # TODO resolve fixversions?
         if not text:
             return None
         ret = super().search_issues(text)
@@ -893,6 +894,10 @@ class JiraProject(Jirate):
         if not self._issue_types:
             self._issue_types = self._project.issueTypes
         return self._issue_types
+
+    @property
+    def versions(self):
+        return self._project.versions
 
     # Returns a dict that JIRA should just give us.
     def issue_metadata(self, issue_type_or_id, project_key=None):
