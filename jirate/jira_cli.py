@@ -1058,7 +1058,7 @@ def component_list(args):
     return (0, False)
 
 
-def get_project(project=None, config=None, config_file=None):
+def get_jira_project(project=None, config=None, config_file=None):
     # project: Project key
     # config: dict / pre-read JSON data
     if not config:
@@ -1241,7 +1241,7 @@ def main():
     ns = parser.parse_args()
 
     try:
-        project = get_project(ns.project)
+        project = get_jira_project(ns.project)
     except KeyError:
         sys.exit(1)
     except FileNotFoundError:
