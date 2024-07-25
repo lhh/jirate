@@ -11,6 +11,7 @@ import editor
 
 from collections import OrderedDict
 from jira.exceptions import JIRAError
+
 from referencing import Registry
 import jsonschema
 
@@ -20,6 +21,7 @@ from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
+from jirate.template_vars import apply_values
 
 
 def move(args):
@@ -481,13 +483,29 @@ def create_from_template(args):
     with open(args.template_file, 'r') as yaml_file:
         template = yaml.safe_load(yaml_file)
 
+    values = {}
+    # Always render. there should be defaults.
+    if args.vars:
+        print(args.vars)
+        if len(args.vars) % 2 != 0:
+            raise ValueError('Variable/value list is not divisible by 2')
+
+        # Someone set up us the render
+        argv = copy.copy(args.vars)
+        while len(argv):
+            key = argv.pop(0)
+            value = argv.pop(0)
+            values[key] = value
+
+    template_output = apply_values(template, values)
+
     try:
         validate_template(args)
     except jsonschema.exceptions.ValidationError as e:
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
 
-    all_filed = _create_from_template(args, template)
+    all_filed = _create_from_template(args, template_output)
 
     # Need to refresh to that issues get re-fetched to include subtasks
     # TODO: Have subtask() update parent issues in _config['issue_map']
@@ -1225,6 +1243,7 @@ def create_parser():
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
+    cmd.add_argument('vars', help='Variables in key=value format', nargs='*')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
 
     cmd = parser.command('validate', help='Validate a YAML template for use with the "template" command',
