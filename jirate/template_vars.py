@@ -10,6 +10,7 @@ import copy
 import re
 
 _sub_left = '@@'
+#_sub_right = '((:([^@]+))|(\\?([^@]+)?))?@@'  # for allowing null/empty
 _sub_right = '(:([^@]+))?@@'
 _base_pattern = _sub_left + '([a-z_]+)' + _sub_right
 
@@ -48,9 +49,25 @@ def _populate_defaults(inp, values):
             _populate_defaults(inp[key], values)
 
 
-def apply_values(inp, values={}):
+def update_values_interactive(values):
+    ret = {}
+    for key in values:
+        if values[key]:
+            ret[key] = input(f'Value for "{key}" (default: "{values[key]}"):')
+        else:
+            ret[key] = input(f'Value for "{key}":')
+        if not ret[key]:
+            ret[key] = values[key]
+
+    return ret
+
+
+def apply_values(inp, values={}, interactive=False):
     template_values = {}
     _populate_defaults(inp, template_values)
+
+    if interactive:
+        template_values = update_values_interactive(template_values)
 
     extra = []
     for key in values:
