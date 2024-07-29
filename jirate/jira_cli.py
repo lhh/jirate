@@ -497,7 +497,8 @@ def create_from_template(args):
             value = argv.pop(0)
             values[key] = value
 
-    template_output = apply_values(template, values)
+    interactive = sys.stdin.isatty() and not args.non_interactive
+    template_output = apply_values(template, values, interactive)
 
     try:
         validate_template(args)
@@ -1243,8 +1244,9 @@ def create_parser():
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
-    cmd.add_argument('vars', help='Variables in key=value format', nargs='*')
+    cmd.add_argument('-n', '--non-interactive', default=False, help='Do not prompt for variables', action='store_true')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
+    cmd.add_argument('vars', help='Variables/values (name value name2 value2 ...)', nargs='*')
 
     cmd = parser.command('validate', help='Validate a YAML template for use with the "template" command',
                          handler=validate_template)
