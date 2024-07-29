@@ -3,16 +3,31 @@
 import copy
 import os
 import re
+import sys
 import types
 
 from toolchest.strutil import list_or_splitstr
 
 from jira import JIRA, JIRAError
-from jira.utils import json_loads
+from jira.utils import json_loads as _json_loads
 from jira.resources import Issue
 
 from jirate.decor import nym
 from jirate.jira_input import transmogrify_input
+
+
+# lhh - seems python 3.12.4 doesn't let us simply replace
+# this, so do it the hard way and detect being run under
+# pytest
+_test_ = False
+if "pytest" in sys.modules:
+    _test_ = True
+
+
+def json_loads(val):
+    if _test_:
+        return val
+    return _json_loads(val)
 
 
 def _resolve_field(obj, field_name):

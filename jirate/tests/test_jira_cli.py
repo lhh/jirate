@@ -7,9 +7,6 @@ from jirate.jira_cli import _parse_creation_args, _create_from_template, _serial
 from jirate.jboard import JiraProject
 from jirate.jira_fields import apply_field_renderers
 
-import jirate
-jirate.json_loads = lambda val: val
-
 import pytest  # NOQA
 import types
 from jsonschema.exceptions import ValidationError
