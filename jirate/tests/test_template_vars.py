@@ -11,7 +11,15 @@ def test_populate_defaults_simple():
     values = {}
 
     _populate_defaults(inp, values)
-    assert values == {'a': 'b'}
+    assert values == {'a': {'required': True, 'value': 'b'}}
+
+
+def test_populate_defaults_optional():
+    inp = '@@a?b@@'
+    values = {}
+
+    _populate_defaults(inp, values)
+    assert values == {'a': {'required': False, 'value': 'b'}}
 
 
 def test_ok_variable_no_default():

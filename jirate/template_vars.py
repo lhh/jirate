@@ -10,8 +10,8 @@ import copy
 import re
 
 _sub_left = '@@'
-#_sub_right = '((:([^@]+))|(\\?([^@]+)?))?@@'  # for allowing null/empty
-_sub_right = '(:([^@]+))?@@'
+_sub_right = '((:([^@]+))|(\\?([^@]+)?))?@@'  # for allowing null/empty
+#_sub_right = '(:([^@]+))?@@'
 _base_pattern = _sub_left + '([a-z_]+)' + _sub_right
 
 
@@ -19,8 +19,8 @@ def _apply_values(inp, values):
     if isinstance(inp, str):
         match = re.findall(_base_pattern, inp)
         for glyph in match:
-            varname, _, __ = glyph
-            inp = re.sub(_sub_left + varname + _sub_right, values[varname], inp)
+            varname = glyph[0]
+            inp = re.sub(_sub_left + varname + _sub_right, values[varname]['value'], inp)
     elif isinstance(inp, list):
         ret = []
         for val in inp:
@@ -37,10 +37,21 @@ def _populate_defaults(inp, values):
     if isinstance(inp, str):
         match = re.findall(_base_pattern, inp)
         for glyph in match:
-            key, _, value = glyph
-            if key in values and values[key]:
+            key = glyph[0]
+            value = glyph[1]
+            if key in values and values[key]['value']:
                 continue
-            values[key] = value
+            values[key] = {}
+            if value is None:
+                value = ''
+            if value.startswith('?'):
+                values[key]['required'] = False
+                value = value[1:]
+            else:
+                values[key]['required'] = True
+                if value.startswith(':'):
+                    value = value[1:]
+            values[key]['value'] = value
     elif isinstance(inp, list):
         for val in inp:
             _populate_defaults(val, values)
@@ -52,12 +63,18 @@ def _populate_defaults(inp, values):
 def update_values_interactive(values):
     ret = {}
     for key in values:
-        if values[key]:
-            ret[key] = input(f'Value for "{key}" (default: "{values[key]}"):')
+        ret[key] = {}
+        ret[key]['required'] = values[key]['required']
+
+        dflt = values[key]['value']
+        if dflt:
+            ret[key]['value'] = input(f'Value for "{key}" (default: "{dflt}"): ')
         else:
-            ret[key] = input(f'Value for "{key}":')
-        if not ret[key]:
-            ret[key] = values[key]
+            ret[key]['value'] = input(f'Value for "{key}": ')
+
+        # revert to default
+        if not ret[key]['value']:
+            ret[key]['value'] = values[key]['value']
 
     return ret
 
@@ -73,13 +90,14 @@ def apply_values(inp, values={}, interactive=False):
     for key in values:
         if key not in template_values:
             extra.append(key)
-        template_values[key] = values[key]
+        else:
+            template_values[key]['value'] = values[key]
     if extra:
         raise ValueError(f'Unknown variable(s) for {extra}')
 
     missing = []
     for key in template_values:
-        if not template_values[key]:
+        if template_values[key]['required'] and not template_values[key]['value']:
             missing.append(key)
     if missing:
         raise ValueError(f'Missing value(s) for {missing}')
