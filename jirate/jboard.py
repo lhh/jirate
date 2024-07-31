@@ -34,12 +34,20 @@ def _resolve_field(obj, field_name):
     return obj._jirate.field(obj, field_name)
 
 
+def _set_field(obj, field_alias, value):
+    field_name = obj._jirate._field(obj, field_alias)
+    return obj.update({field_name: value})
+
+
 def _resolve_field_setup(jirate_obj, issue_obj):
     # Do NOT trample future python JIRA objects' field function.
     if hasattr(issue_obj, 'field'):
         raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug!')
+    if hasattr(issue_obj, 'set_field'):
+        raise Exception('API BREAK: \'set_field\' is now part of jira.resources.Issue. Please file a bug!')
     issue_obj._jirate = jirate_obj
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
+    issue_obj.set_field = types.MethodType(_set_field, issue_obj)
 
 
 def _check_fields(issue, name):
