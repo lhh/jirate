@@ -31,7 +31,7 @@ def json_loads(val):
 
 
 def _resolve_field(obj, field_name):
-    return obj._jirate._field(obj, field_name)
+    return obj._jirate.field(obj, field_name)
 
 
 def _resolve_field_setup(jirate_obj, issue_obj):
@@ -241,12 +241,12 @@ class Jirate(object):
         # Don't return customfield if there's a direct match
         # obvious match
         if field_name in issue.raw['fields']:
-            return issue.raw['fields'][field_name]
+            return field_name
         fname = self.field_to_id(field_name)
         if fname in issue.raw['fields']:
-            return issue.raw['fields'][fname]
+            return fname
         fname = _check_fields(issue, field_name)
-        if fname:
+        if fname in issue.raw['fields']:
             return fname
         raise AttributeError(str(issue) + f' has no field like {field_name}')
 
@@ -266,7 +266,8 @@ class Jirate(object):
           AttributeError if the field does not exist.
         """
         issue = self.issue(issue_alias)
-        return self._field(issue, field_name)
+        fname = self._field(issue, field_name)
+        return issue.raw['fields'][fname]
 
     def fields(self, issue_alias):
         """Determine the fields available for an issue
