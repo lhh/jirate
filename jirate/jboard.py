@@ -775,6 +775,8 @@ class JiraProject(Jirate):
 
     def _index_issue(self, issue):
         if issue.key not in self._config['issue_map']:
+            if not getattr(issue, '_jirate'):
+                _resolve_field_setup(self, issue)
             self._config['issue_map'][issue.key] = issue
 
     def _index_issues(self, issues):
