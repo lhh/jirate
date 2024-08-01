@@ -3,16 +3,31 @@
 import copy
 import os
 import re
+import sys
 import types
 
 from toolchest.strutil import list_or_splitstr
 
 from jira import JIRA, JIRAError
-from jira.utils import json_loads
+from jira.utils import json_loads as _json_loads
 from jira.resources import Issue
 
 from jirate.decor import nym
 from jirate.jira_input import transmogrify_input
+
+
+# lhh - seems python 3.12.4 doesn't let us simply replace
+# this, so do it the hard way and detect being run under
+# pytest
+_test_ = False
+if "pytest" in sys.modules:
+    _test_ = True
+
+
+def json_loads(val):
+    if _test_:
+        return val
+    return _json_loads(val)
 
 
 def _resolve_field(obj, field_name):
@@ -536,6 +551,8 @@ class Jirate(object):
         """
         if isinstance(issue, str):
             issue = self.issue(issue)
+        if not issue:
+            return None
         url = os.path.join(issue.raw['self'], 'transitions?expand=transitions.fields')
         transitions = json_loads(self.jira._session.get(url))
         if transitions:
@@ -572,7 +589,10 @@ class Jirate(object):
             fails = list(set(issue_aliases) - set([issue.key for issue in issues]))
             raise ValueError('No such issue(s): ' + str(fails))
 
+        moved = []
         for issue in issues:
+            if not issue:
+                continue
             transition = self._find_transition(issue, status)
             if not transition:
                 continue
@@ -588,7 +608,8 @@ class Jirate(object):
             # POST /rest/api/2/issue/{issueIdOrKey}/transitions
             url = os.path.join(issue.raw['self'], 'transitions')
             self.jira._session.post(url, data=data)
-        return issues
+            moved.append(issue)
+        return moved
 
     def link_types(self):
         """Wrapper for jira.issue_link_types()"""
@@ -736,6 +757,7 @@ class JiraProject(Jirate):
 
     def search_issues(self, text):
         # Override so we can index our return values
+        # TODO resolve fixversions?
         if not text:
             return None
         ret = super().search_issues(text)
@@ -887,6 +909,10 @@ class JiraProject(Jirate):
         if not self._issue_types:
             self._issue_types = self._project.issueTypes
         return self._issue_types
+
+    @property
+    def versions(self):
+        return self._project.versions
 
     # Returns a dict that JIRA should just give us.
     def issue_metadata(self, issue_type_or_id, project_key=None):

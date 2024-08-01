@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import re
+
 from jirate.decor import parse_params
 from jirate.decor import nym
 
@@ -80,6 +82,25 @@ _input_array_renderers = {
 }
 
 
+# Because allowed Values can be very long and complicated, we
+# want users to be able to provide, essentially, the minimum
+# unique value to save keystrokes (and frustration).
+def check_value(check, value):
+    for possible_value in (value, nym(value), value.lower()):
+        if possible_value == check:
+            return True
+        if check not in possible_value:
+            continue
+        # begnning of string, end of string.
+        # Values should be divided by a space or dash
+        # This is just a guess; we may want this configurable
+        #
+        rx = f'(^|[\\s\\-]){check}($|[\\s\\-])'
+        if re.search(rx, possible_value):
+            return True
+    return False
+
+
 def allowed_value_validate(field_name, values, allowed_values=None):
     if not allowed_values:
         return values
@@ -93,27 +114,30 @@ def allowed_value_validate(field_name, values, allowed_values=None):
 
     ret = []
     for val in check:
-        found = False
         for av in allowed_values:
+            # Ignore archived or disabled allowed values
             if 'archived' in av and av['archived']:
                 continue
             if 'disabled' in av and av['disabled']:
                 continue
+
+            # Not sure why we care about name vs. value; value only is fine
             for key in ['name', 'value']:
                 if key not in av:
                     continue
-                if val not in (av[key], nym(av[key]), av[key].lower()):
-                    continue
-                ret.append(av[key])
-                found = True
-                break
-            if found:
-                break
-        if not found:
+                if check_value(val, av[key]):
+                    ret.append(av[key])
+                    break
+        if not ret:
             raise ValueError(f'Value {val} not allowed for {field_name}')
+
+    # Input count must match output count
+    if len(ret) != len(check):
+        raise ValueError(f'{field_name}: Expected {len(check)} matches for {values}, got {ret}')
 
     if not isinstance(values, list):
         return ret[0]
+
     return ret
 
 

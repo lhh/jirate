@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-import jira.utils
-# Hack to paste input to output
-jira.utils.json_loads = lambda val: val
-
 from jira.client import JIRA
 from jira.resources import Issue, dict2resource, Project
 from jirate.args import GenericArgs

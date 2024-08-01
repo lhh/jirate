@@ -2,6 +2,7 @@
 
 from jirate.tests import fake_metadata, fake_transitions
 from jirate.jira_input import transmogrify_input
+from jirate.jira_input import check_value
 
 import os
 import time
@@ -145,3 +146,23 @@ def test_trans_missing_version():
 
 def test_trans_metadata():
     transition_fields = fake_transitions
+
+
+def test_check_value_simple():
+    valid = {'1': ['1', ' 1', '1 ', '1-', '-1'],
+             'a': ['a', ' a', 'a ', 'a-', '-a'],
+             '1.1': [' 1.1', '1.1 ']}
+
+    for check in valid:
+        for value in valid[check]:
+            assert(check_value(check, value))
+
+
+def test_check_value_nomatch():
+    valid = {'1': ['a1', ' 12', '1.1'],
+             'a': ['a1', ' ab', 'a.b'],
+             '1.1': ['1.11', '1.1.2']}
+
+    for check in valid:
+        for value in valid[check]:
+            assert(check_value(check, value) is False)
