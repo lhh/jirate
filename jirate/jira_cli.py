@@ -20,7 +20,6 @@ from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
-from jirate.jira_input import transmogrify_input
 
 
 def move(args):
@@ -238,46 +237,6 @@ def list_issue_types(args):
     return (0, False)
 
 
-def _update_field(issue, field_name_human, value_human, operation='set', fields=None):
-    if not fields:
-        # TODO use native python-jira issue.fields instead of raw json
-        # (Except operations are not captured, which we need)
-        fields = issue._jirate.fields(issue.key)
-    if isinstance(value_human, list):
-        value_human = ' '.join(value_human)
-    else:
-        value_human = str(value_human)
-
-    # TODO multi-field sets?
-    # transmogrify_input - should this be done in jboard.update_issue?
-    # Note that if answer is yes, we have to fetch field metadata there,
-    # so we'll want to cache it or pass it down to avoid extra API calls
-    field_args = {field_name_human: value_human}
-    output_args = transmogrify_input(fields, **field_args)
-
-    if not output_args:
-        raise AttributeError(f'No field like \'{field_name_human}\' in {issue.key}')
-
-    # Set up for the rest
-    field_ids = [key for key in output_args.keys()]
-    field_id = field_ids[0]
-    field = fields[field_id]
-    send_val = output_args[field_id]
-
-    ops = field['operations']
-    if operation not in ops:
-        raise ValueError(f'Cannot perform \'{operation}\' on \'{field_name_human}\' of {issue.key}; try: {ops}')
-
-    # Add and remove use a different format than 'set'.
-    # There's also 'modify', but ... that one's even more complicated.
-    if operation in ['add', 'remove']:
-        update_args = {field_id: [{operation: val} for val in send_val]}
-    else:
-        update_args = {field_id: [{operation: send_val}]}
-
-    return issue.update(**update_args)
-
-
 def issue_fields(args):
     if args.issue:
         issue = args.project.issue(args.issue)
@@ -335,7 +294,7 @@ def issue_fields(args):
         return (0, False)
 
     try:
-        _update_field(issue, args.name, args.values, args.operation, fields)
+        issue.update_field(args.name, args.values, args.operation, fields)
     except (AttributeError, ValueError) as e:
         print(e)
         return (1, False)
