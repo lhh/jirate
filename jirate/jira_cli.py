@@ -20,7 +20,6 @@ from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
-from jirate.jira_input import transmogrify_input
 
 
 def move(args):
@@ -294,36 +293,11 @@ def issue_fields(args):
         render_matrix(matrix)
         return (0, False)
 
-    # TODO multi-field sets?
-    # transmogrify_input - should this be done in jboard.update_issue?
-    # Note that if answer is yes, we have to fetch field metadata there,
-    # so we'll want to cache it or pass it down to avoid extra API calls
-    field_args = {args.name: ' '.join(args.values)}
-    output_args = transmogrify_input(fields, **field_args)
-
-    if not output_args:
-        print(f'No field like {args.name} in {issue.key}')
+    try:
+        issue.update_field(args.name, args.values, args.operation, fields)
+    except (AttributeError, ValueError) as e:
+        print(e)
         return (1, False)
-
-    # Set up for the rest
-    field_ids = [key for key in output_args.keys()]
-    field_id = field_ids[0]
-    field = fields[field_id]
-    send_val = output_args[field_id]
-
-    ops = field['operations']
-    if args.operation not in ops:
-        print(f'Cannot perform {args.operation} on {args.issue}; try: {ops}')
-        return (1, False)
-
-    # Add and remove use a different format than 'set'.
-    # There's also 'modify', but ... that one's even more complicated.
-    if args.operation in ['add', 'remove']:
-        update_args = {field_id: [{args.operation: val} for val in send_val]}
-    else:
-        update_args = {field_id: [{args.operation: send_val}]}
-
-    args.project.update_issue(issue.raw['key'], **update_args)
     return (0, False)
 
 

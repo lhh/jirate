@@ -31,15 +31,56 @@ def json_loads(val):
 
 
 def _resolve_field(obj, field_name):
-    return obj._jirate._field(obj, field_name)
+    return obj._jirate.field(obj, field_name)
+
+
+# Intelligent field update for Issue
+def _update_field(issue, field_name_human, value_human, operation='set', fields=None):
+    if not fields:
+        # TODO use native python-jira issue.fields instead of raw json
+        # (Except operations are not captured, which we need)
+        fields = issue._jirate.fields(issue.key)
+    if isinstance(value_human, list):
+        value_human = ' '.join(value_human)
+    else:
+        value_human = str(value_human)
+
+    # TODO multi-field sets?
+    field_args = {field_name_human: value_human}
+    output_args = transmogrify_input(fields, **field_args)
+
+    if not output_args:
+        raise AttributeError(f'No field like \'{field_name_human}\' in {issue.key}')
+
+    # Set up for the rest
+    field_ids = [key for key in output_args.keys()]
+    field_id = field_ids[0]
+    field = fields[field_id]
+    send_val = output_args[field_id]
+
+    ops = field['operations']
+    if operation not in ops:
+        raise ValueError(f'Cannot perform \'{operation}\' on \'{field_name_human}\' of {issue.key}; try: {ops}')
+
+    # Add and remove use a different format than 'set'.
+    # There's also 'modify', but ... that one's even more complicated.
+    if operation in ['add', 'remove']:
+        update_args = {field_id: [{operation: val} for val in send_val]}
+    else:
+        update_args = {field_id: [{operation: send_val}]}
+
+    return issue.update(**update_args)
 
 
 def _resolve_field_setup(jirate_obj, issue_obj):
     # Do NOT trample future python JIRA objects' field function.
     if hasattr(issue_obj, 'field'):
-        raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug!')
+        raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug against Jirate!')
+    if hasattr(issue_obj, 'update_field'):
+        raise Exception('API BREAK: \'update_field\' is now part of jira.resources.Issue. Please file a bug against Jirate!')
     issue_obj._jirate = jirate_obj
     issue_obj.field = types.MethodType(_resolve_field, issue_obj)
+    issue_obj.update_field = types.MethodType(_update_field, issue_obj)
 
 
 def _check_fields(issue, name):
@@ -241,12 +282,12 @@ class Jirate(object):
         # Don't return customfield if there's a direct match
         # obvious match
         if field_name in issue.raw['fields']:
-            return issue.raw['fields'][field_name]
+            return field_name
         fname = self.field_to_id(field_name)
         if fname in issue.raw['fields']:
-            return issue.raw['fields'][fname]
+            return fname
         fname = _check_fields(issue, field_name)
-        if fname:
+        if fname in issue.raw['fields']:
             return fname
         raise AttributeError(str(issue) + f' has no field like {field_name}')
 
@@ -266,7 +307,8 @@ class Jirate(object):
           AttributeError if the field does not exist.
         """
         issue = self.issue(issue_alias)
-        return self._field(issue, field_name)
+        fname = self._field(issue, field_name)
+        return issue.raw['fields'][fname]
 
     def fields(self, issue_alias):
         """Determine the fields available for an issue
@@ -766,6 +808,8 @@ class JiraProject(Jirate):
 
     def _index_issue(self, issue):
         if issue.key not in self._config['issue_map']:
+            if not hasattr(issue, '_jirate'):
+                _resolve_field_setup(self, issue)
             self._config['issue_map'][issue.key] = issue
 
     def _index_issues(self, issues):
