@@ -11,7 +11,6 @@ import editor
 
 from collections import OrderedDict
 from jira.exceptions import JIRAError
-
 from referencing import Registry
 import jsonschema
 
@@ -404,7 +403,6 @@ def _metadata_by_type(project, issuetype):
         return (1, False)
 
     if not metadata:
-        print(f'Valid issue types for {project.project_name}:')
         list_issue_types(project.issue_types)
         raise ValueError(f'Invalid issue type: {issuetype}')
     return metadata
@@ -481,7 +479,7 @@ def _parse_creation_args(issue_data, required_fields=None, reserved_fields=None,
 
 def create_from_template(args):
     with open(args.template_file, 'r') as yaml_file:
-        template = yaml.safe_load(yaml_file)
+        template = yaml_file.read()
 
     values = {}
     # Always render. there should be defaults.
@@ -500,13 +498,15 @@ def create_from_template(args):
     interactive = sys.stdin.isatty() and not args.non_interactive
     template_output = apply_values(template, values, interactive)
 
+    template = yaml.safe_load(template_output)
+
     try:
-        validate_template(args)
+        _validate_template(args.project, template)
     except jsonschema.exceptions.ValidationError as e:
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
 
-    all_filed = _create_from_template(args, template_output)
+    all_filed = _create_from_template(args, template)
 
     # Need to refresh to that issues get re-fetched to include subtasks
     # TODO: Have subtask() update parent issues in _config['issue_map']
@@ -520,7 +520,6 @@ def create_from_template(args):
         else:
             print_issue(args.project, args.project.issue(filed['parent']), False)
     return (0, True)
-
 
 
 def _create_from_template(args, template):
@@ -575,12 +574,9 @@ def _create_from_template(args, template):
     return all_filed
 
 
-def validate_template(args):
-    with open(args.template_file, 'r') as yaml_file:
-        template = yaml.safe_load(yaml_file)
-
+def _validate_template(project, template):
     for i, issue in enumerate(template['issues']):
-        template['issues'][i] = {args.project.field_to_id(name): value for name, value in issue.items()}
+        template['issues'][i] = {project.field_to_id(name): value for name, value in issue.items()}
 
     schema_dir = files('jirate').joinpath('schemas')
     schemas = {}
@@ -593,6 +589,15 @@ def validate_template(args):
 
     # Will raise a ValidationError with details on what failed:
     validator.validate(template)
+    return True
+
+
+def validate_template(args):
+    with open(args.template_file, 'r') as yaml_file:
+        template = yaml.safe_load(yaml_file)
+
+    _validate_template(args.project, template)
+
     # If we get here it means validation succeeded.
     print(f"Template {args.template_file} is valid.")
     return (0, True)

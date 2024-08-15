@@ -1,6 +1,7 @@
+{% set type=type or "Story" %}
 issues:
-  - issue_type: "Story"
-    summary: "Set up Jirate templates on my machine"
+  - issue_type: {@type@}
+    summary: "Set up {@name@} templates {@version|default('1.0')@} on my machine"
     # Description terminated by two newlines
     description: |
       * {*}This is a multi-line description.{*}
@@ -10,7 +11,6 @@ issues:
        ** Any additional whitespace will be part of the issue description.
        * {*}Termination{*}.
        ** You can terminate multi-line strings with two newlines.
-
 
     subtasks:
       - summary: "Clone the repo and install it"
