@@ -40,7 +40,21 @@ def close_issues(args):
     close_args = {}
     if args.resolution:
         close_args['resolution'] = args.resolution
-    for issue in args.target:
+
+    close_issues = []
+    if args.subtasks:
+        for issue_key in args.target:
+            # Close subtasks first, then main issue
+            issue = args.project.issue(issue_key)
+            if issue.key in close_issues:
+                continue
+            issue_subtasks = [subtask['key'] for subtask in issue.raw['fields']['subtasks']]
+            close_issues.extend(issue_subtasks)
+            close_issues.append(issue.key)
+    else:
+        close_issues = args.target
+
+    for issue in close_issues:
         if not args.project.close(issue, **close_args):
             ret = 1
     return (ret, False)
@@ -1192,6 +1206,7 @@ def create_parser():
     cmd.add_argument('issue', help='Existing Issue (more fields available here)', nargs='?')
 
     cmd = parser.command('close', help='Move issue(s) to closed/done/resolved', handler=close_issues)
+    cmd.add_argument('--subtasks', help='Close subtasks, too', default=False, action='store_true')
     cmd.add_argument('-r', '--resolution', help='Set resolution on transition')
     cmd.add_argument('target', nargs='+', help='Target issue(s)')
 
