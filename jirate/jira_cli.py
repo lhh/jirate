@@ -496,6 +496,9 @@ def create_from_template(args):
             values[key] = value
 
     interactive = sys.stdin.isatty() and not args.non_interactive
+
+    # template_output is the raw text with jinja2 variable substitution
+    # completed, not a yaml structure
     template_output = apply_values(template, values, interactive)
 
     template = yaml.safe_load(template_output)

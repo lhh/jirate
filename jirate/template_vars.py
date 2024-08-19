@@ -1,10 +1,30 @@
 #!/usr/bin/python3
+#
+# Jinja2 variable support for Jirate templates
+#
 
 from jinja2 import Environment, BaseLoader, meta, nodes
 
 
-# If a value is not provided on the command line, ask for it here.
 def update_values_interactive(values, cli_values):
+    """
+    Grab input from the user for all values that do not already have one
+    as input from the CLI.
+
+    If a default is provided and no input is given, accept the default.
+
+    Parameters
+    ----------
+    values : dict
+        Variable names and defaults values from the Jinja2 template
+    cli_values : dict
+        Variable names and values provided from the command line
+
+    Returns
+    -------
+    dict
+        Variable name and value pairs
+    """
     ret = {}
     for key in values:
         # If provided via CLI, move on
@@ -33,13 +53,26 @@ def update_values_interactive(values, cli_values):
 #
 # {% set var=var or "value" %}  # form 1; code at top of file
 # {{var|default("value")}}      # form 2; inline var w/ default
-#
-# Process code block variable default (form 1)
-# Input:
-#   {% set version=version or "1.0" %}
-# Output:
-#   Assign(target=Name(name='abc', ctx='store'), node=Or(left=Name(name='version', ctx='load'), right=Const(value='1.0'))),
 def __assign_default(node, ret):
+    """
+    Grab the assignment variable name and default value from an Assign node.
+    In a Jinja2 document, this looks like:
+        {% set version=version or "1.0" %}
+    ...which results in the following in the Jinja2 tree:
+        Assign(target=Name(name='abc', ctx='store'), node=Or(left=Name(name='version', ctx='load'), right=Const(value='1.0'))),
+
+    Parameters
+    ----------
+    node : jinja2.nodes.Or
+        Current node in Jinja2 abstract syntax tree
+    ret : dict
+        Return variable names and default values (linear)
+
+    Returns
+    -------
+    bool
+        True if a value was assigned, else False
+    """
     if not isinstance(node.node, nodes.Or):
         return False
     if not isinstance(node.node.left, nodes.Name):
@@ -50,12 +83,26 @@ def __assign_default(node, ret):
     return True
 
 
-# Process inline variable default (form 2)
-# Input:
-#   {{version|default('1.0')}}
-# Output node tree:
-#   Output(nodes=[Filter(node=Name(name='version', ctx='load'), name='default', args=[Const(value='1.0')]
 def __filter_default(node, ret):
+    """
+    Grab the assignment variable name and default value from an Assign node.
+    In a Jinja2 document, this looks like:
+        {{version|default('1.0')}}
+    ...which results in the following in the Jinja2 tree:
+        Filter(node=Name(name='version', ctx='load'), name='default', args=[Const(value='1.0')
+
+    Parameters
+    ----------
+    node : jinja2.nodes.Filter
+        Current node in Jinja2 abstract syntax tree
+    ret : dict
+        Return variable names and default values (linear)
+
+    Returns
+    -------
+    bool
+        True if a value was assigned, else False
+    """
     if not isinstance(node, nodes.Filter):
         return False
     if not isinstance(node.node, nodes.Name):
@@ -72,6 +119,20 @@ def __filter_default(node, ret):
 
 
 def __assemble_from_tree(node, ret):
+    """
+    Assembles set of defaults from a parsed Jinja2 node (recursive)
+
+    Parameters
+    ----------
+    node : jinja2.nodes.*
+        Jinja2 nodes class object (tree)
+    ret : dict of return variable names and default values (linear)
+
+    Returns
+    -------
+    dict
+        variable names and default values from document tree
+    """
     if isinstance(node, nodes.Assign):
         if __assign_default(node, ret):
             # Successfully found a mutable variable in form 1
@@ -91,13 +152,57 @@ def __assemble_from_tree(node, ret):
 
 
 def assemble_from_tree(tree):
+    """
+    Assembles set of defaults from a parsed Jinja2 document abstract
+    syntax tree.
+
+    Parameters
+    ----------
+    tree : jinja2.nodes.Template
+        Jinja2 tree object
+    ret : dict
+        Variable names and default values (linear)
+
+    Returns
+    -------
+    dict
+        Variable names and default values
+    """
     ret = {}  # initialize
     return __assemble_from_tree(tree, ret)
 
 
 def apply_values(inp, values={}, interactive=False):
-    # Jinja2 variable substitution uses glyphs that are native to JIRA so
-    # use a modified one. {{ -> {@, }} -> @}
+    """
+    Apply Jinja2 variable defaults (lowest priority), interactive
+    inputs (medium priority) or values provided on the command line
+    (highest priority) and to a Jinja2 template and return the
+    rendered text.
+
+    Note that Jinja2 variable substitution uses glyphs that are native
+    to JIRA so we use a modified set ({{ -> {@, }} -> @})
+
+    Parameters
+    ----------
+    inp : str
+        Raw Jinja2 template as text
+    values : dict
+        Values provided from the command line, if any
+    interactive : bool
+        If false, do NOT prompt for user input; True means to prompt
+        the user for input.
+
+    Returns
+    -------
+    str
+        Rendered text template.
+
+    Raises
+    ------
+    ValueError
+        No value for a variable or no variable matching input in
+        template.
+    """
     env = Environment(loader=BaseLoader,
                       trim_blocks=True, lstrip_blocks=True,
                       variable_start_string='{@',
@@ -123,7 +228,7 @@ def apply_values(inp, values={}, interactive=False):
             extra.append(key)
         template_values[key] = values[key]
     if extra:
-        raise ValueError(f'Unknown variable(s) for {extra}')
+        raise ValueError(f'Unknown variable(s) {extra}')
 
     missing = []
     for key in template_values:
