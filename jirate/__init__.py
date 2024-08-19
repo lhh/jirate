@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-__version__ = '0.8.6'
+__version__ = '0.8.7'
 
 from jirate.jboard import Jirate, JiraProject
 
