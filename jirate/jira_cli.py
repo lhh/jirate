@@ -568,6 +568,9 @@ def validate_template(args):
 def generate_template(args):
     template = {}
     issue = args.project.issue(args.issue_id)
+    if not issue:
+        print('No such issue:', args.issue_id)
+        return (1, False)
 
     # TODO: allow customizing allow_fields in the config
     template = _generate_template(issue.raw['fields'], args.project.field_to_alias, args.project.issue, args.all_fields)
@@ -669,6 +672,9 @@ def _trim_template(template, allow_fields=None):
 def new_subtask(args):
     desc = None
     parent_issue = args.project.issue(args.issue_id)
+    if not parent_issue:
+        print('No such issue:', args.issue_id)
+        return (1, False)
 
     if args.text:
         name = ' '.join(args.text)
@@ -689,7 +695,13 @@ def new_subtask(args):
 
 def link_issues(args):
     left_issue = args.issue_left
+    if not left_issue:
+        print('No such issue:', args.issue_left)
+        return (1, False)
     right_issue = args.issue_right
+    if not right_issue:
+        print('No such issue:', args.issue_right)
+        return (1, False)
     link_name = ' '.join(args.text)
 
     args.project.link(left_issue, right_issue, link_name)
@@ -703,6 +715,9 @@ def unlink_issues(args):
 
 def link_url(args):
     issue = args.issue
+    if not issue:
+        print('No such issue:', args.issue)
+        return (1, False)
     url = args.url
     text = ' '.join(args.text)
     args.project.attach(issue, url, text)
