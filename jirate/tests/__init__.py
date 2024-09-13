@@ -12,12 +12,14 @@ fake_user = {'self': 'https://domain.com/rest/api/2/user?username=porkchop', 'ke
 
 
 fake_fields = [
+    # 0 - parent
     {'clauseNames': ['parent', 'Parent'],
         'custom': False,
         'id': 'parent',
         'name': 'Parent',
         'schema': {'system': 'parent', 'type': 'issuelink'}
      },
+    # 1 - priority
     {'clauseNames': ['priority', 'Priority'],
         'custom': False,
         'id': 'priority',
@@ -40,6 +42,7 @@ fake_fields = [
         'hasDefaultValue': True,
         'operations': ['set']
      },
+    # 2 - description
     {'clauseNames': ['description', 'Description'],
         'custom': False,
         'name': 'Description',
@@ -48,6 +51,7 @@ fake_fields = [
         'operations': ['set'],
         'schema': {'type': 'string'},
      },
+    # 3 - components
     {'clauseNames': ['components', 'Component/s'],
         'custom': False,
         'id': 'components',
@@ -61,7 +65,15 @@ fake_fields = [
             {'id': 1003,
              'name': 'glibc'},
             {'id': 1004,
-             'name': 'porkchop'}],
+             'name': 'porkchop'},
+            {'id': 1005,
+             'name': 'test two'},
+            {'id': 1006,
+             'name': 'test three'},
+            {'id': 1007,
+             'name': 'fuzzy match'},
+            {'id': 1008,
+             'name': 'python 4.0'}],
         'operations': ['add', 'set', 'remove'],
         'required': True
      },
