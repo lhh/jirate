@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from jirate.tests import fake_metadata, fake_transitions
+from jirate.tests import fake_metadata, fake_transitions, fake_fields
 from jirate.jira_input import transmogrify_input
-from jirate.jira_input import check_value
+from jirate.jira_input import check_value, allowed_value_validate
 
 import os
 import time
@@ -151,11 +151,20 @@ def test_trans_metadata():
 def test_check_value_simple():
     valid = {'1': ['1', ' 1', '1 ', '1-', '-1'],
              'a': ['a', ' a', 'a ', 'a-', '-a'],
-             '1.1': [' 1.1', '1.1 ']}
+             '1.1': [' 1.1', '1.1 '],
+             'test': ['test', 'test two']}
 
     for check in valid:
         for value in valid[check]:
             assert(check_value(check, value))
+
+
+def test_check_value_exact():
+    assert(check_value('1', '1') == 2)
+
+
+def test_check_value_inexact():
+    assert(check_value('1', '1 ') == 1)
 
 
 def test_check_value_nomatch():
@@ -165,4 +174,30 @@ def test_check_value_nomatch():
 
     for check in valid:
         for value in valid[check]:
-            assert(check_value(check, value) is False)
+            assert(not check_value(check, value))
+
+
+def test_fuzzy_values_exact():
+    allowed_values = fake_fields[3]['allowedValues']  # components
+    # python and 'python 4.0' are available, but because this is exact,
+    # we get only one python result
+    assert allowed_value_validate('components', 'python', allowed_values) == 'python'
+
+
+def test_fuzzy_values_fail():
+    allowed_values = fake_fields[3]['allowedValues']  # components
+    # 2 possible matches for 'test', so ambiguous, raise valueerror
+    with pytest.raises(ValueError):
+        allowed_value_validate('components', 'test', allowed_values)
+
+
+def test_fuzzy_values_approx():
+    allowed_values = fake_fields[3]['allowedValues']  # components
+    # only one match for this
+    assert allowed_value_validate('components', 'fuzzy', allowed_values) == 'fuzzy match'
+
+
+def test_avv_multiple():
+    allowed_values = fake_fields[3]['allowedValues']  # components
+
+    assert allowed_value_validate('components', ['fuzzy', 'python'], allowed_values) == ['fuzzy match', 'python']
