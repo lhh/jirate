@@ -88,7 +88,7 @@ _input_array_renderers = {
 def check_value(check, value):
     for possible_value in (value, nym(value), value.lower()):
         if possible_value == check:
-            return True
+            return 2
         if check not in possible_value:
             continue
         # begnning of string, end of string.
@@ -97,8 +97,8 @@ def check_value(check, value):
         #
         rx = f'(^|[\\s\\-]){check}($|[\\s\\-])'
         if re.search(rx, possible_value):
-            return True
-    return False
+            return 1
+    return 0
 
 
 def allowed_value_validate(field_name, values, allowed_values=None):
@@ -112,7 +112,7 @@ def allowed_value_validate(field_name, values, allowed_values=None):
     else:
         check = values
 
-    ret = []
+    info = {}
     for val in check:
         for av in allowed_values:
             # Ignore archived or disabled allowed values
@@ -125,15 +125,30 @@ def allowed_value_validate(field_name, values, allowed_values=None):
             for key in ['name', 'value']:
                 if key not in av:
                     continue
-                if check_value(val, av[key]):
-                    ret.append(av[key])
-                    break
-        if not ret:
+                cv = check_value(val, av[key])
+                if cv == 2:
+                    info[val] = {'values': [av[key]], 'exact': True}
+                    continue
+                if cv == 1:
+                    if val in info:
+                        if not info[val]['exact']:
+                            info[val]['values'].append(av[key])
+                    else:
+                        info[val] = {'values': [av[key]], 'exact': False}
+
+        # If we didn't find a match, raise an error
+        if val not in info:
             raise ValueError(f'Value {val} not allowed for {field_name}')
 
-    # Input count must match output count
-    if len(ret) != len(check):
-        raise ValueError(f'{field_name}: Expected {len(check)} matches for {values}, got {ret}')
+    # We should only have one match per value
+    for key in info:
+        if len(info[key]['values']) > 1:
+            raise ValueError(f'{key}: More than one match for {key}')
+
+    ret = []
+    # Output order MUST match input order
+    for val in check:
+        ret.append(info[val]['values'][0])
 
     if not isinstance(values, list):
         return ret[0]

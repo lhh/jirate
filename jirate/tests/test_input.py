@@ -158,6 +158,14 @@ def test_check_value_simple():
             assert(check_value(check, value))
 
 
+def test_check_value_exact():
+    assert(check_value('1', '1') == 2)
+
+
+def test_check_value_inexact():
+    assert(check_value('1', '1 ') == 1)
+
+
 def test_check_value_nomatch():
     valid = {'1': ['a1', ' 12', '1.1'],
              'a': ['a1', ' ab', 'a.b'],
@@ -165,4 +173,4 @@ def test_check_value_nomatch():
 
     for check in valid:
         for value in valid[check]:
-            assert(check_value(check, value) is False)
+            assert(not check_value(check, value))
