@@ -88,7 +88,7 @@ def print_issues_by_field(issue_list, args=None):
     fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
 
     output = []
-    output.append(list(fields.keys()))
+    output.append(list(truncate(key, fields[key]) for key in fields))
     del fields['key']
 
     found_fields = []
