@@ -217,6 +217,8 @@ def comma_separated(item_list):
 
 def truncate(arg, maxlen):
     if arg and maxlen:
+        if maxlen == 1:
+            return str(arg[0])
         if maxlen > 0 and len(arg) > maxlen:
             arg = arg[:maxlen - 1] + '…'
         if maxlen < 0 and len(arg) > abs(maxlen):
@@ -556,7 +558,11 @@ def pretty_matrix(matrix, header=True, header_bar=True):
     # Undefined if the screen width is too wide to accommodate all but the
     # last field
     col_widths = len(matrix[0]) * [0]
-    for row in matrix:
+    if trunc_headers:
+        start_row = 1
+    else:
+        start_row = 0
+    for row in matrix[start_row:]:
         if len(row) != len(col_widths):
             raise ValueError('Column count mismatch')
         for val in range(0, len(col_widths)):
@@ -569,7 +575,9 @@ def pretty_matrix(matrix, header=True, header_bar=True):
         start = 1
         line = []
         for item in range(0, len(col_widths)):
-            line.extend([matrix[0][item], col_widths[item]])
+            # We truncate here to max length from field array
+            val = truncate(matrix[0][item], col_widths[item])
+            line.extend([val, col_widths[item]])
         line.pop()
         # XXX Do we want to render full-width here?
         width = vsep_print(' ', screen_width, *line)
