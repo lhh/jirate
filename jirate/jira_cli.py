@@ -17,6 +17,7 @@ import jsonschema
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym, vsep_print, parse_params, truncate, render_matrix, comma_separated
+from jirate.decor import issue_link_string
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
@@ -98,7 +99,7 @@ def print_issues_by_field(issue_list, args=None):
             if nym(issue.field('status')['name']) != nym(args.status):
                 continue
         row = []
-        row.append(issue.key)
+        row.append(issue_link_string(issue.key, args.project.jira.server_url))
         for field in fields:
             field_key = args.project.field_to_id(field)
             if not field_key:
@@ -849,16 +850,16 @@ def print_labels(issue, prefix='Labels: '):
         print()
 
 
-def print_issue_links(issue):
+def print_issue_links(issue, baseurl=None):
     hbar_under('Issue Links')
     matrix = []
     for link in issue['issuelinks']:
         if 'outwardIssue' in link:
-            text = link['type']['outward'] + ' ' + link['outwardIssue']['key']
+            text = link['type']['outward'] + ' ' + issue_link_string(link['outwardIssue']['key'], baseurl)
             status = link['outwardIssue']['fields']['status']['name']
             desc = link['outwardIssue']['fields']['summary']
         elif 'inwardIssue' in link:
-            text = link['type']['inward'] + ' ' + link['inwardIssue']['key']
+            text = link['type']['inward'] + ' ' + issue_link_string(link['inwardIssue']['key'], baseurl)
             status = link['inwardIssue']['fields']['status']['name']
             desc = link['inwardIssue']['fields']['summary']
         # color_string throws off length calculations
@@ -881,7 +882,7 @@ def print_remote_links(links):
 
 
 # Dict from search or subtask list
-def _print_issue_list(header, issues):
+def _print_issue_list(header, issues, baseurl=None):
     if not issues:
         return
     hbar_under(header)
@@ -890,11 +891,11 @@ def _print_issue_list(header, issues):
         if isinstance(task, str):
             task = issues[task]
         try:
-            task_key = task.key
+            task_key = issue_link_string(task['key'], baseurl)
             status = task.raw['fields']['status']['name']
             summary = task.raw['fields']['summary']
         except AttributeError:
-            task_key = task['key']
+            task_key = issue_link_string(task['key'], baseurl)
             status = task['fields']['status']['name']
             summary = task['fields']['summary']
         matrix.append([task_key, status, summary])
@@ -902,16 +903,17 @@ def _print_issue_list(header, issues):
     print()
 
 
-def print_subtasks(issue):
-    _print_issue_list('Sub-tasks', issue['subtasks'])
+def print_subtasks(issue, baseurl=None):
+    _print_issue_list('Sub-tasks', issue['subtasks'], baseurl)
 
 
 def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     issue = issue_obj.raw['fields']
-    lsize = max(len(issue_obj.raw['key']), max_field_width(issue, verbose, project.allow_code))
+    key_link = issue_link_string(issue_obj.key, project.jira.server_url)
+    lsize = max(len(key_link), max_field_width(issue, verbose, project.allow_code))
     lsize = max(lsize, len('Next States'))
 
-    vsep_print(' ', 0, issue_obj.raw['key'], lsize, issue['summary'])
+    vsep_print(' ', 0, key_link, lsize, issue['summary'])
     render_issue_fields(issue, verbose, project.allow_code, lsize)
 
     if verbose:
@@ -929,7 +931,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         print()
 
     if 'issuelinks' in issue and len(issue['issuelinks']):
-        print_issue_links(issue)
+        print_issue_links(issue, project.jira.server_url)
 
     # Don't print external links unless in verbose mode since it's another API call?
     if verbose:
@@ -938,11 +940,11 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
             print_remote_links(links)
 
     if 'subtasks' in issue and len(issue['subtasks']):
-        print_subtasks(issue)
+        print_subtasks(issue, project.jira.server_url)
 
     if issue['issuetype']['name'] == 'Epic':
         ret = project.search_issues('"Epic Link" = "' + issue_obj.raw['key'] + '"')
-        _print_issue_list('Issues in Epic', ret)
+        _print_issue_list('Issues in Epic', ret, project.jira.server_url)
 
     if no_comments:
         return

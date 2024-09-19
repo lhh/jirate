@@ -42,6 +42,50 @@ COLORS = {'green':       2,     # NOQA
           'default':     7 }    # NOQA
 
 
+class EscapedString(str):
+    def __init__(self, val):
+        self._len = len(val)
+        self._text = val
+        self._value = val
+        self._sequence = None
+
+    def __len__(self):
+        return self._len
+
+    def _escape(self, sequence, value=None):
+        if '{_value_}' not in sequence:
+            raise ValueError('Cannot escape; invalid input')
+        if not value:
+            value = self._text
+        return sequence.replace('{_value_}', value)
+
+    def escape(self, sequence, value=None):
+        self._value = self._escape(sequence, value)
+
+    def update(self, value):
+        self._value = value
+
+    def ljust(self, width):
+        if width <= len(self):
+            return str(self)
+        return self + (' ' * (width - len(self)))
+
+    def __str__(self):
+        return str(self._value)
+
+    def __repr__(self):
+        return str(self._value)
+
+    def __add__(self, other):
+        if (isinstance(other, EscapedString)):
+            ret = EscapedString(self._text + other._text)
+            ret.update(self._value + other._value)
+        else:
+            ret = EscapedString(self._text + str(other))
+            ret.update(self._value + str(other))
+        return ret
+
+
 def color_string(string, color=None, bgcolor=None):
     if display_color is not True:
         return string
@@ -59,7 +103,19 @@ def color_string(string, color=None, bgcolor=None):
 
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
-    return ret_string
+    ret = EscapedString(string)
+    ret.update(ret_string)
+
+    return ret
+
+
+def issue_link_string(issue_key, baseurl=None):
+    if not baseurl:
+        return issue_key
+
+    ret = EscapedString(issue_key)
+    ret.update(f']8;;{baseurl}/browse/{issue_key}\\{issue_key}]8;;\\')
+    return ret
 
 
 def parse_params(arg):
