@@ -20,6 +20,7 @@ from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym
 from jirate.decor import pretty_print  # NOQA
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
+from jirate.template_vars import apply_values
 
 
 def move(args):
@@ -402,7 +403,6 @@ def _metadata_by_type(project, issuetype):
         return (1, False)
 
     if not metadata:
-        print(f'Valid issue types for {project.project_name}:')
         list_issue_types(project.issue_types)
         raise ValueError(f'Invalid issue type: {issuetype}')
     return metadata
@@ -479,10 +479,32 @@ def _parse_creation_args(issue_data, required_fields=None, reserved_fields=None,
 
 def create_from_template(args):
     with open(args.template_file, 'r') as yaml_file:
-        template = yaml.safe_load(yaml_file)
+        template = yaml_file.read()
+
+    values = {}
+    # Always render. there should be defaults.
+    if args.vars:
+        print(args.vars)
+        if len(args.vars) % 2 != 0:
+            raise ValueError('Variable/value list is not divisible by 2')
+
+        # Someone set up us the render
+        argv = copy.copy(args.vars)
+        while len(argv):
+            key = argv.pop(0)
+            value = argv.pop(0)
+            values[key] = value
+
+    interactive = sys.stdin.isatty() and not args.non_interactive
+
+    # template_output is the raw text with jinja2 variable substitution
+    # completed, not a yaml structure
+    template_output = apply_values(template, values, interactive)
+
+    template = yaml.safe_load(template_output)
 
     try:
-        validate_template(args)
+        _validate_template(args.project, template)
     except jsonschema.exceptions.ValidationError as e:
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
@@ -501,7 +523,6 @@ def create_from_template(args):
         else:
             print_issue(args.project, args.project.issue(filed['parent']), False)
     return (0, True)
-
 
 
 def _create_from_template(args, template):
@@ -556,12 +577,9 @@ def _create_from_template(args, template):
     return all_filed
 
 
-def validate_template(args):
-    with open(args.template_file, 'r') as yaml_file:
-        template = yaml.safe_load(yaml_file)
-
+def _validate_template(project, template):
     for i, issue in enumerate(template['issues']):
-        template['issues'][i] = {args.project.field_to_id(name): value for name, value in issue.items()}
+        template['issues'][i] = {project.field_to_id(name): value for name, value in issue.items()}
 
     schema_dir = files('jirate').joinpath('schemas')
     schemas = {}
@@ -574,6 +592,15 @@ def validate_template(args):
 
     # Will raise a ValidationError with details on what failed:
     validator.validate(template)
+    return True
+
+
+def validate_template(args):
+    with open(args.template_file, 'r') as yaml_file:
+        template = yaml.safe_load(yaml_file)
+
+    _validate_template(args.project, template)
+
     # If we get here it means validation succeeded.
     print(f"Template {args.template_file} is valid.")
     return (0, True)
@@ -1225,7 +1252,9 @@ def create_parser():
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
+    cmd.add_argument('-n', '--non-interactive', default=False, help='Do not prompt for variables', action='store_true')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
+    cmd.add_argument('vars', help='Variables/values (name value name2 value2 ...)', nargs='*')
 
     cmd = parser.command('validate', help='Validate a YAML template for use with the "template" command',
                          handler=validate_template)
