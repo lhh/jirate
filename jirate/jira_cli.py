@@ -197,6 +197,10 @@ def search_jira(args):
             print(f'No search configured: {named}')
             return (1, False)
         search_query = searches[named]
+        if args.text:
+            additional = ' '.join(args.text)
+            search_query = f'({additional}) AND {search_query}'
+            print(search_query)
         ret = args.project.search_issues(search_query)
     else:
         search_query = ' '.join(args.text)
