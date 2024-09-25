@@ -20,7 +20,7 @@ except ModuleNotFoundError:
     _markdown = False
     pass
 
-display_color = True
+fancy_output = False
 HILIGHT = '[1m'
 NORMAL = '[0m'
 
@@ -87,7 +87,9 @@ class EscapedString(str):
 
 
 def color_string(string, color=None, bgcolor=None):
-    if display_color is not True:
+    global fancy_output
+
+    if fancy_output is not True:
         return string
 
     ret_string = ''
@@ -110,7 +112,9 @@ def color_string(string, color=None, bgcolor=None):
 
 
 def issue_link_string(issue_key, baseurl=None):
-    if not baseurl:
+    global fancy_output
+
+    if not baseurl or not fancy_output:
         return issue_key
 
     ret = EscapedString(issue_key)

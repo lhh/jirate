@@ -1115,6 +1115,11 @@ def get_jira_project(project=None, config=None, config_file=None):
         if jconfig['here_there_be_dragons'] is True:
             allow_code = True
 
+    # Configure fancy output rendering if specified
+    if 'fancy_output' in jconfig and jconfig['fancy_output']:
+        import jirate.decor  # NOQA
+        jirate.decor.fancy_output = True
+
     if not project:
         # Not sure why I used an array here
         project = jconfig['default_project']
