@@ -1280,9 +1280,21 @@ def create_parser():
     return parser
 
 
+def update_args(args):
+    # Special cases
+    if len(args) == 3:
+        if args[1] == 'field' and args[2] != '-h':
+            return [args[0], 'fields', args[2]]
+    if len(args) == 4:
+        if args[1] == 'field' and '-t' in args:
+            return [args[0], 'fields', args[2], args[3]]
+    return args
+
+
 def main():
     parser = create_parser()
-    ns = parser.parse_args()
+    args = update_args(sys.argv)
+    ns = parser.parse_args(args=args[1:])
 
     try:
         project = get_jira_project(ns.project)
