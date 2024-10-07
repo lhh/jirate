@@ -1,0 +1,3 @@
+[allowlist]
+  description = "Global Allowlist"
+  ignore = 's3kr1+'
