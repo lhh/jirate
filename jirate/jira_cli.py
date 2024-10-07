@@ -895,7 +895,7 @@ def _print_issue_list(header, issues, baseurl=None):
         if isinstance(task, str):
             task = issues[task]
         try:
-            task_key = issue_link_string(task['key'], baseurl)
+            task_key = issue_link_string(task.key, baseurl)
             status = task.raw['fields']['status']['name']
             summary = task.raw['fields']['summary']
         except AttributeError:
