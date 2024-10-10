@@ -180,6 +180,22 @@ def print_users(users):
     render_matrix(matrix)
 
 
+# Returns the search name and fields if provided
+def find_search(name, search_info):
+    if name not in search_info:
+        return (None, None)
+    item = search_info[name]
+    if isinstance(item, str):
+        return (item, None)
+    elif not isinstance(item, dict) or 'query' not in item:
+        return (None, None)
+
+    fields = None
+    if 'fields' in item:
+        fields = item['fields']
+    return (item['query'], fields)
+
+
 def search_jira(args):
     if args.user:
         users = args.project.search_users(args.user)
@@ -190,18 +206,25 @@ def search_jira(args):
         return (0, False)
 
     named = args.named_search
+    fields = None
     if not args.text and not named:
         named = 'default'
     if named:
         searches = args.project.get_user_data('searches')
-        if named not in searches:
+        (search_query, fields) = find_search(named, searches)
+        if not search_query:
             print(f'No search configured: {named}')
             return (1, False)
-        search_query = searches[named]
         if args.text:
             additional = ' '.join(args.text)
             search_query = f'({additional}) AND {search_query}'
-            print(search_query)
+
+        # Field priority:
+        # 1. cli fields
+        # 2. per-search fields
+        # 3. global fields
+        if (not hasattr(args, 'fields') or args.fields is None) and fields:
+            setattr(args, 'fields', fields)
         ret = args.project.search_issues(search_query)
     else:
         search_query = ' '.join(args.text)
