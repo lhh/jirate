@@ -980,9 +980,10 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue, project.jira.server_url)
 
-    if issue['issuetype']['name'] == 'Epic':
-        ret = project.search_issues('"Epic Link" = "' + issue_obj.raw['key'] + '"')
-        _print_issue_list('Issues in Epic', ret, project.jira.server_url)
+    for megalith in ('Epic', 'Feature'):
+        if issue['issuetype']['name'] == megalith:
+            ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
+            _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
 
     if no_comments:
         return
