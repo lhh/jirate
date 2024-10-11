@@ -134,6 +134,7 @@ def print_issues_by_field(issue_list, args=None):
             row.pop(column)
 
     render_matrix(output)
+    return True
 
 
 def print_issues_by_state(issue_list, args=None):
@@ -155,11 +156,21 @@ def print_issues_by_state(issue_list, args=None):
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
         print()
+    return True
+
+
+def print_keys(issue_list):
+    for issue in issue_list:
+        print(issue.key)
+    return False
 
 
 def print_issues(issue_list, args=None):
     if not args:
         return print_issues_by_state(issue_list, args)
+
+    if hasattr(args, 'quiet') and args.quiet:
+        return print_keys(issue_list)
 
     if hasattr(args, 'fields') and args.fields is not None:
         return print_issues_by_field(issue_list, args)
@@ -235,8 +246,8 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    print_issues(ret, args)
-    hbar_over(str(len(ret)) + ' result(s)')
+    if print_issues(ret, args):
+        hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
 
@@ -1180,6 +1191,8 @@ def create_parser():
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
     cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
+
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
     cmd = parser.command('search', help='Search issue(s)/user(s) with matching text', handler=search_jira)
@@ -1187,6 +1200,7 @@ def create_parser():
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
+    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
