@@ -548,6 +548,10 @@ def create_from_template(args):
         print(f"Provided template file is not valid: {args.template_file}")
         raise e
 
+    if args.dry_run:
+        print(template_output)
+        return (0, True)
+
     all_filed = _create_from_template(args, template)
 
     # Need to refresh to that issues get re-fetched to include subtasks
@@ -1303,6 +1307,7 @@ def create_parser():
     cmd.add_argument('template_file', help='Path to the template file')
     cmd.add_argument('-n', '--non-interactive', default=False, help='Do not prompt for variables', action='store_true')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
+    cmd.add_argument('--dry-run', default=False, help='Print template with variables substituted; do not file issues', action='store_true')
     cmd.add_argument('vars', help='Variables/values (name value name2 value2 ...)', nargs='*')
 
     cmd = parser.command('validate', help='Validate a YAML template for use with the "template" command',

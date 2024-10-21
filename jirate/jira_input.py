@@ -161,6 +161,9 @@ def transmogrify_value(value, field_info):
     av = field_info['allowedValues'] if 'allowedValues' in field_info else None
 
     if schema['type'] == 'array':
+        # Patch for Jira sprint - TODO: make more generic
+        if 'custom' in schema and schema['custom'] == "com.pyxis.greenhopper.jira:gh-sprint":
+            return in_number(value)
         vals = allowed_value_validate(field_info['name'], parse_params(value), av)
         try:
             ret = _input_array_renderers[schema['items']](vals)
