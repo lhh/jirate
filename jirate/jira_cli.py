@@ -523,7 +523,6 @@ def create_from_template(args):
     values = {}
     # Always render. there should be defaults.
     if args.vars:
-        print(args.vars)
         if len(args.vars) % 2 != 0:
             raise ValueError('Variable/value list is not divisible by 2')
 
