@@ -6,6 +6,7 @@
 import csv
 import re
 import shutil
+import sys
 
 from dateutil.parser import parse
 from pprint import PrettyPrinter
@@ -360,7 +361,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
     return screen_width
 
 
-def render_matrix(matrix, header=True, header_bar=True):
+def pretty_matrix(matrix, header=True, header_bar=True):
     screen_width = shutil.get_terminal_size()[0]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
@@ -400,3 +401,26 @@ def render_matrix(matrix, header=True, header_bar=True):
             line.extend([row[item], col_widths[item]])
         line.pop()
         vsep_print(' ', screen_width, *line)
+
+
+def native_csv(matrix, header=True, header_bar=True):
+    # header_bar currently unused
+    csv_out = csv.writer(sys.stdout)
+    if header:
+        start = 0
+    else:
+        start = 1
+    for row in matrix[start:]:
+        csv_out.writerow(row)
+
+
+_writers = {
+        'default': pretty_matrix,
+        'csv': native_csv
+}
+
+
+def render_matrix(matrix, header=True, header_bar=True, fmt='default'):
+    if fmt not in _writers:
+        fmt = 'default'
+    return _writers[fmt](matrix, header, header_bar)
