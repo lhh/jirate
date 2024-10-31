@@ -133,7 +133,7 @@ def print_issues_by_field(issue_list, args=None):
         for row in output:
             row.pop(column)
 
-    render_matrix(output)
+    render_matrix(output, fmt=args.format)
     return True
 
 
@@ -247,7 +247,8 @@ def search_jira(args):
     if not ret:
         return (127, False)
     if print_issues(ret, args):
-        hbar_over(str(len(ret)) + ' result(s)')
+        if args.format in ('default'):
+            hbar_over(str(len(ret)) + ' result(s)')
     return (0, False)
 
 
@@ -1127,7 +1128,7 @@ def component_list(args):
         matrix = [keys]
         for name in comp_names:
             matrix.append([truncate(comp_info[name][fk], fields[fk]) for fk in keys])
-        render_matrix(matrix)
+        render_matrix(matrix, fmt=args.format)
 
     return (0, False)
 
@@ -1187,6 +1188,7 @@ def create_parser():
     parser = ComplicatedArgs()
 
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
+    parser.add_argument('-f', '--format', help='Use this format for issue list output', default='default', choices=['default', 'csv'], type=str.lower)
 
     cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
