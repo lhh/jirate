@@ -244,6 +244,20 @@ def search_jira(args):
         else:
             ret = args.project.search(search_query)
 
+    # JIRA's text search borders on useless.
+    # Prune any issues from output where the regex does not
+    # match supplied field
+    stripped = []
+    if args.prune_regex:
+        field = args.prune_regex[0]
+        regex = args.prune_regex[1]
+
+        for issue in ret:
+            val = issue.field(field)
+            if val and re.search(regex, val):
+                stripped.append(issue)
+        ret = stripped
+
     if not ret:
         return (127, False)
     if print_issues(ret, args):
@@ -1206,6 +1220,7 @@ def create_parser():
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
+    cmd.add_argument('--prune-regex', nargs=2, help='Prune results by checking named field against regular expression, removing any that do not match')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
     cmd.add_argument('text', nargs='*', help='Search text')
 
