@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import copy
+import json
 import os
 import re
 import sys
@@ -1147,7 +1148,7 @@ def component_list(args):
     return (0, False)
 
 
-def get_jira_project(project=None, config=None, config_file=None):
+def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     # project: Project key
     # config: dict / pre-read JSON data
     if not config:
@@ -1191,6 +1192,30 @@ def get_jira_project(project=None, config=None, config_file=None):
 
     if 'custom_fields' in jconfig:
         proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
+    else:
+        proj.custom_fields = []
+
+    # CLI field parsing definition
+    field_info = None
+    if 'field' in kwargs and kwargs['field']:
+        field_name = kwargs['field'][0]
+        field_info = json.loads(kwargs['field'][1])
+        field_id = proj.field_to_id(field_name)
+        found = False
+        for cf in proj.custom_fields:
+            if cf['id'] == field_id:
+                found = True
+                for key in field_info:
+                    # TODO update custom field call in jboard?
+                    cf[key] = field_info[key]
+                break
+        if not found:
+            # No config present: Create a field definition on the fly
+            field_info['id'] = field_id
+            field_info['name'] = proj.field_to_human(field_id)
+            proj.custom_fields.append(field_info)
+
+    if proj.custom_fields:
         apply_field_renderers(proj.custom_fields)
     else:
         apply_field_renderers()
@@ -1203,6 +1228,7 @@ def create_parser():
 
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
     parser.add_argument('-f', '--format', help='Use this format for issue list output', default='default', choices=['default', 'csv'], type=str.lower)
+    parser.add_argument('--x-format-field', nargs=2, help='Experimental: apply field formatting from the CLI (field, json)', default=None)
 
     cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
@@ -1355,8 +1381,12 @@ def main():
     args = update_args(sys.argv)
     ns = parser.parse_args(args=args[1:])
 
+    field = None
+    if ns.x_format_field:
+        field = ns.x_format_field
+
     try:
-        project = get_jira_project(ns.project)
+        project = get_jira_project(ns.project, field=field)
     except KeyError:
         sys.exit(1)
     except FileNotFoundError:
