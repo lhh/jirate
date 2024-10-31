@@ -323,7 +323,7 @@ def issue_fields(args):
             return (1, False)
 
     # Remove things we set elsewhere
-    for field in ('description', 'summary', 'assignee', 'issuelinks', 'comment'):
+    for field in ('assignee', 'issuelinks', 'comment'):
         if field in fields:
             del fields[field]
 
@@ -363,8 +363,22 @@ def issue_fields(args):
         render_matrix(matrix)
         return (0, False)
 
+    field_name = args.name
+    value = args.values
+    op = args.operation
+    # Substitution only works on 'set' capable fields for now
+    if args.operation == 'sub':
+        field_id = args.project.field_to_id(args.name)
+        op = 'set'
+        if len(args.values) < 2:
+            raise ValueError('Substitution requires an old value and a new value')
+        oldval = args.values[0]
+        newval = args.values[1]
+        (_, orig_value) = render_field_data(field_id, issue.raw['fields'], False, args.project.allow_code)
+        value = orig_value.replace(oldval, newval)
+
     try:
-        issue.update_field(args.name, args.values, args.operation, fields)
+        issue.update_field(field_name, value, op, fields)
     except (AttributeError, ValueError) as e:
         print(e)
         return (1, False)
@@ -1319,7 +1333,7 @@ def create_parser():
 
     cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
     cmd.add_argument('issue', help='Issue')
-    cmd.add_argument('operation', help='Operation', choices=['add', 'set', 'remove'])
+    cmd.add_argument('operation', help='Operation', choices=['add', 'set', 'remove', 'sub'])
     cmd.add_argument('name', help='Name of field to update')
     cmd.add_argument('values', help='Value(s) to update', nargs='*')
 
