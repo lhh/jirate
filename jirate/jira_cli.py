@@ -323,7 +323,7 @@ def issue_fields(args):
             return (1, False)
 
     # Remove things we set elsewhere
-    for field in ('description', 'summary', 'assignee', 'issuelinks', 'comment'):
+    for field in ('assignee', 'issuelinks', 'comment'):
         if field in fields:
             del fields[field]
 
