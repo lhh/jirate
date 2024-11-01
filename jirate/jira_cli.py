@@ -736,8 +736,10 @@ def _str_presenter(dumper, data):
     """
     Makes PyYAML print multiline strings in a sensible way
     """
-    if data.count('\n') > 0:
-        data = data.replace('\r\n', '\n')  # CRLFs confuse and anger PyYAML
+    data = data.rstrip()
+    lines = data.splitlines()
+    if len(lines) > 1:
+        data = '\n'.join([line.rstrip() for line in lines])
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
     return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
