@@ -606,6 +606,17 @@ def _create_from_template(args, template):
     # TODO: support reading arbitrary fields from the template
     all_filed = []  # We keep issue keys here because we'll need to refresh anyway
 
+    existing_issue = None
+    if args.apply:
+        # Sanity checks:
+        # 1. Issue exists
+        existing_issue = args.project.issue(args.apply)
+        if not existing_issue:
+            raise ValueError(f'Cannot apply template to nonexisting issue {args.apply}')
+        # 2. Template's issues attribute length is 1
+        if len(template['issues']) != 1:
+            raise ValueError(f'Undefined request: template is for multiple issues')
+
     for raw_issue in template['issues']:
         issue = {args.project.field_to_id(name): value for name, value in raw_issue.items()}
         reserved_fields = ['subtasks']
@@ -628,10 +639,20 @@ def _create_from_template(args, template):
         metadata = metadata_by_type[pname][issuetype]
 
         filed = {}
-        parent = args.project.create(metadata['fields'], **creation_fields)
+        if existing_issue:
+            # Do not mess with issuetype if we're applying to existing issue
+            del creation_fields['issuetype']
+            existing_issue.update(**creation_fields)
+            parent = existing_issue
+        else:
+            parent = args.project.create(metadata['fields'], **creation_fields)
         filed['parent'] = parent.key
 
-        if 'subtasks' in issue and issue['subtasks']:
+        # Apply subtasks - but only to a parent which does not already have any
+        # subtasks
+        if ('subtasks' in issue and issue['subtasks']) and \
+                ('subtasks' not in parent.raw['fields'] or \
+                not parent.raw['fields']['subtasks']):
             # Set once
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
@@ -1361,6 +1382,7 @@ def create_parser():
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
     cmd.add_argument('template_file', help='Path to the template file')
+    cmd.add_argument('--apply', help='Apply template to existing issue')
     cmd.add_argument('-n', '--non-interactive', default=False, help='Do not prompt for variables', action='store_true')
     cmd.add_argument('-q', '--quiet', default=False, help='Only print new issue IDs after creation (for scripting)', action='store_true')
     cmd.add_argument('--dry-run', default=False, help='Print template with variables substituted; do not file issues', action='store_true')
