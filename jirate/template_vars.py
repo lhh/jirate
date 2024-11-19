@@ -79,6 +79,11 @@ def __assign_default(node, ret):
         return False
     if not isinstance(node.node.right, nodes.Const):
         return False
+
+    # Ignore template variables that start with underscore
+    if node.target.name.startswith('_'):
+        return False
+
     ret[node.target.name] = node.node.right.value
     return True
 
@@ -112,6 +117,10 @@ def __filter_default(node, ret):
     if len(node.args) > 1:
         return False
     if not isinstance(node.args[0], nodes.Const):
+        return False
+
+    # Ignore template variables that start with underscore
+    if node.node.name.startswith('_'):
         return False
 
     ret[node.node.name] = node.args[0].value
@@ -216,6 +225,9 @@ def apply_values(inp, values={}, interactive=False):
     # pass 2: store unassigned variables too
     unset_keys = meta.find_undeclared_variables(ast)
     for key in unset_keys:
+        # Ignore all variables that start with underscore
+        if key.startswith('_'):
+            continue
         if key not in template_values:
             template_values[key] = ''
 
