@@ -20,6 +20,7 @@ from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym, vsep_print, parse_params, truncate, render_matrix, comma_separated
 from jirate.decor import issue_link_string
 from jirate.decor import pretty_print  # NOQA
+from jirate.decor import EscapedString
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
 from jirate.template_vars import apply_values
@@ -949,11 +950,11 @@ def print_issue_links(issue, baseurl=None):
     matrix = []
     for link in issue['issuelinks']:
         if 'outwardIssue' in link:
-            text = link['type']['outward'] + ' ' + issue_link_string(link['outwardIssue']['key'], baseurl)
+            text = EscapedString(link['type']['outward'] + ' ') + issue_link_string(link['outwardIssue']['key'], baseurl)
             status = link['outwardIssue']['fields']['status']['name']
             desc = link['outwardIssue']['fields']['summary']
         elif 'inwardIssue' in link:
-            text = link['type']['inward'] + ' ' + issue_link_string(link['inwardIssue']['key'], baseurl)
+            text = EscapedString(link['type']['inward'] + ' ') + issue_link_string(link['inwardIssue']['key'], baseurl)
             status = link['inwardIssue']['fields']['status']['name']
             desc = link['inwardIssue']['fields']['summary']
         # color_string throws off length calculations
