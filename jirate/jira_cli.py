@@ -169,6 +169,9 @@ def print_keys(issue_list):
 
 
 def print_issues(issue_list, args=None):
+    if not issue_list:
+        print('No matching issues')
+        return True
     if not args:
         return print_issues_by_state(issue_list, args)
 
@@ -1265,6 +1268,7 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
 def create_parser():
     parser = ComplicatedArgs()
 
+    parser.add_argument('-c', '--config', help='Use this config file (instead of ~/.jirate.json)', default=None)
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
     parser.add_argument('-f', '--format', help='Use this format for issue list output', default='default', choices=['default', 'csv'], type=str.lower)
     parser.add_argument('--x-format-field', nargs=2, help='Experimental: apply field formatting from the CLI (field, json)', default=None)
@@ -1426,7 +1430,7 @@ def main():
         field = ns.x_format_field
 
     try:
-        project = get_jira_project(ns.project, field=field)
+        project = get_jira_project(ns.project, config_file=ns.config, field=field)
     except KeyError:
         sys.exit(1)
     except FileNotFoundError:
