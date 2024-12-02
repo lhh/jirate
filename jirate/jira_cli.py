@@ -169,6 +169,9 @@ def print_keys(issue_list):
 
 
 def print_issues(issue_list, args=None):
+    if not issue_list:
+        print('No matching issues')
+        return True
     if not args:
         return print_issues_by_state(issue_list, args)
 
