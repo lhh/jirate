@@ -550,8 +550,8 @@ def unassign_card(args):
     return (0, False)
 
 
-def get_board(board_name=None):
-    config = get_config()
+def get_board(board_name=None, config_file=None):
+    config = get_config(config_file)
     board_id = None
     readonly = False
 
@@ -597,6 +597,7 @@ def get_board(board_name=None):
 def create_parser():
     parser = ComplicatedArgs()
 
+    parser.add_argument('-c', '--config', help='Use this config file (instead of ~/.jirate.json)', default=None)
     parser.add_argument('-b', '--board', help='Use this Trello board (from config file)', default=None)
 
     cmd = parser.command('ls', help='List card(s)', handler=list_cards)
@@ -684,7 +685,7 @@ def main():
     ns = parser.parse_args()
 
     try:
-        board = get_board(ns.board)
+        board = get_board(ns.board, config_file=ns.config)
     except KeyError:
         sys.exit(1)
 
