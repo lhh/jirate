@@ -153,7 +153,8 @@ def print_issues_by_state(issue_list, args=None):
             continue
         hbar_under(key)
         for issue in states[key]:
-            print('  ', issue.key, end=' ')
+            issue_info = EscapedString('  ') + issue_link_string(issue.key, args.project.jira.server_url)
+            print(issue_info, end=' ')
             if args and hasattr(args, 'labels') and args.labels:
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
