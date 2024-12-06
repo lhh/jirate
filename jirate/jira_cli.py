@@ -1190,6 +1190,34 @@ def component_list(args):
     return (0, False)
 
 
+def runaway(args):
+    if args.inactive:
+        info = args.project.sprint_info(states=['active', 'future', 'closed'])
+    else:
+        info = args.project.sprint_info()
+
+    board_by_id = {}
+    for board in info['boards']:
+        # This is a dict, we want the board, not key
+        board = info['boards'][board]
+        board_by_id[board.id] = board
+
+    matrix = [['name', 'id', 'status', 'board']]
+    for sprint in info['sprints']:
+        sprint = info['sprints'][sprint]
+        if sprint.state not in ('active', 'future') and not args.inactive:
+            continue
+        try:
+            board_name = board_by_id[sprint.originBoardId]
+        except KeyError:
+            board_name = '???'
+        matrix.append([sprint.name, sprint.id, sprint.state, board_name])
+    if len(info) > 1:
+        render_matrix(matrix, fmt=args.format)
+
+    return(0, False)
+
+
 def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     # project: Project key
     # config: dict / pre-read JSON data
@@ -1405,6 +1433,9 @@ def create_parser():
     cmd.add_argument('-a', '--all-fields', default=False, help='Include all fields, even ones that may not make sense for a '
                                                                'template',
                      action='store_true')
+
+    cmd = parser.command('runaway', help='Get Sprint information', handler=runaway)
+    cmd.add_argument('--inactive', help='Include inactive sprints', default=False, action='store_true')
 
     return parser
 

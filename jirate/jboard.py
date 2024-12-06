@@ -396,6 +396,56 @@ class Jirate(object):
             user = user_ids.pop(0)
             issue.update(assignee=user)
 
+    def sprint_info(self, states=['active', 'future']):
+        """Retrieve all sprints and boards for a project.
+
+        Parameters:
+          states: Array or string (comma separated) of sprint states
+
+        Returns:
+          dict with boards and sprints
+        """
+        if isinstance(states, list):
+            states = ','.join(states)
+
+        ret = {'boards': {}, 'sprints': {}}
+        # XXX fixme: paginated APIs
+        boards = []
+        _start = 0
+        _max = 50
+        while True:
+            new_boards = self.jira.boards(projectKeyOrID=self.project_name, startAt=_start, maxResults=_max)
+            if not new_boards:
+                break
+            _start = _start + _max
+            boards.extend(new_boards)
+
+        sprints = []
+        for board in boards:
+            if board.type != 'scrum':
+                continue
+            _start = 0
+            while True:
+                new_sprints = self.jira.sprints(board.id, startAt=_start, maxResults=_max, state=states)
+                if not new_sprints:
+                    break
+                _start = _start + _max
+                sprints.extend(new_sprints)
+
+            if board.name in ret['boards']:
+                old = ret['boards'][board.name]
+                if old.id != board.id:
+                  print(f'Warning: Duplicate Board: {old.name} (IDs: {old.id} {board.id})')
+            ret['boards'][board.name] = board
+
+        for sprint in sprints:
+            if sprint.name in ret['sprints']:
+                old = ret['sprints'][sprint.name]
+                if old.id != sprint.id:
+                    print(f'Warning: Duplicate Sprint: {old.name} (IDs: {old.id} {sprint.id})')
+            ret['sprints'][sprint.name] = sprint
+        return ret
+
     def get_comment(self, issue_alias, comment_id):
         """Retrieve raw comment for an issue
 
