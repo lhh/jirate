@@ -169,24 +169,28 @@ def print_keys(issue_list):
 
 
 def print_issues(issue_list, args=None):
+    footer = (args.format in ('default'))
     if not issue_list:
         print('No matching issues')
-        return True
-    if not args:
-        return print_issues_by_state(issue_list, args)
-
-    if hasattr(args, 'quiet') and args.quiet:
-        return print_keys(issue_list)
-
-    if hasattr(args, 'fields') and args.fields is not None:
-        return print_issues_by_field(issue_list, args)
-
-    fields = args.project.get_user_data('default_fields')
-    if fields:
-        setattr(args, 'fields', fields)
-        return print_issues_by_field(issue_list, args)
-
-    return print_issues_by_state(issue_list, args)
+        footer = False
+        ret = True
+    elif not args:
+        ret = print_issues_by_state(issue_list, args)
+    elif hasattr(args, 'quiet') and args.quiet:
+        ret = print_keys(issue_list)
+        footer = False
+    elif hasattr(args, 'fields') and args.fields is not None:
+        ret = print_issues_by_field(issue_list, args)
+    else:
+        fields = args.project.get_user_data('default_fields')
+        if fields:
+            setattr(args, 'fields', fields)
+            ret = print_issues_by_field(issue_list, args)
+        else:
+            ret = print_issues_by_state(issue_list, args)
+    if footer:
+        hbar_over(str(len(issue_list)) + ' result(s)')
+    return ret
 
 
 def print_users(users):
@@ -266,9 +270,7 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    if print_issues(ret, args):
-        if args.format in ('default'):
-            hbar_over(str(len(ret)) + ' result(s)')
+    print_issues(ret, args)
     return (0, False)
 
 
