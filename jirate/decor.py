@@ -362,6 +362,8 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 
 
 def pretty_matrix(matrix, header=True, header_bar=True):
+    # total # of printed lines less header
+    lines = 0
     screen_width = shutil.get_terminal_size()[0]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
@@ -401,9 +403,13 @@ def pretty_matrix(matrix, header=True, header_bar=True):
             line.extend([row[item], col_widths[item]])
         line.pop()
         vsep_print(' ', screen_width, *line)
+        lines = lines + 1
+
+    return lines
 
 
 def native_csv(matrix, header=True, header_bar=True):
+    lines = 0
     # header_bar currently unused
     csv_out = csv.writer(sys.stdout)
     if header:
@@ -412,6 +418,9 @@ def native_csv(matrix, header=True, header_bar=True):
         start = 1
     for row in matrix[start:]:
         csv_out.writerow(row)
+        lines = lines + 1
+
+    return lines
 
 
 _writers = {
