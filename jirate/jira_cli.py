@@ -92,6 +92,7 @@ def print_issues_by_field(issue_list, args=None):
     fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
 
     output = []
+    raw_fields = list(fields.keys())
     output.append(list(truncate(key, fields[key]) for key in fields))
     del fields['key']
 
@@ -124,23 +125,22 @@ def print_issues_by_field(issue_list, args=None):
 
     delta = list(set(list(fields.keys())) - set(found_fields))
     for kill in delta:
-        column = None
-        for header in range(0, len(output[0])):
-            if kill == output[0][header]:
-                column = header
-                break
-        if column is None:
+        try:
+           column = raw_fields.index(kill)
+           raw_fields.pop(column)
+        except ValueError:
             print(f'Bug: Tried to remove nonexistent column {kill}?')
             continue
         for row in output:
             row.pop(column)
 
-    render_matrix(output, fmt=args.format)
-    return True
+    lines = render_matrix(output, fmt=args.format)
+    return lines
 
 
 def print_issues_by_state(issue_list, args=None):
     states = {}
+    printed = 0
 
     for issue in issue_list:
         cstatus = issue.raw['fields']['status']['name']
@@ -153,13 +153,14 @@ def print_issues_by_state(issue_list, args=None):
             continue
         hbar_under(key)
         for issue in states[key]:
+            printed = printed + 1
             issue_info = EscapedString('  ') + issue_link_string(issue.key, args.project.jira.server_url)
             print(issue_info, end=' ')
             if args and hasattr(args, 'labels') and args.labels:
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
         print()
-    return True
+    return printed
 
 
 def print_keys(issue_list):
@@ -170,27 +171,28 @@ def print_keys(issue_list):
 
 def print_issues(issue_list, args=None):
     footer = (args.format in ('default'))
+    total = len(issue_list)
+
     if not issue_list:
         print('No matching issues')
         footer = False
-        ret = True
     elif not args:
-        ret = print_issues_by_state(issue_list, args)
+        total = print_issues_by_state(issue_list, args)
     elif hasattr(args, 'quiet') and args.quiet:
         ret = print_keys(issue_list)
         footer = False
     elif hasattr(args, 'fields') and args.fields is not None:
-        ret = print_issues_by_field(issue_list, args)
+        total = print_issues_by_field(issue_list, args)
     else:
         fields = args.project.get_user_data('default_fields')
         if fields:
             setattr(args, 'fields', fields)
-            ret = print_issues_by_field(issue_list, args)
+            total = print_issues_by_field(issue_list, args)
         else:
-            ret = print_issues_by_state(issue_list, args)
+            total = print_issues_by_state(issue_list, args)
     if footer:
-        hbar_over(str(len(issue_list)) + ' result(s)')
-    return ret
+        hbar_over(str(total) + ' result(s)')
+    return True
 
 
 def print_users(users):
