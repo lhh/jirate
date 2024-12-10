@@ -1193,7 +1193,16 @@ def component_list(args):
 
 
 def runaway(args):
-    if args.inactive:
+    if args.sprint_id:
+        search = f'sprint = {args.sprint_id}'
+        if not args.closed:
+            search = search + ' and statusCategory != Done'
+        issues = args.project.search_issues(search)
+        print_issues(issues, args)
+        return (0, False)
+
+    ### General Sprit information
+    if args.closed:
         info = args.project.sprint_info(states=['active', 'future', 'closed'])
     else:
         info = args.project.sprint_info()
@@ -1207,7 +1216,7 @@ def runaway(args):
     matrix = [['name', 'id', 'status', 'board']]
     for sprint in info['sprints']:
         sprint = info['sprints'][sprint]
-        if sprint.state not in ('active', 'future') and not args.inactive:
+        if sprint.state not in ('active', 'future') and not args.closed:
             continue
         try:
             board_name = board_by_id[sprint.originBoardId]
@@ -1437,7 +1446,8 @@ def create_parser():
                      action='store_true')
 
     cmd = parser.command('runaway', help='Get Sprint information', handler=runaway)
-    cmd.add_argument('--inactive', help='Include inactive sprints', default=False, action='store_true')
+    cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
+    cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
 
     return parser
 
