@@ -190,7 +190,7 @@ def print_issues(issue_list, args=None):
             total = print_issues_by_field(issue_list, args)
         else:
             total = print_issues_by_state(issue_list, args)
-    if footer:
+    if footer and total is not None:
         hbar_over(str(total) + ' result(s)')
     return True
 
