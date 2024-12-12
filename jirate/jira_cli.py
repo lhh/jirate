@@ -1308,6 +1308,13 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     return proj
 
 
+def add_list_options(cmd,
+                     fields_help='Display these fields in a table',
+                     quiet_help='Only print issue IDs'):
+    cmd.add_argument('-f', '--fields', help=fields_help)
+    cmd.add_argument('-q', '--quiet', default=False, help=quiet_help, action='store_true')
+
+
 def create_parser():
     parser = ComplicatedArgs()
 
@@ -1322,8 +1329,7 @@ def create_parser():
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
-    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
-    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
+    add_list_options(cmd)
 
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
@@ -1331,9 +1337,8 @@ def create_parser():
     cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
-    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('--prune-regex', nargs=2, help='Prune results by checking named field against regular expression, removing any that do not match')
-    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
+    add_list_options(cmd)
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
@@ -1427,8 +1432,8 @@ def create_parser():
     cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
 
     cmd = parser.command('components', help='List components', handler=component_list)
-    cmd.add_argument('-f', '--fields', help='Field delimiters', default=None)
     cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
+    add_list_options(cmd, quiet_help='Just print component names')
     cmd.add_argument('-s', '--search', help='Search by regular expression')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
@@ -1451,6 +1456,7 @@ def create_parser():
 
     cmd = parser.command('runaway', help='Get Sprint information', handler=runaway)
     cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
+    add_list_options(cmd)
     cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
 
     return parser
