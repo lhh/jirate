@@ -120,6 +120,8 @@ def print_issues_by_field(issue_list, args=None):
                 val = fv
             else:
                 val = raw_fv
+            if val is None:
+                val = ''
             row.append(truncate(val, fields[field]))
         output.append(row)
 
