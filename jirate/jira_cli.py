@@ -113,8 +113,6 @@ def print_issues_by_field(issue_list, args=None):
             except AttributeError:
                 row.append('N/A')
                 continue
-            if field not in found_fields:
-                found_fields.append(field)
             fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
             if fk:
                 val = fv
@@ -123,13 +121,17 @@ def print_issues_by_field(issue_list, args=None):
             if val is None:
                 val = ''
             row.append(truncate(val, fields[field]))
+            if args.compact and val == '':
+                continue
+            if field not in found_fields:
+                found_fields.append(field)
         output.append(row)
 
     delta = list(set(list(fields.keys())) - set(found_fields))
     for kill in delta:
         try:
-           column = raw_fields.index(kill)
-           raw_fields.pop(column)
+            column = raw_fields.index(kill)
+            raw_fields.pop(column)
         except ValueError:
             print(f'Bug: Tried to remove nonexistent column {kill}?')
             continue
@@ -1313,6 +1315,7 @@ def add_list_options(cmd,
                      quiet_help='Only print issue IDs'):
     cmd.add_argument('-f', '--fields', help=fields_help)
     cmd.add_argument('-q', '--quiet', default=False, help=quiet_help, action='store_true')
+    cmd.add_argument('--compact', default=False, help='Delete columns with no value set', action='store_true')
 
 
 def create_parser():
@@ -1432,7 +1435,6 @@ def create_parser():
     cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
 
     cmd = parser.command('components', help='List components', handler=component_list)
-    cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
     add_list_options(cmd, quiet_help='Just print component names')
     cmd.add_argument('-s', '--search', help='Search by regular expression')
 
