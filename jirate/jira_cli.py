@@ -183,7 +183,7 @@ def print_issues(issue_list, args=None):
     elif not args:
         total = print_issues_by_state(issue_list, args)
     elif hasattr(args, 'quiet') and args.quiet:
-        ret = print_keys(issue_list)
+        print_keys(issue_list)
         footer = False
     elif hasattr(args, 'fields') and args.fields is not None:
         total = print_issues_by_field(issue_list, args)
@@ -628,7 +628,7 @@ def _create_from_template(args, template):
             raise ValueError(f'Cannot apply template to nonexisting issue {args.apply}')
         # 2. Template's issues attribute length is 1
         if len(template['issues']) != 1:
-            raise ValueError(f'Undefined request: template is for multiple issues')
+            raise ValueError('Undefined request: template is for multiple issues')
 
     for raw_issue in template['issues']:
         issue = {args.project.field_to_id(name): value for name, value in raw_issue.items()}
@@ -664,8 +664,8 @@ def _create_from_template(args, template):
         # Apply subtasks - but only to a parent which does not already have any
         # subtasks
         if ('subtasks' in issue and issue['subtasks']) and \
-                ('subtasks' not in parent.raw['fields'] or \
-                not parent.raw['fields']['subtasks']):
+                ('subtasks' not in parent.raw['fields'] or
+                 not parent.raw['fields']['subtasks']):
             # Set once
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
@@ -1207,7 +1207,7 @@ def runaway(args):
         print_issues(issues, args)
         return (0, False)
 
-    ### General Sprit information
+    # General Sprit information
     if args.closed:
         info = args.project.sprint_info(states=['active', 'future', 'closed'])
     else:
@@ -1232,7 +1232,7 @@ def runaway(args):
     if len(info) > 1:
         render_matrix(matrix, fmt=args.format)
 
-    return(0, False)
+    return (0, False)
 
 
 def get_jira_project(project=None, config=None, config_file=None, **kwargs):

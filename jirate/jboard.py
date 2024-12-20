@@ -105,6 +105,7 @@ class JIRAWrapper(JIRA):
 
 class Jirate(object):
     """High-level wrapper for python-jira"""
+
     def __init__(self, jira):
         self.jira = jira
         self._user = None
@@ -232,8 +233,7 @@ class Jirate(object):
                 self._field_to_human[val] = name
                 self._field_to_alias[val] = alias
             for clause_name in field['clauseNames']:
-                if (re.match('^cf\\[[0-9]+\\]$', clause_name) or
-                        clause_name in self._field_to_id):
+                if (re.match('^cf\\[[0-9]+\\]$', clause_name) or clause_name in self._field_to_id):
                     # Skip nonsense and duplicate alternative names
                     continue
                 self._field_to_id[clause_name] = field_id
@@ -435,7 +435,7 @@ class Jirate(object):
             if board.name in ret['boards']:
                 old = ret['boards'][board.name]
                 if old.id != board.id:
-                  print(f'Warning: Duplicate Board: {old.name} (IDs: {old.id} {board.id})')
+                    print(f'Warning: Duplicate Board: {old.name} (IDs: {old.id} {board.id})')
             ret['boards'][board.name] = board
 
         for sprint in sprints:

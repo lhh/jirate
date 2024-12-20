@@ -157,7 +157,7 @@ def truncate(arg, maxlen):
         if maxlen > 0 and len(arg) > maxlen:
             arg = arg[:maxlen - 1] + '…'
         if maxlen < 0 and len(arg) > abs(maxlen):
-            arg = '…' + arg[maxlen+1:]
+            arg = '…' + arg[maxlen + 1:]
     return arg
 
 
@@ -424,8 +424,8 @@ def native_csv(matrix, header=True, header_bar=True):
 
 
 _writers = {
-        'default': pretty_matrix,
-        'csv': native_csv
+    'default': pretty_matrix,
+    'csv': native_csv
 }
 
 
