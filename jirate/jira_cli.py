@@ -1201,7 +1201,7 @@ def component_list(args):
     return (0, False)
 
 
-def runaway(args):
+def sprint_info(args):
     if args.sprint_id:
         search = f'sprint = {args.sprint_id}'
         if not args.closed:
@@ -1459,7 +1459,7 @@ def create_parser():
                                                                'template',
                      action='store_true')
 
-    cmd = parser.command('runaway', help='Get Sprint information', handler=runaway)
+    cmd = parser.command('sprint', help='Get Sprint information', handler=sprint_info)
     cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
     add_list_options(cmd)
     cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
