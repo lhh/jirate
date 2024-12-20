@@ -105,6 +105,7 @@ class JIRAWrapper(JIRA):
 
 class Jirate(object):
     """High-level wrapper for python-jira"""
+
     def __init__(self, jira):
         self.jira = jira
         self._user = None
@@ -232,8 +233,7 @@ class Jirate(object):
                 self._field_to_human[val] = name
                 self._field_to_alias[val] = alias
             for clause_name in field['clauseNames']:
-                if (re.match('^cf\\[[0-9]+\\]$', clause_name) or
-                        clause_name in self._field_to_id):
+                if (re.match('^cf\\[[0-9]+\\]$', clause_name) or clause_name in self._field_to_id):
                     # Skip nonsense and duplicate alternative names
                     continue
                 self._field_to_id[clause_name] = field_id
@@ -395,6 +395,57 @@ class Jirate(object):
 
             user = user_ids.pop(0)
             issue.update(assignee=user)
+
+    def sprint_info(self, project_key, states=['active', 'future']):
+        """Retrieve all sprints and boards for a project.
+
+        Parameters:
+          project_key: Key of project to check
+          states: Array or string (comma separated) of sprint states
+
+        Returns:
+          dict with boards and sprints
+        """
+        if isinstance(states, list):
+            states = ','.join(states)
+
+        ret = {'boards': {}, 'sprints': {}}
+        # XXX fixme: paginated APIs
+        boards = []
+        _start = 0
+        _max = 50
+        while True:
+            new_boards = self.jira.boards(projectKeyOrID=project_key, startAt=_start, maxResults=_max)
+            if not new_boards:
+                break
+            _start = _start + _max
+            boards.extend(new_boards)
+
+        sprints = []
+        for board in boards:
+            if board.type != 'scrum':
+                continue
+            _start = 0
+            while True:
+                new_sprints = self.jira.sprints(board.id, startAt=_start, maxResults=_max, state=states)
+                if not new_sprints:
+                    break
+                _start = _start + _max
+                sprints.extend(new_sprints)
+
+            if board.name in ret['boards']:
+                old = ret['boards'][board.name]
+                if old.id != board.id:
+                    print(f'Warning: Duplicate Board: {old.name} (IDs: {old.id} {board.id})')
+            ret['boards'][board.name] = board
+
+        for sprint in sprints:
+            if sprint.name in ret['sprints']:
+                old = ret['sprints'][sprint.name]
+                if old.id != sprint.id:
+                    print(f'Warning: Duplicate Sprint: {old.name} (IDs: {old.id} {sprint.id})')
+            ret['sprints'][sprint.name] = sprint
+        return ret
 
     def get_comment(self, issue_alias, comment_id):
         """Retrieve raw comment for an issue
@@ -983,6 +1034,11 @@ class JiraProject(Jirate):
         field_dict = {val['fieldId']: val for val in fields}
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
         return metadata
+
+    def sprint_info(self, project_key=None, states=['active','future']):
+        if not project_key:
+            project_key = self.project_name
+        return super().sprint_info(project_key, states)
 
     def config(self):
         return copy.copy(self._config)
