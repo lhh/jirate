@@ -91,6 +91,9 @@ def print_issues_by_field(issue_list, args=None):
     fields = OrderedDict({'key': 0})
     fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
 
+    if not args.compact:
+        args.compact = args.project.get_user_data('compact_output')
+
     output = []
     raw_fields = list(fields.keys())
     output.append(list(truncate(key, fields[key]) for key in fields))
@@ -1315,7 +1318,7 @@ def add_list_options(cmd,
                      quiet_help='Only print issue IDs'):
     cmd.add_argument('-f', '--fields', help=fields_help)
     cmd.add_argument('-q', '--quiet', default=False, help=quiet_help, action='store_true')
-    cmd.add_argument('--compact', default=False, help='Delete columns with no value set', action='store_true')
+    cmd.add_argument('--compact', default=False, help='Delete columns with no value set in matrix output', action='store_true')
 
 
 def create_parser():
