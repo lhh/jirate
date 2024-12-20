@@ -396,10 +396,11 @@ class Jirate(object):
             user = user_ids.pop(0)
             issue.update(assignee=user)
 
-    def sprint_info(self, states=['active', 'future']):
+    def sprint_info(self, project_key, states=['active', 'future']):
         """Retrieve all sprints and boards for a project.
 
         Parameters:
+          project_key: Key of project to check
           states: Array or string (comma separated) of sprint states
 
         Returns:
@@ -414,7 +415,7 @@ class Jirate(object):
         _start = 0
         _max = 50
         while True:
-            new_boards = self.jira.boards(projectKeyOrID=self.project_name, startAt=_start, maxResults=_max)
+            new_boards = self.jira.boards(projectKeyOrID=project_key, startAt=_start, maxResults=_max)
             if not new_boards:
                 break
             _start = _start + _max
@@ -1033,6 +1034,11 @@ class JiraProject(Jirate):
         field_dict = {val['fieldId']: val for val in fields}
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
         return metadata
+
+    def sprint_info(self, project_key=None, states=['active','future']):
+        if not project_key:
+            project_key = self.project_name
+        return super().sprint_info(project_key, states)
 
     def config(self):
         return copy.copy(self._config)
