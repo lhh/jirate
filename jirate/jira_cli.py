@@ -91,7 +91,11 @@ def print_issues_by_field(issue_list, args=None):
     fields = OrderedDict({'key': 0})
     fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
 
+    if not args.compact:
+        args.compact = args.project.get_user_data('compact_output')
+
     output = []
+    raw_fields = list(fields.keys())
     output.append(list(truncate(key, fields[key]) for key in fields))
     del fields['key']
 
@@ -112,35 +116,38 @@ def print_issues_by_field(issue_list, args=None):
             except AttributeError:
                 row.append('N/A')
                 continue
-            if field not in found_fields:
-                found_fields.append(field)
             fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
             if fk:
                 val = fv
             else:
                 val = raw_fv
+            if val is None:
+                val = ''
             row.append(truncate(val, fields[field]))
+            if args.compact and val == '':
+                continue
+            if field not in found_fields:
+                found_fields.append(field)
         output.append(row)
 
     delta = list(set(list(fields.keys())) - set(found_fields))
     for kill in delta:
-        column = None
-        for header in range(0, len(output[0])):
-            if kill == output[0][header]:
-                column = header
-                break
-        if column is None:
+        try:
+            column = raw_fields.index(kill)
+            raw_fields.pop(column)
+        except ValueError:
             print(f'Bug: Tried to remove nonexistent column {kill}?')
             continue
         for row in output:
             row.pop(column)
 
-    render_matrix(output, fmt=args.format)
-    return True
+    lines = render_matrix(output, fmt=args.format)
+    return lines
 
 
 def print_issues_by_state(issue_list, args=None):
     states = {}
+    printed = 0
 
     for issue in issue_list:
         cstatus = issue.raw['fields']['status']['name']
@@ -153,13 +160,14 @@ def print_issues_by_state(issue_list, args=None):
             continue
         hbar_under(key)
         for issue in states[key]:
+            printed = printed + 1
             issue_info = EscapedString('  ') + issue_link_string(issue.key, args.project.jira.server_url)
             print(issue_info, end=' ')
             if args and hasattr(args, 'labels') and args.labels:
                 print_labels(issue.raw, prefix='')
             print(issue.raw['fields']['summary'])
         print()
-    return True
+    return printed
 
 
 def print_keys(issue_list):
@@ -169,24 +177,29 @@ def print_keys(issue_list):
 
 
 def print_issues(issue_list, args=None):
+    footer = (args.format in ('default'))
+    total = len(issue_list)
+
     if not issue_list:
         print('No matching issues')
-        return True
-    if not args:
-        return print_issues_by_state(issue_list, args)
-
-    if hasattr(args, 'quiet') and args.quiet:
-        return print_keys(issue_list)
-
-    if hasattr(args, 'fields') and args.fields is not None:
-        return print_issues_by_field(issue_list, args)
-
-    fields = args.project.get_user_data('default_fields')
-    if fields:
-        setattr(args, 'fields', fields)
-        return print_issues_by_field(issue_list, args)
-
-    return print_issues_by_state(issue_list, args)
+        footer = False
+    elif not args:
+        total = print_issues_by_state(issue_list, args)
+    elif hasattr(args, 'quiet') and args.quiet:
+        print_keys(issue_list)
+        footer = False
+    elif hasattr(args, 'fields') and args.fields is not None:
+        total = print_issues_by_field(issue_list, args)
+    else:
+        fields = args.project.get_user_data('default_fields')
+        if fields:
+            setattr(args, 'fields', fields)
+            total = print_issues_by_field(issue_list, args)
+        else:
+            total = print_issues_by_state(issue_list, args)
+    if footer and total is not None:
+        hbar_over(str(total) + ' result(s)')
+    return True
 
 
 def print_users(users):
@@ -266,9 +279,7 @@ def search_jira(args):
 
     if not ret:
         return (127, False)
-    if print_issues(ret, args):
-        if args.format in ('default'):
-            hbar_over(str(len(ret)) + ' result(s)')
+    print_issues(ret, args)
     return (0, False)
 
 
@@ -620,7 +631,7 @@ def _create_from_template(args, template):
             raise ValueError(f'Cannot apply template to nonexisting issue {args.apply}')
         # 2. Template's issues attribute length is 1
         if len(template['issues']) != 1:
-            raise ValueError(f'Undefined request: template is for multiple issues')
+            raise ValueError('Undefined request: template is for multiple issues')
 
     for raw_issue in template['issues']:
         issue = {args.project.field_to_id(name): value for name, value in raw_issue.items()}
@@ -656,8 +667,8 @@ def _create_from_template(args, template):
         # Apply subtasks - but only to a parent which does not already have any
         # subtasks
         if ('subtasks' in issue and issue['subtasks']) and \
-                ('subtasks' not in parent.raw['fields'] or \
-                not parent.raw['fields']['subtasks']):
+                ('subtasks' not in parent.raw['fields'] or
+                 not parent.raw['fields']['subtasks']):
             # Set once
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
@@ -1190,6 +1201,43 @@ def component_list(args):
     return (0, False)
 
 
+def sprint_info(args):
+    if args.sprint_id:
+        search = f'sprint = {args.sprint_id}'
+        if not args.closed:
+            search = search + ' and statusCategory != Done'
+        issues = args.project.search_issues(search)
+        print_issues(issues, args)
+        return (0, False)
+
+    # General Sprit information
+    if args.closed:
+        info = args.project.sprint_info(states=['active', 'future', 'closed'])
+    else:
+        info = args.project.sprint_info()
+
+    board_by_id = {}
+    for board in info['boards']:
+        # This is a dict, we want the board, not key
+        board = info['boards'][board]
+        board_by_id[board.id] = board
+
+    matrix = [['name', 'id', 'status', 'board']]
+    for sprint in info['sprints']:
+        sprint = info['sprints'][sprint]
+        if sprint.state not in ('active', 'future') and not args.closed:
+            continue
+        try:
+            board_name = board_by_id[sprint.originBoardId]
+        except KeyError:
+            board_name = '???'
+        matrix.append([sprint.name, sprint.id, sprint.state, board_name])
+    if len(info) > 1:
+        render_matrix(matrix, fmt=args.format)
+
+    return (0, False)
+
+
 def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     # project: Project key
     # config: dict / pre-read JSON data
@@ -1265,6 +1313,14 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     return proj
 
 
+def add_list_options(cmd,
+                     fields_help='Display these fields in a table',
+                     quiet_help='Only print issue IDs'):
+    cmd.add_argument('-f', '--fields', help=fields_help)
+    cmd.add_argument('-q', '--quiet', default=False, help=quiet_help, action='store_true')
+    cmd.add_argument('--compact', default=False, help='Delete columns with no value set in matrix output', action='store_true')
+
+
 def create_parser():
     parser = ComplicatedArgs()
 
@@ -1279,8 +1335,7 @@ def create_parser():
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
-    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
-    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
+    add_list_options(cmd)
 
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
@@ -1288,9 +1343,8 @@ def create_parser():
     cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
-    cmd.add_argument('-f', '--fields', help='Display these fields in a table.')
     cmd.add_argument('--prune-regex', nargs=2, help='Prune results by checking named field against regular expression, removing any that do not match')
-    cmd.add_argument('-q', '--quiet', default=False, help='Only print issue IDs', action='store_true')
+    add_list_options(cmd)
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
@@ -1384,8 +1438,7 @@ def create_parser():
     cmd.add_argument('-r', '--remove', help='Component to remove', nargs=1)
 
     cmd = parser.command('components', help='List components', handler=component_list)
-    cmd.add_argument('-f', '--fields', help='Field delimiters', default=None)
-    cmd.add_argument('-q', '--quiet', help='Just print component names', default=False, action='store_true')
+    add_list_options(cmd, quiet_help='Just print component names')
     cmd.add_argument('-s', '--search', help='Search by regular expression')
 
     cmd = parser.command('template', help='Create issue from YAML template', handler=create_from_template)
@@ -1405,6 +1458,11 @@ def create_parser():
     cmd.add_argument('-a', '--all-fields', default=False, help='Include all fields, even ones that may not make sense for a '
                                                                'template',
                      action='store_true')
+
+    cmd = parser.command('sprint', help='Get Sprint information', handler=sprint_info)
+    cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
+    add_list_options(cmd)
+    cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
 
     return parser
 
