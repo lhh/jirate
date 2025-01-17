@@ -86,10 +86,12 @@ def parse_field_widths(field_string, allowed_fields=None, ignore_fields=None, st
     return fields
 
 
-def print_issues_by_field(issue_list, args=None):
+def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     # TODO: sort by column
     fields = OrderedDict({'key': 0})
-    fields = parse_field_widths(args.fields, ignore_fields=['key'], starting_fields=fields)
+    ignore_fields = ['key']
+    ignore_fields.extend(exclude_fields)
+    fields = parse_field_widths(args.fields, ignore_fields=ignore_fields, starting_fields=fields)
 
     if not args.compact:
         args.compact = args.project.get_user_data('compact_output')
@@ -176,7 +178,7 @@ def print_keys(issue_list):
     return False
 
 
-def print_issues(issue_list, args=None):
+def print_issues(issue_list, args=None, exclude_fields=[]):
     footer = (args.format in ('default'))
     total = len(issue_list)
 
@@ -189,12 +191,12 @@ def print_issues(issue_list, args=None):
         print_keys(issue_list)
         footer = False
     elif hasattr(args, 'fields') and args.fields is not None:
-        total = print_issues_by_field(issue_list, args)
+        total = print_issues_by_field(issue_list, args, exclude_fields)
     else:
         fields = args.project.get_user_data('default_fields')
         if fields:
             setattr(args, 'fields', fields)
-            total = print_issues_by_field(issue_list, args)
+            total = print_issues_by_field(issue_list, args, exclude_fields)
         else:
             total = print_issues_by_state(issue_list, args)
     if footer and total is not None:
@@ -1213,7 +1215,7 @@ def sprint_info(args):
         if args.raw:
             search = search + f' and {args.raw}'
         issues = args.project.search_issues(search)
-        print_issues(issues, args)
+        print_issues(issues, args, exclude_fields=['sprint'])
         return (0, False)
 
     # General Sprit information
