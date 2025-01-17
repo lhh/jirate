@@ -26,6 +26,10 @@ from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_f
 from jirate.template_vars import apply_values
 
 
+# Prevent case/typos/etc.
+_subtask = 'Sub-task'
+
+
 def move(args):
     if args.user:
         args.project.assign(args.src, args.user)
@@ -86,12 +90,47 @@ def parse_field_widths(field_string, allowed_fields=None, ignore_fields=None, st
     return fields
 
 
+def _reorder_issues(issue_list):
+    ret = []
+    issues_by_key = OrderedDict()
+
+    # 1. Scrape all issues by key
+    for issue in issue_list:
+        issues_by_key[str(issue.key)] = issue
+
+    # 2. Reorder
+    #    a. group subtasks under parent task
+    #    b. orphan subtasks are left in rank order
+    for issue in issue_list:
+        if str(issue.fields.issuetype) == _subtask:
+            # For subtasks, if their parent is not in the list,
+            # append now to preserve rank order
+            if str(issue.fields.parent) not in issues_by_key:
+                ret.append(issue)
+            continue
+        ret.append(issue)
+
+        # There's a bug in JIRA API. If you get:
+        #    issue/ISSUE-123
+        # ... the subtasks in the JSON data are in order according to the
+        # JIRA web UI.  If, however, you have ISSUE-123 as part of the
+        # result of a search, the subtasks' ordering according to the UI
+        # is not preserved
+        issue_subtasks = [subtask['key'] for subtask in issue.raw['fields']['subtasks']]
+        for subtask in issue_subtasks:
+            if subtask in issues_by_key:
+                ret.append(issues_by_key[subtask])
+
+    return ret
+
+
 def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     # TODO: sort by column
     fields = OrderedDict({'key': 0})
     ignore_fields = ['key']
     ignore_fields.extend(exclude_fields)
     fields = parse_field_widths(args.fields, ignore_fields=ignore_fields, starting_fields=fields)
+    subtask_prefix = EscapedString('↳ ')
 
     if not args.compact:
         args.compact = args.project.get_user_data('compact_output')
@@ -102,12 +141,25 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     del fields['key']
 
     found_fields = []
+    issue_list = _reorder_issues(issue_list)
+
+    # To show subtasks under parents, we need to know all the issues we
+    # have so we can see if the parent task is in the list
+    issue_keys = [str(issue.key) for issue in issue_list]
+
     for issue in issue_list:
         if args and hasattr(args, 'status') and args.status:
             if nym(issue.field('status')['name']) != nym(args.status):
                 continue
         row = []
-        row.append(issue_link_string(issue.key, args.project.jira.server_url))
+        key_string = issue_link_string(issue.key, args.project.jira.server_url)
+        # Above, we reordered a subtask to be under its parent task in subtask
+        # order according to the parent issue. Here, we want to show a visual break
+        # to show this is associated with the above non-Subtask
+        if str(issue.fields.issuetype) == _subtask and str(issue.fields.parent) in issue_keys:
+            # No f-magic for EscapedString, so we must concatenate
+            key_string = subtask_prefix + key_string
+        row.append(key_string)
         for field in fields:
             field_key = args.project.field_to_id(field)
             if not field_key:
@@ -618,7 +670,6 @@ def create_from_template(args):
 def _create_from_template(args, template):
     # Cache for issue createmeta information
     metadata_by_type = {}
-    _subtask = 'Sub-task'  # To prevent case / typos / etc
 
     # TODO: consider using Jira's bulk issue creation
     # TODO: support reading arbitrary fields from the template
@@ -1207,7 +1258,7 @@ def sprint_info(args):
     if args.sprint_id:
         search = f'sprint = {args.sprint_id}'
         if not args.all_types:
-            search = search + ' and issuetype != Sub-task'
+            search = search + f' and issuetype != {_subtask}'
         if not args.closed:
             search = search + ' and statusCategory != Done'
         if args.new:
@@ -1469,7 +1520,7 @@ def create_parser():
 
     cmd = parser.command('sprint', help='Get Sprint information', handler=sprint_info)
     cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
-    cmd.add_argument('--all-types','-A', help='When displaying sprint issues, include subtasks', action='store_true', default=False)
+    cmd.add_argument('--all-types', '-A', help='When displaying sprint issues, include subtasks', action='store_true', default=False)
     cmd.add_argument('--new', help='When displaying issues, only list issues not in progress', default=False, action='store_true')
     cmd.add_argument('--raw', '-r', help='When displaying issues, include this additional JQL snippet')
     add_list_options(cmd)
