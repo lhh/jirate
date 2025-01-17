@@ -1204,8 +1204,14 @@ def component_list(args):
 def sprint_info(args):
     if args.sprint_id:
         search = f'sprint = {args.sprint_id}'
+        if not args.all_types:
+            search = search + ' and issuetype != Sub-task'
         if not args.closed:
             search = search + ' and statusCategory != Done'
+        if args.new:
+            search = search + ' and statusCategory = New'
+        if args.raw:
+            search = search + f' and {args.raw}'
         issues = args.project.search_issues(search)
         print_issues(issues, args)
         return (0, False)
@@ -1461,6 +1467,9 @@ def create_parser():
 
     cmd = parser.command('sprint', help='Get Sprint information', handler=sprint_info)
     cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
+    cmd.add_argument('--all-types','-A', help='When displaying sprint issues, include subtasks', action='store_true', default=False)
+    cmd.add_argument('--new', help='When displaying issues, only list issues not in progress', default=False, action='store_true')
+    cmd.add_argument('--raw', '-r', help='When displaying issues, include this additional JQL snippet')
     add_list_options(cmd)
     cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
 
