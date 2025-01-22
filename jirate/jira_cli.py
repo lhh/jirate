@@ -130,7 +130,10 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     ignore_fields = ['key']
     ignore_fields.extend(exclude_fields)
     fields = parse_field_widths(args.fields, ignore_fields=ignore_fields, starting_fields=fields)
-    subtask_prefix = EscapedString('↳ ')
+    if args.format != 'csv':
+        subtask_prefix = EscapedString('↳ ')
+    else:
+        subtask_prefix = EscapedString('')
 
     if not args.compact:
         args.compact = args.project.get_user_data('compact_output')
