@@ -1267,7 +1267,14 @@ def sprint_info(args):
         if args.new:
             search = search + ' and statusCategory = New'
         if args.raw:
-            search = search + f' and {args.raw}'
+            if args.raw.lower().strip().starswith('order'):
+                search = search + f' {args.raw}'
+            else:
+                search = search + f' and {args.raw}'
+        # FIXME: This doesn't allow for field substring ("order" in the
+        # "summary" field, for example)
+        if not args.raw or 'order' not in args.raw.lower():
+            search = search + f' order by rank asc'
         issues = args.project.search_issues(search)
         print_issues(issues, args, exclude_fields=['sprint'])
         return (0, False)
