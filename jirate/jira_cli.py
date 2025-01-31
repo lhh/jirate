@@ -722,9 +722,7 @@ def _create_from_template(args, template):
 
         # Apply subtasks - but only to a parent which does not already have any
         # subtasks
-        if ('subtasks' in issue and issue['subtasks']) and \
-                ('subtasks' not in parent.raw['fields'] or
-                 not parent.raw['fields']['subtasks']):
+        if ('subtasks' in issue and issue['subtasks']) and ('subtasks' not in parent.raw['fields'] or not parent.raw['fields']['subtasks']):
             # Set once
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
@@ -1285,7 +1283,7 @@ def sprint_info(args):
         # FIXME: This doesn't allow for field substring ("order" in the
         # "summary" field, for example)
         if not args.raw or 'order' not in args.raw.lower():
-            search = search + f' order by rank asc'
+            search = search + ' order by rank asc'
         issues = args.project.search_issues(search)
         print_issues(issues, args, exclude_fields=['sprint'])
         return (0, False)

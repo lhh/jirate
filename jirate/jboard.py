@@ -1101,7 +1101,7 @@ class JiraProject(Jirate):
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
         return metadata
 
-    def sprint_info(self, project_key=None, states=['active','future']):
+    def sprint_info(self, project_key=None, states=['active', 'future']):
         if not project_key:
             project_key = self.project_name
         return super().sprint_info(project_key, states)
