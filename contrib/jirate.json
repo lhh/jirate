@@ -10,6 +10,7 @@
 	"here_there_be_dragons": false,
 	"fancy_output": true,
 	"compact_output": false,
+	"eausm": true,
 	"searches": {
 		"default": "assignee = currentUser() and status not in (Done, closed, resolved)",
 		"closed": "assignee = currentUser() and status in (Done, closed, resolved)"

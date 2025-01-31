@@ -1113,6 +1113,17 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
             ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
             _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
 
+    votes = project.eausm_issue_votes(issue_obj)
+    if votes and 'votes' in votes and len(votes['votes']):
+        mx = [['Vote', 'Points']]
+        for vote in votes['votes']:
+            # TODO: cache users when using JiraProject() to reduce
+            # API calls
+            user = project.jira.user(vote['userId'])
+            mx.append([user.displayName, vote['vote']])
+        render_matrix(mx)
+        print()
+
     if no_comments:
         return
     if issue['comment']['comments']:
