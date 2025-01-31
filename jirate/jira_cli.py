@@ -1318,6 +1318,13 @@ def sprint_info(args):
     return (0, False)
 
 
+def eausm_vote(args):
+    issues = args.project.issues(args.issue_id)
+    for issue in issues:
+        args.project.eausm_vote_issue(issue, args.vote)
+    return (0, False)
+
+
 def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     # project: Project key
     # config: dict / pre-read JSON data
@@ -1546,6 +1553,10 @@ def create_parser():
     cmd.add_argument('--raw', '-r', help='When displaying issues, include this additional JQL snippet')
     add_list_options(cmd)
     cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
+
+    cmd = parser.command('eausm-vote', help='Apply your EZ Agile Planning vote', handler=eausm_vote)
+    cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
+    cmd.add_argument('vote', help='Story Point Value', type=str.upper)
 
     return parser
 
