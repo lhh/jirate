@@ -124,12 +124,6 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - Search component names and descriptions for a regex:
   - `jirate components -s kernel`
 
-## Templates
-- Generate a template from an existing issue:
-  - `jirate generate-template MYISSUE-123 > my-template.yaml`
-- File a new issue from a template:
-  - `jirate template my-template.yaml`
-
 ## Inter-issue links and external links
 - Create a link between two issues:
   - `jirate link PROJ-123 depends on PROJTWO-111`
@@ -139,6 +133,34 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
   - `jirate attach PROJ-123 http://www.github.com Github Home`
 
 # Advanced
+## Templates
+Jirate has powerful templating - templates are a combination of Jinja2 and YAML.  Note that typical syntax differs from Jinja2 since double-braces are used by Jira, we use `{@` and `@}` instead.
+- Generate a template from an existing issue:
+  - `jirate generate-template MYISSUE-123 > my-template.yaml`
+- File a new issue from a template:
+  - `jirate template my-template.yaml version 1.2`
+### Template fields
+Because Jirate resolves field IDs to human-readable values, it's possible to use the human-readable field names in your templates. There are some strange exceptions, but most custom fields are supported as long as your project's creation metadata supports the field.
+### Template variables
+There are two typical methods of setting default values.
+- `{% set var=var or "1.0 %}`
+- `{@var|default('1.0')@}`
+
+Jirate ignores variables in templates which start with underscores. This allows you to use Jinja2 code to slice up existing variables or to create derived variable values from user input. The first usage of a variable in a template - even in a YAML comment - is what tells Jirate to require the variable from the user. Here's an example of creating a `_version_next` by slicing up the `version` value given to us by a user:
+
+```
+# {@version@} - version to stand up
+{% set _version_info = version.split('.') %}
+{% set _ = _version_info.append(((_version_info.pop()|int) + 1)|string) %}
+{% set _version_next = _version_info|join('.') %}`
+```
+
+Now `{@_version_next@}` can be used within fields inside your template.
+### Applying templates after issue creation
+This is useful for when a user needs to create a set of known tasks, but does not have the full context for what is entailed yet. They might generate stub 30 issues, then generate a template from the first one and apply it to the other 29.
+- `jirate template --apply MYISSUE-123 mytemplate.yaml version 1.0`
+
+
 ## API hackery
 - Call an API
   - `jirate call-api /field`
