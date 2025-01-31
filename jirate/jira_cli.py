@@ -1071,6 +1071,19 @@ def print_subtasks(issue, baseurl=None):
     _print_issue_list('Sub-tasks', issue['subtasks'], baseurl)
 
 
+def print_issue_votes(project, issue):
+    votes = project.eausm_issue_votes(issue)
+    if votes and 'votes' in votes and len(votes['votes']):
+        mx = [['Vote', 'Points']]
+        for vote in votes['votes']:
+            # TODO: cache users when using JiraProject() to reduce
+            # API calls
+            user = project.jira.user(vote['userId'])
+            mx.append([user.displayName, vote['vote']])
+        render_matrix(mx)
+        print()
+
+
 def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     issue = issue_obj.raw['fields']
     key_link = issue_link_string(issue_obj.key, project.jira.server_url)
@@ -1097,8 +1110,11 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     if 'issuelinks' in issue and len(issue['issuelinks']):
         print_issue_links(issue, project.jira.server_url)
 
-    # Don't print external links unless in verbose mode since it's another API call?
+    # Don't print external links or votes unless in verbose mode since it's
+    # another API call?
     if verbose:
+        print_issue_votes(project, issue_obj)
+
         links = project.remote_links(issue_obj)
         if links:
             print_remote_links(links)
@@ -1110,17 +1126,6 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         if issue['issuetype']['name'] == megalith:
             ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
             _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
-
-    votes = project.eausm_issue_votes(issue_obj)
-    if votes and 'votes' in votes and len(votes['votes']):
-        mx = [['Vote', 'Points']]
-        for vote in votes['votes']:
-            # TODO: cache users when using JiraProject() to reduce
-            # API calls
-            user = project.jira.user(vote['userId'])
-            mx.append([user.displayName, vote['vote']])
-        render_matrix(mx)
-        print()
 
     if no_comments:
         return
