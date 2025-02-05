@@ -1374,7 +1374,10 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
             proj.set_user_data(key, jconfig[key])
 
     if 'custom_fields' in jconfig:
-        proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
+        if isinstance(jconfig['custom_fields'], str):
+            proj.custom_fields = get_config(jconfig['custom_fields'])
+        else:
+            proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
     else:
         proj.custom_fields = []
 

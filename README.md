@@ -23,10 +23,19 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
 - `no_format` (Optional) - Set to `true` if you would prefer Jirate not attempt to render JIRA comments and descriptions as markdown (JIRA text isn't markdown, so the markdown processor often gets this wrong)
 - `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
-- `custom_fields` (Optional) - Raw (or cooked, if you prefer) field definitions following the same conventions as the jira `/field` data.
+- `custom_fields` (Optional) - One of:
+  - Custom field rendering definitions in the format of the jira `/field` data with some additional fields (see below)
+  - A filename pointing to custom field definitions, or
 - `proxies` (Optional) - HTTP and/or HTTPS proxies to use
 - `cache_expire` (Optional) - Number of seconds to cache certain JIRA configuration data locally (default: `300`; `0` means no expiration)
 - `cache_file` (Optional) - Where to store cached JIRA configuration data (default: `~/.jirate.cache`)
+
+### JIRA Custom field display configuration
+Each field in `custom_fields` is a dictionary. Jirate only cares about a few fields when defining custom rendering; most fields it automatically discerns by asking the server for the `/field` data:
+- `id` (Required) - the JIRA custom field name (`customfield_xxxxx`).
+- `name` (Required) - Generally this should come from your JIRA instance, but you can rename it to whatever you like if you want.
+- `display` (Optional) - false (to not display this field) or one of several built in renderers:`string, any, number, value, name, version, user, value_list, email_list, name_list, date, datetime`
+- `code` (Optional) - when `here_there_be_dragons` is set to true, insert a snippet of Python code to render your data.  The field is passed to your one-line of code as `field`; all fields in the issue are passed in as `fields`.  You'll need to know the custom field ID of any field you are trying to reference.
 
 ## Operation
 - Trello support is somewhat unmaintained as the maintainers do not have access to a commercial Trello instance any longer. Taking patches.
