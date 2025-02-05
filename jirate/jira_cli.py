@@ -1131,8 +1131,13 @@ def cat(args):
             return (127, False)
         issues.append(issue)
 
+    if args.no_format:
+        no_format = args.no_format
+    else:
+        no_format = args.project.get_user_data('no_format')
+
     for issue in issues:
-        print_issue(args.project, issue, args.verbose, args.no_comments, args.no_format)
+        print_issue(args.project, issue, args.verbose, args.no_comments, no_format)
     return (0, False)
 
 
