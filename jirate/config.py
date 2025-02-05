@@ -9,6 +9,23 @@ class ParseError(Exception):
     pass
 
 
+def _str_presenter(dumper, data):
+    """
+    Makes PyYAML print multiline strings in a sensible way
+    """
+    data = data.rstrip()
+    lines = data.splitlines()
+    if len(lines) > 1:
+        data = '\n'.join([line.rstrip() for line in lines])
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+
+def yaml_dump(info):
+    yaml.representer.SafeRepresenter.add_representer(str, _str_presenter)
+    return yaml.safe_dump(info, allow_unicode=True)
+
+
 # Allow YAML or JSON
 def _auto_parse(config_data):
     try:
