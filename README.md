@@ -20,6 +20,7 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `default_project` (Required) - Default project to use when interacting with JIRA
 - `here_there_be_dragons` (Optional) - Set to `true` if you intend to use custom code to render JIRA custom field data
 - `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
+- `no_format` (Optional) - Set to `true` if you would prefer Jirate not attempt to render JIRA comments and descriptions as markdown (JIRA text isn't markdown, so the markdown processor often gets this wrong)
 - `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
 - `custom_fields` (Optional) - Raw (or cooked, if you prefer) field definitions following the same conventions as the jira `/field` data.
 - `proxies` (Optional) - HTTP and/or HTTPS proxies to use
