@@ -1379,10 +1379,9 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
             field_info['name'] = proj.field_to_human(field_id)
             proj.custom_fields.append(field_info)
 
+    apply_field_renderers(proj.jira.fields())
     if proj.custom_fields:
         apply_field_renderers(proj.custom_fields)
-    else:
-        apply_field_renderers()
 
     return proj
 

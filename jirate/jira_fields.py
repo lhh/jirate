@@ -461,6 +461,12 @@ def apply_field_renderers(custom_field_defs=None):
     for key in custom_fields:
         ret[key] = custom_fields[key]
 
+    if _fields:
+        # If we were called twice, tack on the things we'd already set up
+        for key in _fields:
+            if key not in ret:
+                ret[key] = _fields[key]
+
     _fields = ret
 
 
