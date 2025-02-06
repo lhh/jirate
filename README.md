@@ -18,6 +18,7 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `url` (Required) - URL to your JIRA instance
 - `token` (Required) - A valid personal access token for your account
 - `default_project` (Required) - Default project to use when interacting with JIRA
+- `eausm` (Optional) - Set to `false` to disable EZ Agile Planning voting
 - `here_there_be_dragons` (Optional) - Set to `true` if you intend to use custom code to render JIRA custom field data
 - `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
 - `no_format` (Optional) - Set to `true` if you would prefer Jirate not attempt to render JIRA comments and descriptions as markdown (JIRA text isn't markdown, so the markdown processor often gets this wrong)

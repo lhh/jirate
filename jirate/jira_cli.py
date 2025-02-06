@@ -722,9 +722,7 @@ def _create_from_template(args, template):
 
         # Apply subtasks - but only to a parent which does not already have any
         # subtasks
-        if ('subtasks' in issue and issue['subtasks']) and \
-                ('subtasks' not in parent.raw['fields'] or
-                 not parent.raw['fields']['subtasks']):
+        if ('subtasks' in issue and issue['subtasks']) and ('subtasks' not in parent.raw['fields'] or not parent.raw['fields']['subtasks']):
             # Set once
             filed['subtasks'] = []
             for subtask in issue['subtasks']:
@@ -1073,6 +1071,19 @@ def print_subtasks(issue, baseurl=None):
     _print_issue_list('Sub-tasks', issue['subtasks'], baseurl)
 
 
+def print_issue_votes(project, issue):
+    votes = project.eausm_issue_votes(issue)
+    if votes and 'votes' in votes and len(votes['votes']):
+        mx = [['Vote', 'Points']]
+        for vote in votes['votes']:
+            # TODO: cache users when using JiraProject() to reduce
+            # API calls
+            user = project.jira.user(vote['userId'])
+            mx.append([user.displayName, vote['vote']])
+        render_matrix(mx)
+        print()
+
+
 def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     issue = issue_obj.raw['fields']
     key_link = issue_link_string(issue_obj.key, project.jira.server_url)
@@ -1099,8 +1110,11 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     if 'issuelinks' in issue and len(issue['issuelinks']):
         print_issue_links(issue, project.jira.server_url)
 
-    # Don't print external links unless in verbose mode since it's another API call?
+    # Don't print external links or votes unless in verbose mode since it's
+    # another API call?
     if verbose:
+        print_issue_votes(project, issue_obj)
+
         links = project.remote_links(issue_obj)
         if links:
             print_remote_links(links)
@@ -1279,7 +1293,7 @@ def sprint_info(args):
         # FIXME: This doesn't allow for field substring ("order" in the
         # "summary" field, for example)
         if not args.raw or 'order' not in args.raw.lower():
-            search = search + f' order by rank asc'
+            search = search + ' order by rank asc'
         issues = args.project.search_issues(search)
         print_issues(issues, args, exclude_fields=['sprint'])
         return (0, False)
@@ -1309,6 +1323,13 @@ def sprint_info(args):
     if len(info) > 1:
         render_matrix(matrix, fmt=args.format)
 
+    return (0, False)
+
+
+def eausm_vote(args):
+    issues = args.project.issues(args.issue_id)
+    for issue in issues:
+        args.project.eausm_vote_issue(issue, args.vote)
     return (0, False)
 
 
@@ -1539,6 +1560,10 @@ def create_parser():
     cmd.add_argument('--raw', '-r', help='When displaying issues, include this additional JQL snippet')
     add_list_options(cmd)
     cmd.add_argument('--closed', help='Include closed sprints or issues', default=False, action='store_true')
+
+    cmd = parser.command('eausm-vote', help='Apply your EZ Agile Planning vote', handler=eausm_vote)
+    cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
+    cmd.add_argument('vote', help='Story Point Value', type=str.upper)
 
     return parser
 

@@ -602,6 +602,58 @@ class Jirate(object):
                 pass
         return None
 
+    def eausm_issue_votes(self, issue_alias):
+        """Retrieve EAUSM (Easy Agile Planning Poker) votes
+        for an issue
+
+        Parameters:
+          issue_alias: key, issue ID (string), or Issue object
+
+        Returns:
+          raw json data of EAUSM information
+        """
+        issue = self.issue(issue_alias)
+        if not issue:
+            return None
+        if 'eausm' in issue.raw['fields']:
+            return issue.raw['fields']
+
+        # Check for the EZ Agile Planning Poker ext on the server
+        EAUSM_url = self.jira.server_url + \
+            f"/rest/eausm/latest/planningPoker/{issue.id}"
+        try:
+            ret = self.jira._session.get(EAUSM_url)
+            EAUSM_json = json_loads(ret)
+            issue.raw['fields']['eausm'] = EAUSM_json
+        except JIRAError:
+            return False
+        return issue.raw['fields']['eausm']
+
+    def eausm_vote_issue(self, issue_alias, vote):
+        """Set EAUSM (Easy Agile Planning Poker) votes
+        for an issue
+
+        Parameters:
+          issue_alias: key, issue ID (string), or Issue object
+          votes: string or integer for story point voting
+
+        Returns:
+          None: no such issue or voting disabled
+          False: Failed to set
+          True: OK
+        """
+        issue = self.issue(issue_alias)
+        if not issue:
+            return None
+        vote = int(vote)
+
+        EAUSM_url = f"{self.jira.server_url}/rest/eausm/latest/planningPoker/vote"
+        payload = {"issueId": issue.id, "vote": vote}
+        ret = self.jira._session.put(EAUSM_url, data=payload)
+        if not ret:
+            return False
+        return True
+
     def issues(self, issue_list, verbose=False):
         """Retrieve one or more issues from JIRA
 
@@ -918,6 +970,20 @@ class JiraProject(Jirate):
                 pass
         return None
 
+    def eausm_issue_votes(self, issue_alias):
+        if 'eausm' in self._config and not self._config['eausm']:
+            return None
+        ret = super().eausm_issue_votes(issue_alias)
+        if ret is False:
+            self._config['eausm'] = False
+            return None
+        return ret
+
+    def eausm_vote_issue(self, issue_alias, votes):
+        if 'eausm' in self._config and not self._config['eausm']:
+            return False
+        return super().eausm_vote_issue(issue_alias)
+
     def states(self):
         return copy.copy(self._config['states'])
 
@@ -1035,7 +1101,7 @@ class JiraProject(Jirate):
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
         return metadata
 
-    def sprint_info(self, project_key=None, states=['active','future']):
+    def sprint_info(self, project_key=None, states=['active', 'future']):
         if not project_key:
             project_key = self.project_name
         return super().sprint_info(project_key, states)
