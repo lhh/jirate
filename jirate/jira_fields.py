@@ -3,6 +3,7 @@
 import re  # NOQA
 from collections import OrderedDict
 from jirate.decor import pretty_date, vsep_print, comma_separated
+from jirate.jira_custom import custom_field_renderers
 
 
 #
@@ -371,6 +372,9 @@ _array_renderers = {
 
 def apply_schema_renderer(field):
     schema = field['schema']
+    if 'custom' in schema and schema['custom'] in custom_field_renderers:
+        field['display'] = custom_field_renderers[schema['custom']]
+        return
     if schema['type'] == 'array':
         try:
             field['display'] = _array_renderers[schema['items']]
