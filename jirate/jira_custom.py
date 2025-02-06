@@ -4,9 +4,9 @@ import re
 
 
 _val_to_py = {
-        'false': False,
-        'true': True,
-        '<null>': None
+    'false': False,
+    'true': True,
+    '<null>': None
 }
 
 
@@ -65,7 +65,18 @@ def sprint_field(data, fields, as_object=False):
     return f"{sprint['name']} (ID: {sprint['id']})"
 
 
+def no_display(data, fields, as_object=False):
+    if as_object:
+        return data
+    return None
+
+
 # Used by jira_fields
 custom_field_renderers = {
-        'com.pyxis.greenhopper.jira:gh-sprint': sprint_field
+    'com.atlassian.jira.plugins.jira-development-integration-plugin:devsummary': no_display,
+    'com.onresolve.jira.groovy.groovyrunner:scripted-field': no_display,
+    'com.pyxis.greenhopper.jira:gh-epic-color': no_display,
+    'com.pyxis.greenhopper.jira:gh-global-rank': no_display,
+    'com.pyxis.greenhopper.jira:gh-lexo-rank': no_display,
+    'com.pyxis.greenhopper.jira:gh-sprint': sprint_field
 }
