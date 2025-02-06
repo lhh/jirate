@@ -31,7 +31,7 @@ def _auto_parse(config_data):
     try:
         config = json.loads(config_data)
         return config
-    except json.decoder.JSONDecodeError as e:
+    except json.decoder.JSONDecodeError:
         pass
 
     try:
