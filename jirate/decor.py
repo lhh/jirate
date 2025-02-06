@@ -288,8 +288,9 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
         widths.append(int(args.pop(0)))
     fields.append(args.pop(0))
 
-    if sum(widths) + (3 * len(widths)) + 1 > screen_width:
-        print('Screen too narrow.')
+    wn = sum(widths) + (3 * len(widths)) + 1
+    if wn > screen_width:
+        print(f'Screen too narrow ({wn} > {screen_width}')
         return 0
 
     #       field widths+ separators
