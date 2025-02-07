@@ -24,6 +24,7 @@ from jirate.decor import EscapedString
 from jirate.config import get_config
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
 from jirate.template_vars import apply_values
+from jirate.jira_debug import debug_setup, debug_dump
 
 
 # Prevent case/typos/etc.
@@ -1370,6 +1371,8 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
         jconfig['proxies'] = {"http": "", "https": ""}
 
     jira = get_jira(jconfig)
+    if 'debug' in kwargs and kwargs['debug']:
+        debug_setup(jira)
     proj = JiraProject(jira, project, readonly=False, allow_code=allow_code)
     for key in jconfig:
         if key not in ['custom_fields', 'proxies', 'here_there_be_dragons', 'url', 'token', 'default_project', 'proxies']:
@@ -1422,6 +1425,7 @@ def create_parser():
     parser.add_argument('-p', '--project', help='Use this JIRA project instead of default', default=None, type=str.upper)
     parser.add_argument('-f', '--format', help='Use this format for issue list output', default='default', choices=['default', 'csv'], type=str.lower)
     parser.add_argument('--x-format-field', nargs=2, help='Experimental: apply field formatting from the CLI (field, json)', default=None)
+    parser.add_argument('--debug', help='Enable debugging', default=False, action='store_true')
 
     cmd = parser.command('whoami', help='Display current user information', handler=user_info)
 
@@ -1589,7 +1593,7 @@ def main():
         field = ns.x_format_field
 
     try:
-        project = get_jira_project(ns.project, config_file=ns.config, field=field)
+        project = get_jira_project(ns.project, config_file=ns.config, field=field, debug=ns.debug)
     except KeyError:
         sys.exit(1)
     except FileNotFoundError:
@@ -1605,6 +1609,8 @@ def main():
         rc = parser.finalize(ns)
     except JIRAError as err:
         print(err)
+        if ns.debug:
+            debug_dump()
         sys.exit(1)
     if rc:
         ret = rc[0]
@@ -1613,6 +1619,8 @@ def main():
         print('No command specified')
         ret = 0
         save = False  # NOQA
+    if ns.debug:
+        debug_dump()
     sys.exit(ret)
 
 
