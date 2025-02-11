@@ -94,21 +94,11 @@ def _check_fields(issue, name):
     return None
 
 
-class JIRAWrapper(JIRA):
-    # Ensures we never call fields() twice, to save API calls
-
-    def fields(self):
-        if not hasattr(self, '_fields_cache_value_raw'):
-            self._fields_cache_value_raw = super().fields()
-        return self._fields_cache_value_raw
-
-
 class Jirate(object):
     """High-level wrapper for python-jira"""
 
     def __init__(self, jira):
         self.jira = jira
-        self._user = None
         self._field_to_id = None
         self._field_to_alias = None
         self._field_to_human = None
@@ -124,13 +114,7 @@ class Jirate(object):
 
     @property
     def user(self):
-        """This is the connected user (lazy-loaded)"""
-        if self._user is None:
-            # Get current user info and record it
-            # This doesn't use self.jira.session().raw since this
-            # doesn't have all the information available.
-            self._user = self.jira.myself()
-        return self._user
+        return self.jira.myself()
 
     def attach(self, issue_alias, url, description):
         """Attach an external URL to an issue
@@ -1129,7 +1113,7 @@ def get_jira(jconfig):
       jconfig: dict of 3 keys: url, token, proxies (optional)
 
     Returns:
-      JIRAWrapper
+      JIRA
     """
     if 'url' not in jconfig:
         print('No JIRA URL specified')
@@ -1140,4 +1124,4 @@ def get_jira(jconfig):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
-    return JIRAWrapper(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
+    return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
