@@ -940,7 +940,7 @@ class JiraProject(Jirate):
         if issue_alias.upper() != issue_alias:
             issue_aliases.append(issue_alias.upper())
         if '-' not in issue_alias:
-            issue_aliases.append(self.project_name.upper() + f'-{issue_alias}')
+            issue_aliases.insert(0, self.project_name.upper() + f'-{issue_alias}')
         for alias in issue_aliases:
             if alias in self._config['issue_map']:
                 return self._config['issue_map'][alias]
