@@ -8,6 +8,7 @@ import pytest  # NOQA
 from jirate.rqcache import RequestCache
 import jirate.rqcache
 
+
 class TestSession(object):
     def request(self, method, url, **kwargs):
         return {'value': os.urandom(16), 'resp': 200}
@@ -28,7 +29,7 @@ jirate.rqcache.ResilientSession = TestSession
 
 def test_rqcache_nomatch():
     session = TestSession()
-    cache = RequestCache(session, filename=None, expire=10)
+    cache = RequestCache(session, filename=None, expire=10)  # NOQA
     # url1 is not matched by our paths so it should always
     # be a cache miss
     ret1 = session.get('url1')
@@ -39,7 +40,7 @@ def test_rqcache_nomatch():
 
 def test_rqcache_match():
     session = TestSession()
-    cache = RequestCache(session, filename=None, expire=10)
+    cache = RequestCache(session, filename=None, expire=10)  # NOQA
     # /field is a match, so we should get the cached data on
     # the second pull
     ret1 = session.get('https://whatever/rest/api/2/field')
@@ -50,7 +51,7 @@ def test_rqcache_match():
 
 def test_rqcache_match_expire():
     session = TestSession()
-    cache = RequestCache(session, filename=None, expire=1)
+    cache = RequestCache(session, filename=None, expire=1)  # NOQA
     # We expire in 1 second, so second pull should have new
     # data
     ret1 = session.get('https://whatever/rest/api/2/field')
@@ -65,7 +66,7 @@ def test_rqcache_purge_expired():
     cache = RequestCache(session, filename=None, expire=1)
     # Here, our baseline has no requests
     baseline = copy.deepcopy(cache.cached_reqs)
-    ret1 = session.get('https://whatever/rest/api/2/field')
+    session.get('https://whatever/rest/api/2/field')
     # Now our cache has one request, which expires in 1 second
     # Flushing the cache should not matter
     cache.flush()
@@ -106,8 +107,8 @@ def test_rqcache_persist(tmp_path):
     cache.save()
 
     # Load our cache from disk
-    session2 = TestSession()
-    cache2 = RequestCache(session, filename=filename, expire=1)
+    session2 = TestSession()  # NOQA
+    cache2 = RequestCache(session, filename=filename, expire=1)  # NOQA
     ret2 = session.get('https://whatever/rest/api/2/field')
 
     # Request should match
@@ -123,8 +124,8 @@ def test_rqcache_persist_expire(tmp_path):
     time.sleep(1.1)
 
     # Load our cache from disk
-    session2 = TestSession()
-    cache2 = RequestCache(session, filename=filename, expire=1)
+    session2 = TestSession()  # NOQA
+    cache2 = RequestCache(session, filename=filename, expire=1)  # NOQA
     ret2 = session.get('https://whatever/rest/api/2/field')
 
     # Request should not match
