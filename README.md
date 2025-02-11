@@ -25,6 +25,8 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
 - `custom_fields` (Optional) - Raw (or cooked, if you prefer) field definitions following the same conventions as the jira `/field` data.
 - `proxies` (Optional) - HTTP and/or HTTPS proxies to use
+- `cache_expire` (Optional) - Number of seconds to cache certain JIRA configuration data locally (default: `300`; `0` means no expiration)
+- `cache_file` (Optional) - Where to store cached JIRA configuration data (default: `~/.jirate.cache`)
 
 ## Operation
 - Trello support is somewhat unmaintained as the maintainers do not have access to a commercial Trello instance any longer. Taking patches.
