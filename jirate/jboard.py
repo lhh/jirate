@@ -10,7 +10,7 @@ from toolchest.strutil import list_or_splitstr
 
 from jira import JIRA, JIRAError
 from jira.utils import json_loads as _json_loads
-from jira.resources import Issue
+from jira.resources import Issue, User
 
 from jirate.decor import nym
 from jirate.jira_input import transmogrify_input
@@ -28,6 +28,28 @@ def json_loads(val):
     if _test_:
         return val
     return _json_loads(val)
+
+
+def _user_fix(obj, *args):
+    # JIRA.user() doesn't search by key
+    try:
+        ret = JIRA.user(obj, *args)
+        return ret
+    except JIRAError as err:
+        # There's no check by key; try it
+        pass
+
+    return _user_by_key(obj, *args)
+
+
+def _user_by_key(obj, *args):
+    key = args[0]
+    data = {}
+    if len(args) > 1:
+        data = {'expand': args[1]}
+    user = User(obj._options, obj._session, _query_param='key')
+    user.find(key, params=data)
+    return user
 
 
 def _resolve_field(obj, field_name):
@@ -102,6 +124,8 @@ class Jirate(object):
         self._field_to_id = None
         self._field_to_alias = None
         self._field_to_human = None
+        jira.user = types.MethodType(_user_fix, jira)
+        jira.user_by_key = types.MethodType(_user_by_key, jira)
 
     def _issue_key(self, alias):
         if isinstance(alias, str):

@@ -1077,9 +1077,7 @@ def print_issue_votes(project, issue):
     if votes and 'votes' in votes and len(votes['votes']):
         mx = [['Vote', 'Points']]
         for vote in votes['votes']:
-            # TODO: cache users when using JiraProject() to reduce
-            # API calls
-            user = project.jira.user(vote['userId'])
+            user = project.jira.user_by_key(vote['userId'])
             mx.append([user.displayName, vote['vote']])
         render_matrix(mx)
         print()
