@@ -990,7 +990,7 @@ class JiraProject(Jirate):
     def eausm_vote_issue(self, issue_alias, votes):
         if 'eausm' in self._config and not self._config['eausm']:
             return False
-        return super().eausm_vote_issue(issue_alias)
+        return super().eausm_vote_issue(issue_alias, votes)
 
     def states(self):
         return copy.copy(self._config['states'])
