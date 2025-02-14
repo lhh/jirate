@@ -37,7 +37,8 @@ default_cache_patterns = {
             r'/rest/agile/[0-9]+(\.[0-9]+)?/board$',
             r'/rest/agile/[0-9]+(\.[0-9]+)?/board/[0-9]+/sprint$',
             r'/rest/api/[0-9]+/project/[A-Z]+/statuses$',
-            r'/rest/api/[0-9]+/project/[A-Z]+$']
+            r'/rest/api/[0-9]+/project/[A-Z]+$',
+            r'/rest/api/[0-9]+/user\?(username|key)=']
 }
 
 
