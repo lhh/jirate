@@ -21,7 +21,7 @@ from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym
 from jirate.decor import issue_link_string
 from jirate.decor import pretty_print  # NOQA
 from jirate.decor import EscapedString
-from jirate.config import get_config
+from jirate.config import get_config, yaml_dump
 from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
 from jirate.template_vars import apply_values
 from jirate.rqcache import RequestCache
@@ -780,8 +780,7 @@ def generate_template(args):
     # TODO: allow customizing allow_fields in the config
     template = _generate_template(issue.raw['fields'], args.project.field_to_alias, args.project.issue, args.all_fields)
 
-    yaml.representer.SafeRepresenter.add_representer(str, _str_presenter)
-    print(yaml.safe_dump({'issues': [template]}, allow_unicode=True))
+    print(yaml_dump({'issues': [template]}))
     return (0, True)
 
 
@@ -822,18 +821,6 @@ def _serialize_issue(raw_issue, translate_fields, fetch_issue=None):
             _, template[translate_fields(field)] = render_field_data(field, raw_issue, as_object=True)
 
     return template
-
-
-def _str_presenter(dumper, data):
-    """
-    Makes PyYAML print multiline strings in a sensible way
-    """
-    data = data.rstrip()
-    lines = data.splitlines()
-    if len(lines) > 1:
-        data = '\n'.join([line.rstrip() for line in lines])
-        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 
 def _trim_template(template, allow_fields=None):
@@ -1387,7 +1374,10 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
             proj.set_user_data(key, jconfig[key])
 
     if 'custom_fields' in jconfig:
-        proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
+        if isinstance(jconfig['custom_fields'], str):
+            proj.custom_fields = get_config(jconfig['custom_fields'])
+        else:
+            proj.custom_fields = copy.deepcopy(jconfig['custom_fields'])
     else:
         proj.custom_fields = []
 
