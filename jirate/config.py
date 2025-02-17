@@ -37,7 +37,7 @@ def _auto_parse(config_data):
     try:
         config = yaml.safe_load(config_data)
         return config
-    except yaml.scanner.ScannerError:
+    except (yaml.scanner.ScannerError, yaml.reader.ReaderError):
         pass
 
     raise ParseError('Could not parse configuration file')
