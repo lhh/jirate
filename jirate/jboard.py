@@ -35,7 +35,7 @@ def _user_fix(obj, *args):
     try:
         ret = JIRA.user(obj, *args)
         return ret
-    except JIRAError as err:
+    except JIRAError:
         # There's no check by key; try it
         pass
 
@@ -215,16 +215,25 @@ class Jirate(object):
             return self._field_to_human[id_or_alias]
         return None
 
+    def _builtin_map_init(self, jira_val, human_val):
+        self._field_to_id[jira_val] = jira_val
+        self._field_to_id[human_val] = jira_val
+        self._field_to_alias[jira_val] = jira_val
+        self._field_to_alias[human_val] = jira_val
+        self._field_to_human[jira_val] = human_val
+        self._field_to_human[human_val] = human_val
+
     def _field_map_init(self):
         # For inscrutable reasons Jira returns all possible fields via the /field API...
         # ...all but one: the "parent" field. We hardcode the translation so higher-level
         # code doesn't need to deal with that.
-        self._field_to_id = {"parent": "parent",
-                             "Parent": "parent"}
-        self._field_to_alias = {"parent": "parent",
-                                "Parent": "parent"}
-        self._field_to_human = {"parent": "Parent",
-                                "Parent": "Parent"}
+        self._field_to_id = {}
+        self._field_to_alias = {}
+        self._field_to_human = {}
+        self._builtin_map_init('parent', 'Parent')
+        self._builtin_map_init('fixVersions', 'fixversions')
+        self._builtin_map_init('lastViewed', 'lastviewed')
+
         fields = self.jira.fields()
         for field in fields:
             field_id = field['id']
