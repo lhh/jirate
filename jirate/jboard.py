@@ -232,6 +232,7 @@ class Jirate(object):
         self._field_to_human = {}
         self._builtin_map_init('parent', 'Parent')
         self._builtin_map_init('fixVersions', 'fixversions')
+        self._builtin_map_init('lastViewed', 'lastviewed')
 
         fields = self.jira.fields()
         for field in fields:
