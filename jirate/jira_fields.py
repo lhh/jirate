@@ -186,7 +186,7 @@ _field_renderers = {
 #         Note: 'display' supersedes 'code' if both
 #         are present.
 # 'verbose': if True, Only show this field in
-#            verbose mode
+#            verbose mode when rendering all fields
 #
 _base_fields = [
     {

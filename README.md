@@ -35,6 +35,8 @@ Each field in `custom_fields` is a dictionary. Jirate only cares about a few fie
 - `id` (Required) - the JIRA custom field name (`customfield_xxxxx`).
 - `name` (Required) - Generally this should come from your JIRA instance, but you can rename it to whatever you like if you want.
 - `display` (Optional) - false (to not display this field) or one of several built in renderers:`string, any, number, value, name, version, user, value_list, email_list, name_list, date, datetime`
+- `disabled` (Optional) - If set to `true`, do not allow rendering of this field, even if requested
+- `verbose` (Optional) - If set to `true`, only display this field when someone requests verbose output or requests this field explicitly
 - `code` (Optional) - when `here_there_be_dragons` is set to true, insert a snippet of Python code to render your data.  The field is passed to your one-line of code as `field`; all fields in the issue are passed in as `fields`.  You'll need to know the custom field ID of any field you are trying to reference.
 
 ## Operation
