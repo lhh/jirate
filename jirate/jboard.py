@@ -35,7 +35,7 @@ def _user_fix(obj, *args):
     try:
         ret = JIRA.user(obj, *args)
         return ret
-    except JIRAError as err:
+    except JIRAError:
         # There's no check by key; try it
         pass
 
