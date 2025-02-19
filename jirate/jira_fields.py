@@ -297,16 +297,6 @@ _base_fields = [
         'display': 'array',
     },
     {
-        'id': 'votes',
-        'name': 'Votes',
-        'display': _votes
-    },
-    {
-        'id': 'watches',
-        'name': 'Watchers',
-        'display': _watchers
-    },
-    {
         'id': 'components',
         'name': 'Component(s)',
         'display': 'name_list'
@@ -320,6 +310,16 @@ _base_fields = [
         'id': 'fixVersions',
         'name': 'Fix Version(s)',
         'display': 'name_list'
+    },
+    {
+        'id': 'votes',
+        'name': 'Votes',
+        'display': _votes
+    },
+    {
+        'id': 'watches',
+        'name': 'Watchers',
+        'display': _watchers
     },
 ]
 
@@ -426,7 +426,7 @@ def eval_custom_field(__code__, field, fields):
     return eval(str(__code__))
 
 
-def apply_field_renderers(custom_field_defs=None):
+def apply_field_renderers(custom_field_defs=None, reorder_custom=True):
     """Custom field rendering setup function
 
     Parameters:
@@ -474,12 +474,17 @@ def apply_field_renderers(custom_field_defs=None):
         if 'display' not in field and 'code' not in field and 'schema' in field:
             apply_schema_renderer(field)
 
-    for key in base_fields:
-        if key not in custom_fields:
+    if reorder_custom:
+        for key in base_fields:
+            if key not in custom_fields:
+                ret[key] = base_fields[key]
+        for key in custom_fields:
+            ret[key] = custom_fields[key]
+    else:
+        for key in base_fields:
             ret[key] = base_fields[key]
-
-    for key in custom_fields:
-        ret[key] = custom_fields[key]
+        for key in custom_fields:
+            ret[key] = custom_fields[key]
 
     if _fields:
         # If we were called twice, tack on the things we'd already set up
