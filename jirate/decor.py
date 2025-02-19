@@ -3,10 +3,12 @@
 # Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
+import copy
 import csv
 import re
 import shutil
 import sys
+import termios
 
 from dateutil.parser import parse
 from pprint import PrettyPrinter
@@ -362,9 +364,70 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
     return screen_width
 
 
+def get_colors():
+    if not fancy_output:
+        return None
+    curr_attrs = termios.tcgetattr(sys.stdin)
+    new_attrs = copy.deepcopy(curr_attrs)
+    new_attrs[3] = curr_attrs[3] & ~(termios.ICANON | termios.ECHO)
+    termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, new_attrs)
+    sys.stdout.write(']10;?')
+    sys.stdout.flush()
+    fg = ''
+    while (fg := fg + sys.stdin.read(1)):
+        if fg.endswith(''):
+            break
+    sys.stdout.write(']11;?')
+    sys.stdout.flush()
+    bg = ''
+    while (bg := bg + sys.stdin.read(1)):
+        if bg.endswith(''):
+            break
+    termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, curr_attrs)
+
+    # hack it up
+    rx = r';rgb:(([0-9a-f]+)/([0-9a-f]+)/([0-9a-f]+))'
+    fgm = re.findall(rx, fg)
+    if not fgm:
+        return None
+    bgm = re.findall(rx, bg)
+    if not bgm:
+        return None
+
+    # intify - we get a 16-bit hex from our terminal
+    # query, but when we set, it's 8-bit / truecolor.
+    # Let's hope this shifty stuff is enough.
+    fgr = [int(val, 16) >> 8 for val in fgm[0][1:]]
+    bgr = [int(val, 16) >> 8 for val in bgm[0][1:]]
+
+    return [fgr, bgr]
+
+
+def set_color(fg=None, bg=None, erase=False):
+    if fg:
+        sys.stdout.write(f'[38;2;{fg[0]};{fg[1]};{fg[2]}m')
+    if bg:
+        # When you set bgcolor, if you want the whole line to
+        # have it, you have to erase the line before writing to
+        # it - that's why we have the erase parameter.
+        sys.stdout.write(f'[48;2;{bg[0]};{bg[1]};{bg[2]}m')
+        if erase:
+            sys.stdout.write('[2K')
+
+
 def pretty_matrix(matrix, header=True, header_bar=True):
+    if colors := get_colors():
+        bgcolor = colors[1]
+        tint = [0] * len(bgcolor)
+        for idx in range(0, len(bgcolor)):
+            if bgcolor[idx] >= 240:
+                tint[idx] = bgcolor[idx] - 16
+            else:
+                tint[idx] = bgcolor[idx] + 16
+
     # total # of printed lines less header
     lines = 0
+    even = False
     screen_width = shutil.get_terminal_size()[0]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
@@ -403,8 +466,19 @@ def pretty_matrix(matrix, header=True, header_bar=True):
         for item in range(0, len(col_widths)):
             line.extend([row[item], col_widths[item]])
         line.pop()
+        if colors:
+            if even:
+                set_color(bg=tint, erase=True)
+            else:
+                set_color(bg=bgcolor, erase=True)
+        even = not even
+
         vsep_print(' ', screen_width, *line)
         lines = lines + 1
+
+    # Reset to default just in case
+    if colors:
+        set_color(bg=bgcolor, erase=True)
 
     return lines
 
