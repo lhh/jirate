@@ -1066,7 +1066,7 @@ def print_subtasks(issue, baseurl=None):
     _print_issue_list('Sub-tasks', issue['subtasks'], baseurl)
 
 
-def print_issue_votes(project, issue):
+def print_eausm_votes(project, issue):
     votes = project.eausm_issue_votes(issue)
     if votes and 'votes' in votes and len(votes['votes']):
         mx = [['Vote', 'Points']]
@@ -1106,7 +1106,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     # Don't print external links or votes unless in verbose mode since it's
     # another API call?
     if verbose:
-        print_issue_votes(project, issue_obj)
+        print_eausm_votes(project, issue_obj)
 
         links = project.remote_links(issue_obj)
         if links:
@@ -1323,6 +1323,16 @@ def eausm_vote(args):
     issues = args.project.issues(args.issue_id)
     for issue in issues:
         args.project.eausm_vote_issue(issue, args.vote)
+    return (0, False)
+
+
+def vote(args):
+    issues = args.project.issues(args.issue_id)
+    for issue in issues:
+        if args.remove:
+            args.project.jira.remove_vote(issue.key)
+        else:
+            args.project.jira.add_vote(issue.key)
     return (0, False)
 
 
@@ -1572,6 +1582,10 @@ def create_parser():
     cmd = parser.command('eausm-vote', help='Apply your EZ Agile Planning vote', handler=eausm_vote)
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
     cmd.add_argument('vote', help='Story Point Value', type=str.upper)
+
+    cmd = parser.command('vote', help='Apply your vote to an issue', handler=vote)
+    cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
+    cmd.add_argument('-r', '--remove', default=False, action='store_true', help='Remove vote from issue(s)')
 
     return parser
 
