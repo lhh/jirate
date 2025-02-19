@@ -619,6 +619,15 @@ class Jirate(object):
                 pass
         return None
 
+    def votes(self, issue_alias):
+        if isinstance(issue_alias, Issue):
+            ret = self.jira.votes(issue_alias.key)
+            if ret:
+                issue_alias.raw['fields']['votes'] = ret.raw
+        else:
+            ret = self.jira.votes(issue_alias)
+        return ret
+
     def eausm_issue_votes(self, issue_alias):
         """Retrieve EAUSM (Easy Agile Planning Poker) votes
         for an issue
@@ -633,7 +642,7 @@ class Jirate(object):
         if not issue:
             return None
         if 'eausm' in issue.raw['fields']:
-            return issue.raw['fields']
+            return issue.raw['fields']['eausm']
 
         # Check for the EZ Agile Planning Poker ext on the server
         EAUSM_url = self.jira.server_url + \
