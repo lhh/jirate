@@ -39,6 +39,7 @@ default_cache_patterns = {
             r'/rest/api/[0-9]+/project/[A-Z]+/statuses$',
             r'/rest/api/[0-9]+/project/[A-Z]+$',
             r'/rest/api/[0-9]+/issue/[0-9]+/transitions',
+            r'/rest/api/[0-9]+/issue/createmeta/[A-Z]+/issuetypes',
             r'/rest/api/[0-9]+/issue/[0-9]+/editmeta',
             r'/rest/api/[0-9]+/user\?(username|key)=']
 }
