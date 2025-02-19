@@ -163,3 +163,19 @@ def test_votes_with_users():
     fields = issue.raw['fields']
 
     assert render_field_data('votes', fields, False, True) == ('Votes', '2: Cow, Pig')
+
+
+def test_watches_simple():
+    apply_field_renderers(test_fielddefs)
+    issue = fake_jirate.issue('TEST-1')
+    fields = issue.raw['fields']
+
+    assert render_field_data('watches', fields, False, True) == ('Watchers', '37')
+
+
+def test_watches_with_users():
+    apply_field_renderers(test_fielddefs)
+    issue = fake_jirate.issue('TEST-2')
+    fields = issue.raw['fields']
+
+    assert render_field_data('watches', fields, False, True) == ('Watchers', '2: Chicken, Duck')
