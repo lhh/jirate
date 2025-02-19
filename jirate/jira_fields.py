@@ -126,14 +126,22 @@ def _created_updated(field, fields, as_object=False):
     return created
 
 
-def _votes(field, fields, as_object=False):
-    if field['votes'] in (0, '0'):
+def _human_list(basic_value, item_list, field, fields, as_object=False):
+    if field[basic_value] in (0, '0'):
         return None
-    if 'voters' not in field or as_object:
-        return auto_field(field['votes'], fields, as_object)
+    if item_list not in field or as_object:
+        return auto_field(field[basic_value], fields, as_object)
     else:
         # Special: votes is a count + list_of_key as displayName
-        return str(field['votes']) + ': ' + _list_of_key(field['voters'], 'displayName', False)
+        return str(field[basic_value]) + ': ' + _list_of_key(field[item_list], 'displayName', False)
+
+
+def _votes(field, fields, as_object=False):
+    return _human_list('votes', 'voters', field, fields, as_object)
+
+
+def _watchers(field, fields, as_object=False):
+    return _human_list('watchCount', 'watchers', field, fields, as_object)
 
 
 # these can functions can be referenced in custom user
@@ -294,6 +302,11 @@ _base_fields = [
         'display': _votes
     },
     {
+        'id': 'watches',
+        'name': 'Watchers',
+        'display': _watchers
+    },
+    {
         'id': 'components',
         'name': 'Component(s)',
         'display': 'name_list'
@@ -333,7 +346,6 @@ _quiet_fields = [
     'timeoriginalestimate',
     'timespent',
     'timetracking',
-    'watches',
     'worklog',
     'workratio'
 ]

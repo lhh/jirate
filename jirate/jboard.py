@@ -628,6 +628,15 @@ class Jirate(object):
             ret = self.jira.votes(issue_alias)
         return ret
 
+    def watchers(self, issue_alias):
+        if isinstance(issue_alias, Issue):
+            ret = self.jira.watchers(issue_alias.key)
+            if ret:
+                issue_alias.raw['fields']['watches'] = ret.raw
+        else:
+            ret = self.jira.votes(issue_alias)
+        return ret
+
     def eausm_issue_votes(self, issue_alias):
         """Retrieve EAUSM (Easy Agile Planning Poker) votes
         for an issue

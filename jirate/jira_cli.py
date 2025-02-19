@@ -1079,8 +1079,9 @@ def print_eausm_votes(project, issue):
 
 def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     if verbose:
-        # Get votes in verbose mode
+        # Get votes and watchers in verbose mode
         project.votes(issue_obj)
+        project.watchers(issue_obj)
     issue = issue_obj.raw['fields']
     key_link = issue_link_string(issue_obj.key, project.jira.server_url)
     lsize = max(len(key_link), max_field_width(issue, verbose, project.allow_code))
