@@ -129,7 +129,11 @@ def _created_updated(field, fields, as_object=False):
 def _votes(field, fields, as_object=False):
     if field['votes'] in (0, '0'):
         return None
-    return auto_field(field['votes'], fields, as_object)
+    if 'voters' not in field or as_object:
+        return auto_field(field['votes'], fields, as_object)
+    else:
+        # Special: votes is a count + list_of_key as displayName
+        return str(field['votes']) + ': ' + _list_of_key(field['voters'], 'displayName', False)
 
 
 # these can functions can be referenced in custom user

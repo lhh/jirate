@@ -147,3 +147,19 @@ def test_render_no_field():
 
     assert render_field_data('summary', fields, False, True) == ('summary', 'Test 1')
     assert render_field_data('summary', fields, False, True, as_object=True) == ('summary', 'Test 1')
+
+
+def test_votes_simple():
+    apply_field_renderers(test_fielddefs)
+    issue = fake_jirate.issue('TEST-1')
+    fields = issue.raw['fields']
+
+    assert render_field_data('votes', fields, False, True) == ('Votes', '42')
+
+
+def test_votes_with_users():
+    apply_field_renderers(test_fielddefs)
+    issue = fake_jirate.issue('TEST-2')
+    fields = issue.raw['fields']
+
+    assert render_field_data('votes', fields, False, True) == ('Votes', '2: Cow, Pig')
