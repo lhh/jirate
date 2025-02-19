@@ -1079,8 +1079,9 @@ def print_eausm_votes(project, issue):
 
 def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
     if verbose:
-        # Get votes in verbose mode
+        # Get votes and watchers in verbose mode
         project.votes(issue_obj)
+        project.watchers(issue_obj)
     issue = issue_obj.raw['fields']
     key_link = issue_link_string(issue_obj.key, project.jira.server_url)
     lsize = max(len(key_link), max_field_width(issue, verbose, project.allow_code))
@@ -1421,9 +1422,14 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
             field_info['name'] = proj.field_to_human(field_id)
             proj.custom_fields.append(field_info)
 
-    apply_field_renderers(proj.jira.fields())
+    apply_field_renderers(proj.jira.fields(), False)
     if proj.custom_fields:
-        apply_field_renderers(proj.custom_fields)
+        reorder = True
+        if 'custom_reorder' in jconfig:
+            reorder = jconfig['custom_reorder']
+            if reorder is not False:
+                reorder = True
+        apply_field_renderers(proj.custom_fields, reorder)
     return proj
 
 

@@ -23,6 +23,7 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
 - `no_format` (Optional) - Set to `true` if you would prefer Jirate not attempt to render JIRA comments and descriptions as markdown (JIRA text isn't markdown, so the markdown processor often gets this wrong)
 - `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
+- `custom_reorder` (Optional) - Defaults to true. If set to false, custom field definitions will not reorder base JIRA fields when listing issues.
 - `custom_fields` (Optional) - One of:
   - Custom field rendering definitions in the format of the jira `/field` data with some additional fields (see below)
   - A filename pointing to custom field definitions, or
