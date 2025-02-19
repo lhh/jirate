@@ -174,7 +174,7 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
             except AttributeError:
                 row.append('N/A')
                 continue
-            fk, fv = render_field_data(field_key, issue.raw['fields'], None, args.project.allow_code)
+            fk, fv = render_field_data(field_key, issue.raw['fields'], True, args.project.allow_code)
             if fk:
                 val = fv
             else:
@@ -337,7 +337,7 @@ def search_jira(args):
                 continue
             except TypeError:
                 pass
-            (_, val) = render_field_data(fid, issue.raw['fields'], False, args.project.allow_code)
+            (_, val) = render_field_data(fid, issue.raw['fields'], True, args.project.allow_code)
             if val and re.search(regex, val):
                 stripped.append(issue)
         ret = stripped
@@ -455,7 +455,7 @@ def issue_fields(args):
             raise ValueError('Substitution requires an old value and a new value')
         oldval = args.values[0]
         newval = args.values[1]
-        (_, orig_value) = render_field_data(field_id, issue.raw['fields'], False, args.project.allow_code)
+        (_, orig_value) = render_field_data(field_id, issue.raw['fields'], True, args.project.allow_code)
         value = orig_value.replace(oldval, newval)
 
     try:
