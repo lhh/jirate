@@ -22,7 +22,7 @@ from jirate.decor import issue_link_string
 from jirate.decor import pretty_print  # NOQA
 from jirate.decor import EscapedString
 from jirate.config import get_config, yaml_dump
-from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data
+from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_field_width, render_field_data, jirate_field
 from jirate.template_vars import apply_values
 from jirate.rqcache import RequestCache
 
@@ -165,12 +165,20 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
             key_string = subtask_prefix + key_string
         row.append(key_string)
         for field in fields:
-            field_key = args.project.field_to_id(field)
-            if not field_key:
-                row.append('N/A')
-                continue
+            # See if it's a user-defined one first, as optimization
+            real_key = jirate_field(field)
+            if real_key:
+                field_key = field
+            else:
+                # See if it's an alias for a field in jira
+                # (then real_key and field_key are the same)
+                field_key = args.project.field_to_id(field)
+                if not field_key:
+                    row.append('N/A')
+                    continue
+                real_key = field_key
             try:
-                raw_fv = issue.field(field_key)
+                raw_fv = issue.field(real_key)
             except AttributeError:
                 row.append('N/A')
                 continue

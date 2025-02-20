@@ -23,7 +23,28 @@
 		{"name": "Epic Status", "id": "customfield_12311142", "display": false },
 		{"name": "CC List", "id": "customfield_12355381", "display": "email_list" },
 		{"name": "Example", "id": "example", "display": "[value|key|name|email_list|value_list]" },
-		{"name": "Completion", "id": "customfield_12317140", "code": "field + '%'"}
+		{"name": "Completion", "id": "customfield_12317140", "code": "field + '%'"},
+		{
+			"name": "Owner Email",
+			"id": "email",
+			"verbose": true,
+			"_jirate_reference": "assignee",
+			"code": "field['emailAddress']"
+		},
+		{
+			"name": "Owner Name",
+			"id": "ownername",
+			"verbose": true,
+			"_jirate_reference": "assignee",
+			"code": "field['displayName']"
+		},
+		{
+			"name": "Sub-Component/s",
+			"id": "subcomponents",
+			"verbose": true,
+			"_jirate_reference": "components",
+			"code": "', '.join([val['name'].split('/')[-1].strip() for val in field])"
+		}
 	]
  },
  "trello": {
