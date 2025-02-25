@@ -376,6 +376,8 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 def get_colors():
     if not fancy_output:
         return None
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return None
     curr_attrs = termios.tcgetattr(sys.stdin)
     new_attrs = copy.deepcopy(curr_attrs)
     new_attrs[3] = curr_attrs[3] & ~(termios.ICANON | termios.ECHO)
