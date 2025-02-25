@@ -24,6 +24,7 @@ except ModuleNotFoundError:
     pass
 
 fancy_output = False
+color_shift = 16
 HILIGHT = '[1m'
 NORMAL = '[0m'
 
@@ -424,14 +425,15 @@ def set_color(fg=None, bg=None, erase=False):
 
 
 def pretty_matrix(matrix, header=True, header_bar=True):
+    global color_shift
     if colors := get_colors():
         bgcolor = colors[1]
         tint = [0] * len(bgcolor)
         for idx in range(0, len(bgcolor)):
-            if bgcolor[idx] >= 240:
-                tint[idx] = bgcolor[idx] - 16
+            if bgcolor[idx] >= ((1 << 8) - color_shift):
+                tint[idx] = bgcolor[idx] - color_shift
             else:
-                tint[idx] = bgcolor[idx] + 16
+                tint[idx] = bgcolor[idx] + color_shift
 
     # total # of printed lines less header
     lines = 0
