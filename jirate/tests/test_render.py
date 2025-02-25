@@ -179,3 +179,15 @@ def test_watches_with_users():
     fields = issue.raw['fields']
 
     assert render_field_data('watches', fields, False, True) == ('Watchers', '2: Chicken, Duck')
+
+
+def test_user_defined_field():
+    user_email = [{'name': 'Assignee Email', 'id': 'email', '_jirate_reference': 'assignee', 'code': 'field[\'emailAddress\']'}]
+
+    apply_field_renderers(test_fielddefs)
+    apply_field_renderers(user_email)
+
+    issue = fake_jirate.issue('TEST-1')
+    fields = issue.raw['fields']
+
+    assert render_field_data('email', fields, False, True) == ('Assignee Email', 'robert@pie.com')

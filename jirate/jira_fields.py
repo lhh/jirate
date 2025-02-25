@@ -386,6 +386,9 @@ _array_renderers = {
 }
 
 
+_jirate_fields = {}
+
+
 def apply_schema_renderer(field):
     schema = field['schema']
     if 'custom' in schema and schema['custom'] in custom_field_renderers:
@@ -473,6 +476,9 @@ def apply_field_renderers(custom_field_defs=None, reorder_custom=True):
         custom_fields[field['id']] = field
         if 'display' not in field and 'code' not in field and 'schema' in field:
             apply_schema_renderer(field)
+        if '_jirate_reference' in field:
+            # Just keep track of reference
+            _jirate_fields[field['id']] = field['_jirate_reference']
 
     if reorder_custom:
         for key in base_fields:
@@ -495,6 +501,12 @@ def apply_field_renderers(custom_field_defs=None, reorder_custom=True):
     _fields = ret
 
 
+def jirate_field(field_key):
+    if field_key in _jirate_fields:
+        return _jirate_fields[field_key]
+    return None
+
+
 def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False):
     """Render the field using custom-renderers or user-supplied code
     Note: you must first configure the rendering engine using apply_field_renderers()
@@ -514,9 +526,15 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False, as_obj
     if field_key not in _fields:
         return field_key, fields[field_key]
     field_name = _fields[field_key]['name']
-    if field_key not in fields:
+    if field_key not in fields and field_key not in _jirate_fields:
         return field_name, None
-    field = fields[field_key]
+    if field_key in _jirate_fields:
+        real_key = _jirate_fields[field_key]
+        if real_key not in fields:
+            return field_name, None
+        field = fields[_jirate_fields[field_key]]
+    else:
+        field = fields[field_key]
     if not field:
         return field_name, None
     field_config = _fields[field_key]
@@ -582,8 +600,6 @@ def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
         width = max_field_width(issue, verbose, allow_code)
 
     for field_key in _fields:
-        if field_key not in issue:
-            continue
         field_name, val = render_field_data(field_key, issue, verbose, allow_code)
         if not val:
             continue

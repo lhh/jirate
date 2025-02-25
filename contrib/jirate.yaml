@@ -36,6 +36,24 @@ jira:
     - name: Completion
       id: customfield_12317140
       code: "field + '%'"
+    - name: "Owner Email",
+      id: email
+      verbose: true,
+      _jirate_reference: assignee,
+      code: "field['emailAddress']"
+    - name: "Owner Name"
+      id: ownername
+      verbose: true,
+      _jirate_reference: assignee,
+      code: "field['displayName']"
+    - name: "Sub-Component/s",
+      # Given:
+      # "component / sub", "component2 / sub2" -> "sub, sub2" is rendered
+      id: subcomponents
+      verbose: true,
+      _jirate_reference: components
+      code: "', '.join([val['name'].split('/')[-1].strip() for val in field])"
+
 
 trello:
   key: 832908fdsy89342789
