@@ -18,7 +18,7 @@ import jsonschema
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym, vsep_print, parse_params, truncate, render_matrix, comma_separated
-from jirate.decor import issue_link_string
+from jirate.decor import issue_link_string, link_string
 from jirate.decor import pretty_print  # NOQA
 from jirate.decor import EscapedString
 from jirate.config import get_config, yaml_dump
@@ -1038,12 +1038,16 @@ def print_issue_links(issue, baseurl=None):
 def print_remote_links(links):
     hbar_under('External Links')
     matrix = []
+    fancy = False
     for link in links:
         # color_string throws off length calculations
-        text = link.raw['object']['title']
         lid = str(link.raw['id'])
+        text = link.raw['object']['title']
         url = link.raw['object']['url']
-        matrix.append([lid, text, url])
+        if ret := link_string(text, url):
+            matrix.append([lid, ret])
+        else:
+            matrix.append([lid, text, url])
     render_matrix(matrix, False, False)
     print()
 
