@@ -422,7 +422,7 @@ def set_color(fg=None, bg=None, erase=False):
         # it - that's why we have the erase parameter.
         sys.stdout.write(f'[48;2;{bg[0]};{bg[1]};{bg[2]}m')
         if erase:
-            sys.stdout.write('[2K')
+            sys.stdout.write('[K[2K')
 
 
 def pretty_matrix(matrix, header=True, header_bar=True):
