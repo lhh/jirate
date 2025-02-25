@@ -114,15 +114,23 @@ def color_string(string, color=None, bgcolor=None):
     return ret
 
 
+def link_string(text, url):
+    global fancy_output
+    if not fancy_output:
+        return None
+
+    ret = EscapedString(text)
+    ret.update(f']8;;{url}\\{text}]8;;\\')
+    return ret
+
+
 def issue_link_string(issue_key, baseurl=None):
     global fancy_output
 
     if not baseurl or not fancy_output:
         return issue_key
 
-    ret = EscapedString(issue_key)
-    ret.update(f']8;;{baseurl}/browse/{issue_key}\\{issue_key}]8;;\\')
-    return ret
+    return link_string(issue_key, f'{baseurl}/browse/{issue_key}')
 
 
 def parse_params(arg):
