@@ -462,6 +462,8 @@ def apply_field_renderers(custom_field_defs=None, reorder_custom=True):
 
     # reorder
     for field in custom_field_defs:
+        if 'id' not in field:
+            continue
         if field['id'] in _ignore_fields:
             continue
         if field['id'] in base_fields:
