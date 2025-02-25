@@ -997,18 +997,6 @@ def display_comment(action, verbose, no_format):
     print()
 
 
-def display_attachment(attachment, verbose):
-    print('  ' + attachment['name'])
-    if verbose:
-        print('    ID:', attachment['id'])
-    if attachment['isUpload']:
-        if attachment['filename'] != attachment['name']:
-            print('    Filename:', attachment['filename'])
-    else:
-        if attachment['url'] != attachment['name']:
-            print('    URL:', attachment['url'])
-
-
 def print_labels(issue, prefix='Labels: '):
     if 'labels' in issue and len(issue['labels']):
         print(prefix, end='')
@@ -1038,7 +1026,6 @@ def print_issue_links(issue, baseurl=None):
 def print_remote_links(links):
     hbar_under('External Links')
     matrix = []
-    fancy = False
     for link in links:
         # color_string throws off length calculations
         lid = str(link.raw['id'])
@@ -1048,6 +1035,22 @@ def print_remote_links(links):
             matrix.append([lid, ret])
         else:
             matrix.append([lid, text, url])
+    render_matrix(matrix, False, False)
+    print()
+
+
+def print_attachments(attachments):
+    hbar_under('Attachments')
+    matrix = []
+    for attachment in attachments:
+        # color_string throws off length calculations
+        aid = str(attachment['id'])
+        text = attachment['filename']
+        url = attachment['content']
+        if ret := link_string(text, url):
+            matrix.append([aid, ret])
+        else:
+            matrix.append([aid, text, url])
     render_matrix(matrix, False, False)
     print()
 
@@ -1127,6 +1130,9 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         links = project.remote_links(issue_obj)
         if links:
             print_remote_links(links)
+
+        if 'attachment' in issue and len(issue['attachment']):
+            print_attachments(issue['attachment'])
 
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue, project.jira.server_url)
