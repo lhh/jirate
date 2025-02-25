@@ -365,7 +365,7 @@ def list_issues(args):
     else:
         userid = 'me'
 
-    issues = args.project.list(userid=userid)
+    issues = args.project.list(userid=userid, all_issues=args.all)
     print_issues(issues, args)
     return (0, True)
 
@@ -1464,6 +1464,7 @@ def create_parser():
     cmd.add_argument('-U', '--unassigned', action='store_true', help='Display only issues with no assignee.')
     cmd.add_argument('-u', '--user', help='Display only issues assigned to the specific user.')
     cmd.add_argument('-l', '--labels', action='store_true', help='Display issue labels.')
+    cmd.add_argument('-a', '--all', action='store_true', help='Display all issues; do not restrict to one project.')
     add_list_options(cmd)
 
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
