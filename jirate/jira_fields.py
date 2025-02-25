@@ -581,11 +581,10 @@ def field_ordering():
 
 
 def max_field_width(issue, verbose, allow_code):
+    global _fields
     width = 0
 
     for field_key in _fields:
-        if field_key not in issue:
-            continue
         field_name, val = render_field_data(field_key, issue, verbose, allow_code)
         if not val:
             continue
