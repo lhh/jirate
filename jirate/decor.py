@@ -6,7 +6,6 @@
 import copy
 import csv
 import re
-import shutil
 import sys
 import termios
 
@@ -285,7 +284,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
     consumed = 0
 
     if not screen_width:
-        screen_width = shutil.get_terminal_size()[0]
+        screen_width = termios.tcgetwinsize(sys.stdout)[1]
     args = list(vals)
 
     if not args:
@@ -428,6 +427,7 @@ def set_color(fg=None, bg=None, erase=False):
 
 def pretty_matrix(matrix, header=True, header_bar=True):
     global color_shift
+
     if colors := get_colors():
         bgcolor = colors[1]
         tint = [0] * len(bgcolor)
@@ -440,7 +440,7 @@ def pretty_matrix(matrix, header=True, header_bar=True):
     # total # of printed lines less header
     lines = 0
     even = False
-    screen_width = shutil.get_terminal_size()[0]
+    screen_width = termios.tcgetwinsize(sys.stdout)[1]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
     # last field
