@@ -388,6 +388,9 @@ _array_renderers = {
 
 _jirate_fields = {}
 
+# Store modules here so we don't keep loading from disk
+_loaded_mods = {}
+
 
 def apply_schema_renderer(field):
     schema = field['schema']
@@ -404,6 +407,27 @@ def apply_schema_renderer(field):
             field['display'] = _field_renderers[schema['type']]
         except KeyError:
             field['display'] = string
+
+
+def func_from_path(filename, function, field, fields):
+    global _loaded_mods
+    # Load a function from a file and run that
+    import importlib.util
+    import sys
+    import os
+
+    full_fn = os.path.expanduser(filename)
+    mod_fn = os.path.basename(full_fn)
+    if mod_fn not in _loaded_mods:
+        spec = importlib.util.spec_from_file_location(f'{mod_fn}', full_fn)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _loaded_mods[mod_fn] = module
+    else:
+        module = _loaded_mods[mod_fn]
+
+    ret = eval(f'module.{function}(field, fields)')
+    return ret
 
 
 def eval_custom_field(__code__, field, fields):
@@ -426,6 +450,9 @@ def eval_custom_field(__code__, field, fields):
         return None
     if '__code__' in __code__:
         raise ValueError('Reserved keyword in code snippet')
+    if __code__.startswith('#'):
+        filename, func = __code__[1:].split(':')
+        return func_from_path(filename, func, field, fields)
     return eval(str(__code__))
 
 
