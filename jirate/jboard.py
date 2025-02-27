@@ -776,6 +776,10 @@ class Jirate(object):
             transition = self._find_transition(issue, status)
             if not transition:
                 continue
+            # API cleanup:
+            # If it's already in the target status, don't apply the move
+            if transition['to']['name'] == status:
+                continue
 
             data = {'transition': {'id': transition['id']}}
             if args and 'fields' in transition:
