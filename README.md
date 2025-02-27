@@ -41,7 +41,7 @@ Each field in `custom_fields` is a dictionary. Jirate only cares about a few fie
 - `disabled` (Optional) - If set to `true`, do not allow rendering of this field, even if requested
 - `verbose` (Optional) - If set to `true`, only display this field when someone requests verbose output or requests this field explicitly
 - `code` (Optional) - when `here_there_be_dragons` is set to true, insert a snippet of Python code to render your data.  The field is passed to your one-line of code as `field`; all fields in the issue are passed in as `fields`.  You'll need to know the custom field ID of any field you are trying to reference.
--- `code` can also be: `#~/filename.py:function_name`. If defined in this way, `~/filename.py` should contain `def function_name(field, fields)` in it. `field` is the raw value of the current field being processed, and `fields` are all fields in the issue JSON.
+  - `code` can also be something like: `#~/filename.py:function_name`. If defined in this way, `~/filename.py` should contain `def function_name(field, fields)` in it. `field` is the raw value of the current field being processed, and `fields` is the JSON data for all fields in the issue.
 
 ## Operation
 - Trello support is somewhat unmaintained as the maintainers do not have access to a commercial Trello instance any longer. Taking patches.
