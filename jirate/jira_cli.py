@@ -1527,8 +1527,8 @@ def create_parser():
     cmd.add_argument('user', help='Target assignee')
     # cmd.add_argument('users', help='First is assignee; rest are watchers (if none, assign to self)', nargs='*')
 
-    cmd = parser.command('unassign', help='Remove assignee from issue', handler=unassign_issue)
-    cmd.add_argument('issue_id', help='Target issue', type=str.upper)
+    cmd = parser.command('unassign', help='Remove assignee from issue(s)', handler=unassign_issue)
+    cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
 
     cmd = parser.command('mv', help='Move issue(s) to new state', handler=move)
     cmd.add_argument('-m', '--mine', action='store_true', help='Also assign to myself')

@@ -350,7 +350,7 @@ class Jirate(object):
         Returns:
           username (string)
         """
-        if username.lower == 'none':
+        if not username or username.lower() == 'none':
             return None
         if username == 'me':
             return self.user['name']
