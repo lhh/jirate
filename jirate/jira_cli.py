@@ -18,7 +18,7 @@ import jsonschema
 from jirate.args import ComplicatedArgs, GenericArgs
 from jirate.jboard import JiraProject, get_jira
 from jirate.decor import md_print, pretty_date, hbar_under, hbar, hbar_over, nym, vsep_print, parse_params, truncate, render_matrix, comma_separated
-from jirate.decor import issue_link_string
+from jirate.decor import issue_link_string, link_string
 from jirate.decor import pretty_print  # NOQA
 from jirate.decor import EscapedString
 from jirate.config import get_config, yaml_dump
@@ -133,8 +133,10 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     fields = parse_field_widths(args.fields, ignore_fields=ignore_fields, starting_fields=fields)
     if args.format != 'csv':
         subtask_prefix = EscapedString('↳ ')
+        subtask_error = EscapedString('‼ ')
     else:
         subtask_prefix = EscapedString('')
+        subtask_error = EscapedString('')
 
     if not args.compact:
         args.compact = args.project.get_user_data('compact_output')
@@ -162,7 +164,10 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
         # to show this is associated with the above non-Subtask
         if str(issue.fields.issuetype) == _subtask and str(issue.fields.parent) in issue_keys:
             # No f-magic for EscapedString, so we must concatenate
-            key_string = subtask_prefix + key_string
+            if issue.raw['fields']['status']['statusCategory']['name'] != 'Done' and issue.raw['fields']['parent']['fields']['status']['statusCategory']['name'] == 'Done':
+                key_string = subtask_error + key_string
+            else:
+                key_string = subtask_prefix + key_string
         row.append(key_string)
         for field in fields:
             # See if it's a user-defined one first, as optimization
@@ -452,12 +457,27 @@ def issue_fields(args):
         render_matrix(matrix)
         return (0, False)
 
+    # Update a field
     field_name = args.name
-    value = args.values
+    field_id = args.project.field_to_id(field_name)
+    if field_id not in fields:
+        raise ValueError(f'Update to {field_name} ({field_id}) is not allowed at this point')
+
+    schema = fields[field_id]['schema']
+    if schema['type'] == 'user':
+        value = args.project.get_user(args.values[0])
+    elif schema['type'] == 'array':
+        # Special case: Resolve users before passing down
+        if schema['items'] == 'user':
+            value = [args.project.get_user(user) for user in args.values]
+        else:
+            value = args.values
+    else:
+        value = ' '.join(args.values)
+
     op = args.operation
     # Substitution only works on 'set' capable fields for now
     if args.operation == 'sub':
-        field_id = args.project.field_to_id(args.name)
         op = 'set'
         if len(args.values) < 2:
             raise ValueError('Substitution requires an old value and a new value')
@@ -997,18 +1017,6 @@ def display_comment(action, verbose, no_format):
     print()
 
 
-def display_attachment(attachment, verbose):
-    print('  ' + attachment['name'])
-    if verbose:
-        print('    ID:', attachment['id'])
-    if attachment['isUpload']:
-        if attachment['filename'] != attachment['name']:
-            print('    Filename:', attachment['filename'])
-    else:
-        if attachment['url'] != attachment['name']:
-            print('    URL:', attachment['url'])
-
-
 def print_labels(issue, prefix='Labels: '):
     if 'labels' in issue and len(issue['labels']):
         print(prefix, end='')
@@ -1040,10 +1048,29 @@ def print_remote_links(links):
     matrix = []
     for link in links:
         # color_string throws off length calculations
-        text = link.raw['object']['title']
         lid = str(link.raw['id'])
+        text = link.raw['object']['title']
         url = link.raw['object']['url']
-        matrix.append([lid, text, url])
+        if ret := link_string(text, url):
+            matrix.append([lid, ret])
+        else:
+            matrix.append([lid, text, url])
+    render_matrix(matrix, False, False)
+    print()
+
+
+def print_attachments(attachments):
+    hbar_under('Attachments')
+    matrix = []
+    for attachment in attachments:
+        # color_string throws off length calculations
+        aid = str(attachment['id'])
+        text = attachment['filename']
+        url = attachment['content']
+        if ret := link_string(text, url):
+            matrix.append([aid, ret])
+        else:
+            matrix.append([aid, text, url])
     render_matrix(matrix, False, False)
     print()
 
@@ -1123,6 +1150,9 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         links = project.remote_links(issue_obj)
         if links:
             print_remote_links(links)
+
+        if 'attachment' in issue and len(issue['attachment']):
+            print_attachments(issue['attachment'])
 
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue, project.jira.server_url)
@@ -1377,6 +1407,8 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     if 'fancy_output' in jconfig and jconfig['fancy_output']:
         import jirate.decor  # NOQA
         jirate.decor.fancy_output = True
+        if 'color_shift' in jconfig:
+            jirate.decor.color_shift = int(jconfig['color_shift'])
 
     if not project:
         # Not sure why I used an array here
@@ -1631,11 +1663,12 @@ def main():
     try:
         project = get_jira_project(ns.project, config_file=ns.config, field=field)
     except KeyError:
+        print('Configuration faile failed to parse correctly')
         sys.exit(1)
     except FileNotFoundError:
         print('Please create a configuration file (~/.jirate.json)')
         sys.exit(1)
-    except JIRAError as err:
+    except Exception as err:
         print(err)
         sys.exit(1)
 
@@ -1647,6 +1680,9 @@ def main():
         print(err)
         if ns.debug:
             project.request_cache.debug_dump()
+        sys.exit(1)
+    except Exception as err:
+        print(err)
         sys.exit(1)
     if rc:
         ret = rc[0]

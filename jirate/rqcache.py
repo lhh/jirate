@@ -34,6 +34,7 @@ default_cache_expire = 300
 default_cache_patterns = {
     'GET': [r'/rest/api/[0-9]+/myself$',
             r'/rest/api/[0-9]+/field$',
+            r'/rest/api/[0-9]+/user/search',
             r'/rest/agile/[0-9]+(\.[0-9]+)?/board$',
             r'/rest/agile/[0-9]+(\.[0-9]+)?/board/[0-9]+/sprint$',
             r'/rest/api/[0-9]+/project/[A-Z]+/statuses$',

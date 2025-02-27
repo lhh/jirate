@@ -30,6 +30,8 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `proxies` (Optional) - HTTP and/or HTTPS proxies to use
 - `cache_expire` (Optional) - Number of seconds to cache certain JIRA configuration data locally (default: `300`; `0` means no expiration)
 - `cache_file` (Optional) - Where to store cached JIRA configuration data (default: `~/.jirate.cache`)
+- `fancy_output` (Optional) - If set to true, render some things as links and enable per-line visual separation for tables
+- `color_shift` (Optional) - Tune color separation when using `fancy_output`. (0..128; default=16)
 
 ### JIRA Custom field display configuration
 Each field in `custom_fields` is a dictionary. Jirate only cares about a few fields when defining custom rendering; most fields it automatically discerns by asking the server for the `/field` data:
@@ -39,6 +41,7 @@ Each field in `custom_fields` is a dictionary. Jirate only cares about a few fie
 - `disabled` (Optional) - If set to `true`, do not allow rendering of this field, even if requested
 - `verbose` (Optional) - If set to `true`, only display this field when someone requests verbose output or requests this field explicitly
 - `code` (Optional) - when `here_there_be_dragons` is set to true, insert a snippet of Python code to render your data.  The field is passed to your one-line of code as `field`; all fields in the issue are passed in as `fields`.  You'll need to know the custom field ID of any field you are trying to reference.
+  - `code` can also be something like: `#~/filename.py:function_name`. If defined in this way, `~/filename.py` should contain `def function_name(field, fields)` in it. `field` is the raw value of the current field being processed, and `fields` is the JSON data for all fields in the issue.
 
 ## Operation
 - Trello support is somewhat unmaintained as the maintainers do not have access to a commercial Trello instance any longer. Taking patches.
