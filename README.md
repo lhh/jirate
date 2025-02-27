@@ -30,6 +30,8 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `proxies` (Optional) - HTTP and/or HTTPS proxies to use
 - `cache_expire` (Optional) - Number of seconds to cache certain JIRA configuration data locally (default: `300`; `0` means no expiration)
 - `cache_file` (Optional) - Where to store cached JIRA configuration data (default: `~/.jirate.cache`)
+- `fancy_output` (Optional) - If set to true, render some things as links and enable per-line visual separation for tables
+- `color_shift` (Optional) - Tune color separation when using `fancy_output`. (0..128; default=16)
 
 ### JIRA Custom field display configuration
 Each field in `custom_fields` is a dictionary. Jirate only cares about a few fields when defining custom rendering; most fields it automatically discerns by asking the server for the `/field` data:

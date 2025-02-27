@@ -1407,6 +1407,8 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     if 'fancy_output' in jconfig and jconfig['fancy_output']:
         import jirate.decor  # NOQA
         jirate.decor.fancy_output = True
+        if 'color_shift' in jconfig:
+            jirate.decor.color_shift = int(jconfig['color_shift'])
 
     if not project:
         # Not sure why I used an array here

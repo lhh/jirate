@@ -375,6 +375,8 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 def get_colors():
     if not fancy_output:
         return None
+    if not color_shift:
+        return None
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
     curr_attrs = termios.tcgetattr(sys.stdin)
@@ -428,6 +430,13 @@ def set_color(fg=None, bg=None, erase=False):
 def pretty_matrix(matrix, header=True, header_bar=True):
     global color_shift
 
+    # Range test color_shift
+    if not isinstance(color_shift, int):
+        color_shift = 0
+    if color_shift > 128 or color_shift < 0:
+        color_shift = 0
+
+    colors = None
     if colors := get_colors():
         bgcolor = colors[1]
         tint = [0] * len(bgcolor)
