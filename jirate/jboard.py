@@ -352,9 +352,10 @@ class Jirate(object):
         Returns:
           username (string)
         """
-        if '@' not in username:
-            return username
-
+        if username.lower == 'none':
+            return None
+        if username == 'me':
+            return self.user['name']
         users = self.jira.search_users(username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
@@ -395,12 +396,9 @@ class Jirate(object):
             # first is assignee
             if users:
                 for user in users:
-                    if user == 'me':
-                        user = self.user['name']
-                    if user == 'none':
-                        user_ids.append(None)
-                    if user not in user_ids:
-                        user_ids.append(self.get_user(user))
+                    uid = self.get_user(user)
+                    if uid not in user_ids:
+                        user_ids.append(uid)
             else:
                 # Just me
                 user = self.user['name']
@@ -972,17 +970,10 @@ class JiraProject(Jirate):
         else:
             project_selector = f'PROJECT = {self.project_name} AND '
 
-        if userid in (None, 'none'):
+        userid = self.get_user(userid)
+        if userid is None:
             assignee_selection = 'assignee is EMPTY'
         else:
-            if userid == 'me':
-                userid = self.user['name']
-            elif '@' in userid:
-                users = self.search_users(userid)
-                if len(users) > 1:
-                    raise ValueError(f'Ambiguous username: {userid}')
-                userid = users[0].name
-
             assignee_selection = f'assignee = "{userid}"'
 
         if status:
