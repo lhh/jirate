@@ -133,8 +133,10 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
     fields = parse_field_widths(args.fields, ignore_fields=ignore_fields, starting_fields=fields)
     if args.format != 'csv':
         subtask_prefix = EscapedString('↳ ')
+        subtask_error = EscapedString('‼ ')
     else:
         subtask_prefix = EscapedString('')
+        subtask_error = EscapedString('')
 
     if not args.compact:
         args.compact = args.project.get_user_data('compact_output')
@@ -162,7 +164,10 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
         # to show this is associated with the above non-Subtask
         if str(issue.fields.issuetype) == _subtask and str(issue.fields.parent) in issue_keys:
             # No f-magic for EscapedString, so we must concatenate
-            key_string = subtask_prefix + key_string
+            if issue.raw['fields']['status']['statusCategory']['name'] != 'Done' and issue.raw['fields']['parent']['fields']['status']['statusCategory']['name'] == 'Done':
+                key_string = subtask_error + key_string
+            else:
+                key_string = subtask_prefix + key_string
         row.append(key_string)
         for field in fields:
             # See if it's a user-defined one first, as optimization
