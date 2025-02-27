@@ -1631,11 +1631,12 @@ def main():
     try:
         project = get_jira_project(ns.project, config_file=ns.config, field=field)
     except KeyError:
+        print('Configuration faile failed to parse correctly')
         sys.exit(1)
     except FileNotFoundError:
         print('Please create a configuration file (~/.jirate.json)')
         sys.exit(1)
-    except JIRAError as err:
+    except Exception as err:
         print(err)
         sys.exit(1)
 
@@ -1647,6 +1648,9 @@ def main():
         print(err)
         if ns.debug:
             project.request_cache.debug_dump()
+        sys.exit(1)
+    except Exception as err:
+        print(err)
         sys.exit(1)
     if rc:
         ret = rc[0]
