@@ -778,7 +778,7 @@ class Jirate(object):
                 continue
             # API cleanup:
             # If it's already in the target status, don't apply the move
-            if transition['to']['name'] == status:
+            if transition['to']['name'] == issue.fields.status.name:
                 continue
 
             data = {'transition': {'id': transition['id']}}
