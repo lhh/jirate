@@ -62,9 +62,7 @@ def _update_field(issue, field_name_human, value_human, operation='set', fields=
         # TODO use native python-jira issue.fields instead of raw json
         # (Except operations are not captured, which we need)
         fields = issue._jirate.fields(issue.key)
-    if isinstance(value_human, list):
-        value_human = ' '.join(value_human)
-    else:
+    if not isinstance(value_human, list):
         value_human = str(value_human)
 
     # TODO multi-field sets?

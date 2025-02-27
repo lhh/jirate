@@ -457,12 +457,27 @@ def issue_fields(args):
         render_matrix(matrix)
         return (0, False)
 
+    # Update a field
     field_name = args.name
-    value = args.values
+    field_id = args.project.field_to_id(field_name)
+    if field_id not in fields:
+        raise ValueError(f'Update to {field_name} ({field_id}) is not allowed at this point')
+
+    schema = fields[field_id]['schema']
+    if schema['type'] == 'user':
+        value = args.project.get_user(args.values[0])
+    elif schema['type'] == 'array':
+        # Special case: Resolve users before passing down
+        if schema['items'] == 'user':
+            value = [args.project.get_user(user) for user in args.values]
+        else:
+            value = args.values
+    else:
+        value = ' '.join(args.values)
+
     op = args.operation
     # Substitution only works on 'set' capable fields for now
     if args.operation == 'sub':
-        field_id = args.project.field_to_id(args.name)
         op = 'set'
         if len(args.values) < 2:
             raise ValueError('Substitution requires an old value and a new value')
