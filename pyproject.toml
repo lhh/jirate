@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jirate"
+dynamic = ["version"]
+readme = "README.md"
+license = "BSD-2-Clause"
+authors = [
+    { name = "Red Hat", email = "lhh@redhat.com" },
+]
+maintainers = [
+    { name = "Lon Hohberger", email = "lon@metamorphism.com" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: BSD",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "editor>=1.2.1",
+    "Jinja2>=3.0.0",
+    "jira>=3.8.0",
+    "jsonschema>=4.18.0a1",
+    "prettytable",
+    "python-dateutil",
+    "PyYAML",
+    "referencing",
+    "requests>=2.0.0",
+    "rich",
+    "toolchest",
+    "trollo>=0.2.4",
+]
+
+[project.scripts]
+jirate = "jirate.jira_cli:main"
+trolly = "jirate.cli:main"
+
+[project.urls]
+Homepage = "http://github.com/lhh/jirate"
+
+[tool.hatch.version]
+path = "jirate/__init__.py"
+
+[tool.hatch.build.targets.wheel.shared-data]
+"LICENSE.txt" = "/LICENSE.txt"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/jirate",
+]
