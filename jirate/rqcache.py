@@ -29,7 +29,7 @@ from jira.client import ResilientSession
 from .decor import hbar_over, hbar_under
 from .localstate import pickle_write, pickle_read
 
-default_cache_expire = 300
+default_cache_expire = 43200
 
 default_cache_patterns = {
     'GET': [r'/rest/api/[0-9]+/myself$',
