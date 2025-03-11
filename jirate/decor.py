@@ -319,7 +319,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 
     # Longer than remaining horizontal screen
     if not linesplit:
-        print(last[:(screen_width - width - 2)] + '..')
+        print(last[:(screen_width - width - 1)] + '…')
         return screen_width
 
     max_chunk_len = screen_width - width
@@ -341,7 +341,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
                 # If we've started a line, start a very long
                 # max-chunk-len on new line
                 if consumed > 0:
-                    print()
+                    erase_line(True)
                     newline = True
                     continue
                 print(chunk[:max_chunk_len])
@@ -350,7 +350,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
                 continue
             if len(chunk) > (max_chunk_len - consumed):
                 # Start this chunk on new line
-                print()
+                erase_line(True)
                 newline = True
                 continue
             # OK, we have space - print it
@@ -360,7 +360,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
                 print(linesplit, end='')
                 newline = False
             else:
-                print()
+                erase_line(True)
                 newline = True
             # Next chunk
             break
@@ -368,7 +368,7 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
     # print newline above, so just a check to avoid an erroneous
     # newline in output
     if consumed < max_chunk_len and not newline:
-        print()
+        erase_line(True)
     return screen_width
 
 
@@ -415,6 +415,13 @@ def get_colors():
     return [fgr, bgr]
 
 
+def erase_line(newline=False):
+    if newline:
+        sys.stdout.write('\n')
+    if fancy_output:
+        sys.stdout.write('[K[2K')
+
+
 def set_color(fg=None, bg=None, erase=False):
     if fg:
         sys.stdout.write(f'[38;2;{fg[0]};{fg[1]};{fg[2]}m')
@@ -424,7 +431,7 @@ def set_color(fg=None, bg=None, erase=False):
         # it - that's why we have the erase parameter.
         sys.stdout.write(f'[48;2;{bg[0]};{bg[1]};{bg[2]}m')
         if erase:
-            sys.stdout.write('[K[2K')
+            erase_line()
 
 
 def pretty_matrix(matrix, header=True, header_bar=True):
