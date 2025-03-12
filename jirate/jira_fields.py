@@ -413,7 +413,6 @@ def func_from_path(filename, function, field, fields):
     global _loaded_mods
     # Load a function from a file and run that
     import importlib.util
-    import sys
     import os
 
     full_fn = os.path.expanduser(filename)
