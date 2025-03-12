@@ -82,6 +82,26 @@ _input_array_renderers = {
 }
 
 
+# Custom field inputs for a few things
+def in_sprint_field(value):
+    if isinstance(value, list):
+        value = value[0]
+    return in_number(value)
+
+
+def in_issue_key(value):
+    if isinstance(value, list):
+        value = value[0]
+    return str(value).upper()
+
+
+_custom_field_input = {
+    'com.pyxis.greenhopper.jira:gh-sprint': in_sprint_field,
+    'com.atlassian.jpo:jpo-custom-field-parent': in_issue_key,
+    'com.pyxis.greenhopper.jira:gh-epic-link': in_issue_key
+}
+
+
 # Because allowed Values can be very long and complicated, we
 # want users to be able to provide, essentially, the minimum
 # unique value to save keystrokes (and frustration).
@@ -160,10 +180,10 @@ def transmogrify_value(value, field_info):
     schema = field_info['schema']
     av = field_info['allowedValues'] if 'allowedValues' in field_info else None
 
+    if 'custom' in schema and schema['custom'] in _custom_field_input:
+        return _custom_field_input[schema['custom']](value)
+
     if schema['type'] == 'array':
-        # Patch for Jira sprint - TODO: make more generic
-        if 'custom' in schema and schema['custom'] == "com.pyxis.greenhopper.jira:gh-sprint":
-            return in_number(value[0])
         vals = allowed_value_validate(field_info['name'], parse_params(value), av)
         try:
             ret = _input_array_renderers[schema['items']](vals)
