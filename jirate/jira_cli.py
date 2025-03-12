@@ -953,7 +953,31 @@ def link_url(args):
     return (0, True)
 
 
+def quote_reply(args):
+    if args.text:
+        raise ValueError('Can\'t both quote-reply and one-shot comment')
+
+    issue_id = args.issue
+    comment_id = args.reply
+    comment = args.project.get_comment(issue_id, comment_id)
+    starting_text = f'[~{comment.author.key}] wrote:\n'
+    starting_text = starting_text + '\n'.join(['> ' + item for item in comment.body.split('\n')])
+    new_text = editor(starting_text)
+    if hasattr(comment, 'visibility'):
+        group_name = comment.visibility.value
+    else:
+        group_name = None
+    if not new_text:
+        print('Canceled')
+        return (0, False)
+    args.project.comment(issue_id, new_text, group_name)
+    return (0, False)
+
+
 def comment(args):
+    if args.reply:
+        return quote_reply(args)
+
     issue_id = args.issue
 
     if args.remove:
@@ -1568,6 +1592,7 @@ def create_parser():
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
     cmd.add_argument('-r', '--remove', help='Comment ID to remove')
+    cmd.add_argument('-q', '--reply', help='Comment ID to quote and reply')
     cmd.add_argument('-g', '--group', help='Specify comment group visibility')
     cmd.add_argument('issue', help='Issue to operate on')
     cmd.add_argument('text', nargs='*', help='Comment text')
