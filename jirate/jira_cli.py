@@ -960,8 +960,8 @@ def quote_reply(args):
     issue_id = args.issue
     comment_id = args.reply
     comment = args.project.get_comment(issue_id, comment_id)
-    starting_text = f'[~{comment.author.key}] wrote:\n'
-    starting_text = starting_text + '\n'.join(['> ' + item for item in comment.body.split('\n')])
+    starting_text = f'[~{comment.author.key}] wrote @ {pretty_date(comment.updated)}:\n'
+    starting_text = starting_text + '\n'.join(['┃ ' + item for item in comment.body.strip().split('\n')])
     new_text = editor(starting_text)
     if hasattr(comment, 'visibility'):
         group_name = comment.visibility.value
