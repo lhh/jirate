@@ -96,10 +96,10 @@ field_test_info = [
     pytest.param('customfield_1234574', 'Any Value', 'one, 2.0', ['one', 2.0]),
 
     # Date value
-    pytest.param('customfield_1234575', 'Date Value', '2022-08-01', '2022-08-01'),
+    pytest.param('customfield_1234575', 'Date Value', '2022/08/01', '2022/08/01'),
 
     # Datetime value
-    pytest.param('customfield_1234576', 'Datetime Value', '2019-12-24 21:10:00 EST', '2019-12-24 21:10:00 EST'),
+    pytest.param('customfield_1234576', 'Datetime Value', '2019/12/24 9:10 PM', '2019/12/24 9:10 PM'),
 
     # Related Issue (issue key)
     pytest.param('customfield_1234577', 'Related Issue', 'TEST-2', 'TEST-2'),
