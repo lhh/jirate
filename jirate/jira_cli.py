@@ -960,7 +960,7 @@ def quote_reply(args):
     issue_id = args.issue
     issue = args.project.issue(issue_id)
 
-    if args.reply == True:
+    if args.reply is True:
         # Find last comment if we didn't pick one to reply to; jira
         # keeps them chronologically according to add date
         last_cmt = issue.raw['fields']['comment']['comments'][-1]
