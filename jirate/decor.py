@@ -186,7 +186,11 @@ def md_print(markdown_text, noformat=False):
 
 def pretty_date(date_str):
     date_obj = parse(date_str)
-    return date_obj.astimezone().strftime('%F %T %Z')
+    if 'T' not in date_str:
+        fmt = '%Y/%m/%d'
+    else:
+        fmt = '%Y/%m/%d %-I:%M %p'
+    return date_obj.astimezone().strftime(fmt)
 
 
 def hbar(tl, widths=None, separator='╋'):
