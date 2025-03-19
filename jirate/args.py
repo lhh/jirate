@@ -39,11 +39,11 @@ class ComplicatedArgs(object):
             raise ValueError('Undefined command:', str(cmd))
         self._handlers[cmd] = handler
 
-    def delete_handler(self, cmd, handler):
+    def delete_handler(self, cmd):
         if cmd not in self._commands:
             raise ValueError('Undefined command:', str(cmd))
         if cmd in self._handlers:
-            del self.handlers[cmd]
+            del self._handlers[cmd]
 
     def parse_args(self, **kwargs):
         return self._parser.parse_args(**kwargs)
