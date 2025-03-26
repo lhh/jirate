@@ -1389,7 +1389,7 @@ def sprint_info(args):
         board = info['boards'][board]
         board_by_id[board.id] = board
 
-    matrix = [['name', 'id', 'status', 'board']]
+    matrix = [['name', 'id', 'status', 'start', 'end', 'board']]
     for sprint in info['sprints']:
         sprint = info['sprints'][sprint]
         if sprint.state not in ('active', 'future') and not args.closed:
@@ -1398,7 +1398,7 @@ def sprint_info(args):
             board_name = board_by_id[sprint.originBoardId]
         except KeyError:
             board_name = '???'
-        matrix.append([sprint.name, sprint.id, sprint.state, board_name])
+        matrix.append([sprint.name, sprint.id, sprint.state, pretty_date(sprint.startDate), pretty_date(sprint.endDate), board_name])
     if len(info) > 1:
         render_matrix(matrix, fmt=args.format)
 
