@@ -91,7 +91,7 @@ def name_list(field, fields, as_object=False):
 
 
 def date(field, fields, as_object=False):
-    return field
+    return pretty_date(field)
 
 
 def datetime(field, fields, as_object=False):

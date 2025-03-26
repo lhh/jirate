@@ -41,8 +41,11 @@ def sprint_content_to_py(sprint_info):
         item = {'_hash': str(match.group(1))}
         info_bits = match.group(2)
         for bit in info_bits.split(','):
-            key, value = bit.split('=')
-            item[key] = val_to_py(value)
+            try:
+                key, value = bit.split('=')
+                item[key] = val_to_py(value)
+            except ValueError:
+                continue
         ret.append(item)
     return ret
 

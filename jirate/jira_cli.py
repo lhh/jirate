@@ -953,7 +953,48 @@ def link_url(args):
     return (0, True)
 
 
+def quote_reply(args):
+    if args.text:
+        raise ValueError('Can\'t both quote-reply and one-shot comment')
+
+    issue_id = args.issue
+    issue = args.project.issue(issue_id)
+
+    if args.reply is True:
+        # Find last comment if we didn't pick one to reply to; jira
+        # keeps them chronologically according to add date
+        last_cmt = issue.raw['fields']['comment']['comments'][-1]
+        comment_id = last_cmt['id']
+    else:
+        comment_id = args.reply
+
+    # Don't query jira server again when we have the data
+    comment = None
+    for cmt in issue.raw['fields']['comment']['comments']:
+        if cmt['id'] == comment_id:
+            comment = cmt
+            break
+    if not comment:
+        return (1, False)
+
+    starting_text = f'Quoth [~{comment['author']['name']}] - {pretty_date(comment['updated'])}:\n'
+    starting_text = starting_text + '\n'.join(['┃ ' + item for item in comment['body'].strip().split('\n')])
+    new_text = editor(starting_text)
+    if 'visibility' in comment:
+        group_name = comment['visibility']['value']
+    else:
+        group_name = None
+    if not new_text or new_text == starting_text:
+        print('Canceled')
+        return (0, False)
+    args.project.comment(issue_id, new_text, group_name)
+    return (0, False)
+
+
 def comment(args):
+    if args.reply:
+        return quote_reply(args)
+
     issue_id = args.issue
 
     if args.remove:
@@ -1008,12 +1049,15 @@ def comment(args):
     return (0, False)
 
 
-def display_comment(action, verbose, no_format):
-    print(pretty_date(action['updated']), '•', action['updateAuthor']['emailAddress'], '-', action['updateAuthor']['displayName'], '• ID:', action['id'])
-    if 'visibility' in action:
-        print('🔒', action['visibility']['type'], '•', action['visibility']['value'])
+def display_comment(server_url, comment, verbose, no_format):
+    # Let's get fancy
+    commentator_url = f"{server_url}/secure/ViewProfile.jspa?name={comment['updateAuthor']['key']}"
+    commentator = link_string(comment['updateAuthor']['displayName'], commentator_url)
+    print(commentator, '-', pretty_date(comment['updated']), '• ID:', comment['id'])
+    if 'visibility' in comment:
+        print('🔒', comment['visibility']['type'], '•', comment['visibility']['value'])
     hbar(20)
-    md_print(action['body'], no_format)
+    md_print(comment['body'], no_format)
     print()
 
 
@@ -1168,7 +1212,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         hbar_under('Comments')
 
         for cmt in issue['comment']['comments']:
-            display_comment(cmt, verbose, no_format)
+            display_comment(project.jira.server_url, cmt, verbose, no_format)
 
 
 def cat(args):
@@ -1568,6 +1612,7 @@ def create_parser():
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
     cmd.add_argument('-r', '--remove', help='Comment ID to remove')
+    cmd.add_argument('-q', '--reply', nargs='?', help='Comment ID to quote and reply', default=False, const=True)
     cmd.add_argument('-g', '--group', help='Specify comment group visibility')
     cmd.add_argument('issue', help='Issue to operate on')
     cmd.add_argument('text', nargs='*', help='Comment text')
