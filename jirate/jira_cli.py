@@ -1238,6 +1238,11 @@ def cat(args):
             return (127, False)
         issues.append(issue)
 
+    if not args.fields:
+        fields = args.project.get_user_data('issue_fields')
+        if fields:
+            setattr(args, 'fields', fields)
+
     if args.format in ['csv']:
         print_issues(issues, args)
         return (0, False)

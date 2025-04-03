@@ -20,7 +20,8 @@ Configuration is a JSON document stored as `~/.jirate.json` - an example can be 
 - `default_project` (Required) - Default project to use when interacting with JIRA
 - `eausm` (Optional) - Set to `false` to disable EZ Agile Planning voting
 - `here_there_be_dragons` (Optional) - Set to `true` if you intend to use custom code to render JIRA custom field data
-- `default_fields` (Optional) - When displaying lists of issues, display these fields (and optional field widths) by default
+- `default_fields` (Optional) - When displaying lists of issues (e.g. `list`, `search`, `cat` for more than one issue), display these fields (and optional field widths) by default.  Key is always the left-most field, and is always included.
+- `issue_fields` (Optional) - When displaying issues (or a list) using `cat`, display only these fields by default.  Key is always the left-most field, and is always included.  Summary is not automatically included.  Note: The order of field specification precedence when using `cat` to determine field list is: command line, `issue_fields`, `default_fields`.
 - `no_format` (Optional) - Set to `true` if you would prefer Jirate not attempt to render JIRA comments and descriptions as markdown (JIRA text isn't markdown, so the markdown processor often gets this wrong)
 - `searches` (Optional) - List of JQL searches and their names.  The special search named `default` is applied when one runs `jirate search`.
 - `custom_reorder` (Optional) - Defaults to true. If set to false, custom field definitions will not reorder base JIRA fields when listing issues.
@@ -152,6 +153,9 @@ Each field in `custom_fields` is a dictionary. Jirate only cares about a few fie
   - `jirate attach PROJ-123 http://www.github.com Github Home`
 
 # Advanced
+## CSV output
+Jirate can output individual issues in CSV format, which is a bit easier to parse than JSON or text data.
+- `jirate -f csv [cat|search|sprint|components]`
 ## Templates
 Jirate has powerful templating - templates are a combination of Jinja2 and YAML.  Note that typical syntax differs from Jinja2 since double-braces are used by Jira, we use `{@` and `@}` instead.
 - Generate a template from an existing issue:
