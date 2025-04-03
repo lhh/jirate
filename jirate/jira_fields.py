@@ -410,7 +410,6 @@ def apply_schema_renderer(field):
 
 
 def func_from_path(filename, function, field, fields):
-    global _loaded_mods
     # Load a function from a file and run that
     import importlib.util
     import os
@@ -609,7 +608,6 @@ def field_ordering():
 
 
 def max_field_width(issue, verbose, allow_code):
-    global _fields
     width = 0
 
     for field_key in _fields:
@@ -621,8 +619,6 @@ def max_field_width(issue, verbose, allow_code):
 
 
 def render_issue_fields(issue, verbose=False, allow_code=False, width=None):
-    global _fields
-
     if not width:
         width = max_field_width(issue, verbose, allow_code)
 

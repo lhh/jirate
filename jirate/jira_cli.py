@@ -978,7 +978,7 @@ def quote_reply(args):
     if not comment:
         return (1, False)
 
-    starting_text = f'Quoth [~{comment['author']['name']}] - {pretty_date(comment['updated'])}:\n'
+    starting_text = f"Quoth [~{comment['author']['name']}] - {pretty_date(comment['updated'])}:\n"
     starting_text = starting_text + '\n'.join(['┃ ' + item for item in comment['body'].strip().split('\n')])
     new_text = editor(starting_text)
     if 'visibility' in comment:
