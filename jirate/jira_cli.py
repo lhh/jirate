@@ -212,7 +212,8 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
         for row in output:
             row.pop(column)
 
-    lines = render_matrix(output, fmt=args.format)
+    header = not (args.format in ['csv'])
+    lines = render_matrix(output, fmt=args.format, header=header)
     return lines
 
 
@@ -977,7 +978,7 @@ def quote_reply(args):
     if not comment:
         return (1, False)
 
-    starting_text = f'Quoth [~{comment['author']['name']}] - {pretty_date(comment['updated'])}:\n'
+    starting_text = f"Quoth [~{comment['author']['name']}] - {pretty_date(comment['updated'])}:\n"
     starting_text = starting_text + '\n'.join(['┃ ' + item for item in comment['body'].strip().split('\n')])
     new_text = editor(starting_text)
     if 'visibility' in comment:
@@ -1156,17 +1157,29 @@ def print_eausm_votes(project, issue):
         print()
 
 
-def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False):
+def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False, allowed_fields=None):
     if verbose:
         # Get votes and watchers in verbose mode
         project.votes(issue_obj)
         project.watchers(issue_obj)
+
     issue = issue_obj.raw['fields']
+
+    if allowed_fields:
+        allowed_fields = parse_field_widths(allowed_fields)
+        disp = {}
+        allowed_ids = [project.field_to_id(field) for field in allowed_fields]
+        for field_id in allowed_ids:
+            if field_id in issue:
+                disp[field_id] = issue[field_id]
+        issue = disp
+
     key_link = issue_link_string(issue_obj.key, project.jira.server_url)
     lsize = max(len(key_link), max_field_width(issue, verbose, project.allow_code))
     lsize = max(lsize, len('Next States'))
 
-    vsep_print(' ', 0, key_link, lsize, issue['summary'])
+    if 'summary' in issue and issue['summary']:
+        vsep_print(' ', 0, key_link, lsize, issue['summary'])
     render_issue_fields(issue, verbose, project.allow_code, lsize)
 
     if verbose:
@@ -1179,7 +1192,7 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
             vsep_print(None, 0, 'Next States', lsize, 'No valid transitions; cannot alter status')
 
     print()
-    if issue['description']:
+    if 'description' in issue and issue['description']:
         md_print(issue['description'], no_format)
         print()
 
@@ -1201,12 +1214,13 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
     if 'subtasks' in issue and len(issue['subtasks']):
         print_subtasks(issue, project.jira.server_url)
 
-    for megalith in ('Epic', 'Feature'):
-        if issue['issuetype']['name'] == megalith:
-            ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
-            _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
+    if 'issuetype' in issue:
+        for megalith in ('Epic', 'Feature'):
+            if issue['issuetype']['name'] == megalith:
+                ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
+                _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
 
-    if no_comments:
+    if no_comments or 'comment' not in issue:
         return
     if issue['comment']['comments']:
         hbar_under('Comments')
@@ -1224,13 +1238,22 @@ def cat(args):
             return (127, False)
         issues.append(issue)
 
+    if not args.fields:
+        fields = args.project.get_user_data('issue_fields')
+        if fields:
+            setattr(args, 'fields', fields)
+
+    if args.format in ['csv']:
+        print_issues(issues, args)
+        return (0, False)
+
     if args.no_format:
         no_format = args.no_format
     else:
         no_format = args.project.get_user_data('no_format')
 
     for issue in issues:
-        print_issue(args.project, issue, args.verbose, args.no_comments, no_format)
+        print_issue(args.project, issue, args.verbose, args.no_comments, no_format, args.fields)
     return (0, False)
 
 
@@ -1372,7 +1395,7 @@ def sprint_info(args):
         # FIXME: This doesn't allow for field substring ("order" in the
         # "summary" field, for example)
         if not args.raw or 'order' not in args.raw.lower():
-            search = search + ' order by rank asc'
+            search = search + ' order by rank desc'
         issues = args.project.search_issues(search)
         print_issues(issues, args, exclude_fields=['sprint'])
         return (0, False)
@@ -1389,7 +1412,7 @@ def sprint_info(args):
         board = info['boards'][board]
         board_by_id[board.id] = board
 
-    matrix = [['name', 'id', 'status', 'board']]
+    matrix = [['name', 'id', 'status', 'start', 'end', 'board']]
     for sprint in info['sprints']:
         sprint = info['sprints'][sprint]
         if sprint.state not in ('active', 'future') and not args.closed:
@@ -1398,9 +1421,10 @@ def sprint_info(args):
             board_name = board_by_id[sprint.originBoardId]
         except KeyError:
             board_name = '???'
-        matrix.append([sprint.name, sprint.id, sprint.state, board_name])
+        matrix.append([sprint.name, sprint.id, sprint.state, pretty_date(sprint.startDate), pretty_date(sprint.endDate), board_name])
     if len(info) > 1:
-        render_matrix(matrix, fmt=args.format)
+        header = not (args.format in ['csv'])
+        render_matrix(matrix, fmt=args.format, header=header)
 
     return (0, False)
 
@@ -1557,6 +1581,7 @@ def create_parser():
     cmd.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     cmd.add_argument('-N', '--no-comments', action='store_true', default=False, help='Skip comments')
     cmd.add_argument('-n', '--no-format', action='store_true', help='Do not format output using Markdown')
+    add_list_options(cmd)
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
 
     cmd = parser.command('view', help='Display issue in browser', handler=view_issue)

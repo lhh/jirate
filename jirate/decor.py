@@ -90,8 +90,6 @@ class EscapedString(str):
 
 
 def color_string(string, color=None, bgcolor=None):
-    global fancy_output
-
     if fancy_output is not True:
         return string
 
@@ -115,7 +113,6 @@ def color_string(string, color=None, bgcolor=None):
 
 
 def link_string(text, url):
-    global fancy_output
     if not fancy_output:
         return None
 
@@ -125,8 +122,6 @@ def link_string(text, url):
 
 
 def issue_link_string(issue_key, baseurl=None):
-    global fancy_output
-
     if not baseurl or not fancy_output:
         return issue_key
 
@@ -278,9 +273,6 @@ vseparator = '┃'
 
 
 def vsep_print(linesplit=None, screen_width=0, *vals):
-    global _termsize
-    global vseparator
-
     sep = f' {vseparator} '
 
     fields = []
