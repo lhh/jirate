@@ -371,7 +371,7 @@ def list_issues(args):
     else:
         userid = 'me'
 
-    issues = args.project.list(userid=userid, all_issues=args.all)
+    issues = args.project.list(status=args.status, userid=userid, all_issues=args.all)
     print_issues(issues, args)
     return (0, True)
 
