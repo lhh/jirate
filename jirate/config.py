@@ -29,14 +29,12 @@ def yaml_dump(info):
 # Allow YAML or JSON
 def _auto_parse(config_data):
     try:
-        config = json.loads(config_data)
-        return config
+        return json.loads(config_data)
     except json.decoder.JSONDecodeError:
         pass
 
     try:
-        config = yaml.safe_load(config_data)
-        return config
+        return yaml.safe_load(config_data)
     except (yaml.scanner.ScannerError, yaml.reader.ReaderError):
         pass
 
