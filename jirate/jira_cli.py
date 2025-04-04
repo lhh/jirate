@@ -201,18 +201,19 @@ def print_issues_by_field(issue_list, args=None, exclude_fields=[]):
                 found_fields.append(field)
         output.append(row)
 
-    delta = list(set(list(fields.keys())) - set(found_fields))
-    for kill in delta:
-        try:
-            column = raw_fields.index(kill)
-            raw_fields.pop(column)
-        except ValueError:
-            print(f'Bug: Tried to remove nonexistent column {kill}?')
-            continue
-        for row in output:
-            row.pop(column)
-
     header = not (args.format in ['csv'])
+    if header:  # Fancy output: save real estate by removing columns
+        delta = list(set(list(fields.keys())) - set(found_fields))
+        for kill in delta:
+            try:
+                column = raw_fields.index(kill)
+                raw_fields.pop(column)
+            except ValueError:
+                print(f'Bug: Tried to remove nonexistent column {kill}?')
+                continue
+            for row in output:
+                row.pop(column)
+
     lines = render_matrix(output, fmt=args.format, header=header)
     return lines
 
