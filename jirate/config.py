@@ -44,6 +44,7 @@ def _auto_parse(config_data):
 
 
 def get_config(filename=None):
+    config_file = None
     if not filename:
         for filename in ['~/.jirate.json', '~/.jirate.yaml', '~/.trolly.json']:
             try:

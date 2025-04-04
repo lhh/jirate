@@ -47,3 +47,12 @@ def test_json_config(tmp_path):
     fp.close()
 
     assert get_config(filename) == {'abc': {'def': 1}}
+
+
+# Gemini Advanced
+def test_get_config_no_files_found(tmp_path, monkeypatch):
+    # Test the function when no default files exist
+    monkeypatch.setattr(os.path, 'expanduser', lambda x: tmp_path / x.replace('~/', ''))
+
+    with pytest.raises(FileNotFoundError):
+        get_config()
