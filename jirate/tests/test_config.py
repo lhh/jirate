@@ -4,7 +4,17 @@ import os
 
 import pytest  # NOQA
 
-from jirate.config import get_config, ParseError
+from jirate.config import get_config, ParseError, yaml_dump
+
+
+def test_yaml_dump():
+    inp = {"test": "abc\n\nabcdef"}
+    expected = '''test: |-
+  abc
+
+  abcdef
+'''
+    assert yaml_dump(inp) == expected
 
 
 def test_nonsense_config(tmp_path):
