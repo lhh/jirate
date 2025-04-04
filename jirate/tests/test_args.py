@@ -55,6 +55,16 @@ def test_command_and_handler(args):
     assert result == 'test_result'
 
 
+def test_second_command(args):
+    handler_one = FunctionMockery(return_value='test_result')
+    handler_two = FunctionMockery()
+    args.command('test', help='Test command', handler=handler_one)
+    args.command('test-two', help='Test command', handler=handler_two)
+    parsed_args = args.parse_args(args=['test-two'])
+    result = args.finalize(parsed_args)
+    assert result == None
+
+
 def test_command_duplicate(args):
     args.command('test')
     with pytest.raises(ValueError):
@@ -75,6 +85,8 @@ def test_delete_handler(args):
     args.delete_handler('test')
     result = args.finalize(parsed_args)
     assert result is None
+    with pytest.raises(ValueError):
+        args.delete_handler('HAHAHAHAHAHAH')
 
 
 def test_parse_args(args):

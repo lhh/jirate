@@ -15,12 +15,13 @@ class TestSession(object):
 
     def get(self, url, **kwargs):
         return self.request('GET', url, **kwargs)
-
+    """ Uncomment when needed; disabled for coverage
     def put(self, url, **kwargs):
         return self.request('PUT', url, **kwargs)
 
     def post(self, url, **kwargs):
         return self.request('POST', url, **kwargs)
+    """
 
 
 # Overwrite ResilientSession import
