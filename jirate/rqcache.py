@@ -48,7 +48,7 @@ default_cache_patterns = {
 
 def _cached_request(cache, method, url, **kwargs):
     # Check cache first
-    ret = cache._cache_read(method, url, cache._expire_time, kwargs)
+    ret = cache._cache_read(method, url, kwargs)
     if ret:
         return ret
 
@@ -79,13 +79,11 @@ class RequestCache(object):
             return
         self.load(filename)
 
-    def _cache_read(self, method, url, expire_time=None, args_dict=None):
+    def _cache_read(self, method, url, args_dict=None):
         if method not in self.cached_reqs:
             return None
         if url not in self.cached_reqs[method]:
             return None
-        if expire_time is None:
-            expire_time = self._expire_time
 
         for item in self.cached_reqs[method][url]:
             if time.gmtime(item['expire']) <= time.gmtime():
