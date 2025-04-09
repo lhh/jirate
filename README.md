@@ -13,7 +13,9 @@ High-level CLI for JIRA and Trello
 
 # Notes
 ## Configuration
-Configuration is a JSON document stored as `~/.jirate.json` - an example can be found in the `contrib/jirate.json` file in this repository.
+Configuration is one of:
+- a JSON document stored as `~/.jirate.json` - an example can be found in the `contrib/jirate.json` file in this repository.
+- a YAML document stored as `~/.jirate.yaml` - an example can be found in the `contrib/jirate.yaml` file in this repository.
 ### JIRA configuration fields
 - `url` (Required) - URL to your JIRA instance
 - `token` (Required) - A valid personal access token for your account
