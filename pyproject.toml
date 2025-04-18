@@ -44,6 +44,8 @@ dependencies = [
     "trollo>=0.2.4",
 ]
 
+requires-python = '>=3.9'
+
 [project.scripts]
 jirate = "jirate.jira_cli:main"
 trolly = "jirate.cli:main"
@@ -60,4 +62,12 @@ path = "jirate/__init__.py"
 [tool.hatch.build.targets.sdist]
 include = [
     "/jirate",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+lint = [
+    "flake8",
 ]
