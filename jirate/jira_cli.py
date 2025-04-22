@@ -727,6 +727,9 @@ def _create_from_template(args, template):
         if len(template['issues']) != 1:
             raise ValueError('Undefined request: template is for multiple issues')
 
+    projects = {}
+    projects[args.project.project_name] = args.project
+
     for raw_issue in template['issues']:
         issue = {args.project.field_to_id(name): value for name, value in raw_issue.items()}
         reserved_fields = ['subtasks']
@@ -737,15 +740,17 @@ def _create_from_template(args, template):
             pname = args.project.project_name
         if pname not in metadata_by_type:
             metadata_by_type[pname] = {}
+        if pname not in projects:
+            projects[pname] = JiraProject(args.project.jira, pname, readonly=False, allow_code=args.project.allow_code)
 
         creation_fields = _parse_creation_args(issue, required_fields, reserved_fields)
 
         # Cache all metadata now (so we can debug subtask creation if needed.
         issuetype = creation_fields['issuetype']
         if issuetype not in metadata_by_type:
-            metadata_by_type[pname][issuetype] = _metadata_by_type(args.project, issuetype)
+            metadata_by_type[pname][issuetype] = _metadata_by_type(projects[pname], issuetype)
         if 'subtasks' in issue and issue['subtasks']:
-            metadata_by_type[pname][_subtask] = _metadata_by_type(args.project, _subtask)
+            metadata_by_type[pname][_subtask] = _metadata_by_type(projects[pname], _subtask)
         metadata = metadata_by_type[pname][issuetype]
 
         filed = {}
@@ -755,7 +760,7 @@ def _create_from_template(args, template):
             existing_issue.update(**creation_fields)
             parent = existing_issue
         else:
-            parent = args.project.create(metadata['fields'], **creation_fields)
+            parent = projects[pname].create(metadata['fields'], **creation_fields)
         filed['parent'] = parent.key
 
         # Apply subtasks - but only to a parent which does not already have any
@@ -771,7 +776,7 @@ def _create_from_template(args, template):
                 start_fields['parent'] = parent.key
                 creation_fields = _parse_creation_args(subtask, required_fields, reserved_fields, start_vals=start_fields)
 
-                child = args.project.create(metadata['fields'], **creation_fields)
+                child = projects[pname].create(metadata['fields'], **creation_fields)
                 filed['subtasks'].append(child.key)
         all_filed.append(filed)
 
