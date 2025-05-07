@@ -83,3 +83,13 @@ spoon: {@varfour@}
 
     with pytest.raises(ValueError):
         apply_values(inp, {'_varthree': 'abc', 'varfour': 'meh'})
+
+
+def test_datetime_strftime():
+    inp = """
+{% set year = datetime(2025, 5, 7, 10, 32, 27, 87081).strftime('%Y') %}
+year: {@year@}
+"""
+    exp = 'year: 2025'
+
+    assert apply_values(inp).strip() == exp.strip()
