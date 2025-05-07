@@ -93,3 +93,15 @@ year: {@year@}
     exp = 'year: 2025'
 
     assert apply_values(inp).strip() == exp.strip()
+
+
+def test_datetime_override():
+    inp = """
+{% set year = year or datetime(2025, 5, 7, 10, 32, 27, 87081).strftime('%Y') %}
+year: {@year@}
+"""
+    exp = 'year: 2033'
+
+    values = {'year': '2033'}
+
+    assert apply_values(inp, values).strip() == exp.strip()
