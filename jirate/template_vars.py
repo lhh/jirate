@@ -3,6 +3,8 @@
 # Jinja2 variable support for Jirate templates
 #
 
+import datetime
+
 from jinja2 import Environment, BaseLoader, meta, nodes
 
 
@@ -216,6 +218,7 @@ def apply_values(inp, values={}, interactive=False):
                       trim_blocks=True, lstrip_blocks=True,
                       variable_start_string='{@',
                       variable_end_string='@}')
+    env.globals['datetime'] = datetime.datetime
     jinja_template = env.from_string(inp)
     ast = env.parse(inp)
 
