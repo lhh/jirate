@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copy/pasted from toolchest:
+# Portions Copy/pasted from toolchest:
 #   http://github.com/release-depot/toolchest
 
 import copy
@@ -46,46 +46,15 @@ COLORS = {'green':       2,     # NOQA
 
 
 class EscapedString(str):
-    def __init__(self, val):
-        self._len = len(val)
-        self._text = val
-        self._value = val
-        self._sequence = None
 
     def __len__(self):
-        return self._len
-
-    def _escape(self, sequence, value=None):
-        if '{_value_}' not in sequence:
-            raise ValueError('Cannot escape; invalid input')
-        if not value:
-            value = self._text
-        return sequence.replace('{_value_}', value)
-
-    def escape(self, sequence, value=None):
-        self._value = self._escape(sequence, value)
-
-    def update(self, value):
-        self._value = value
-
-    def ljust(self, width):
-        if width <= len(self):
-            return str(self)
-        return self + (' ' * (width - len(self)))
-
-    def __str__(self):
-        return str(self._value)
-
-    def __repr__(self):
-        return str(self._value)
+        return len(ansi_ctrl_strip(self))
 
     def __add__(self, other):
         if (isinstance(other, EscapedString)):
-            ret = EscapedString(self._text + other._text)
-            ret.update(self._value + other._value)
+            ret = EscapedString(self + other)
         else:
-            ret = EscapedString(self._text + str(other))
-            ret.update(self._value + str(other))
+            ret = EscapedString(self + EscapedString(other))
         return ret
 
 
@@ -106,37 +75,34 @@ def color_string(string, color=None, bgcolor=None):
 
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
-    ret = EscapedString(string)
-    ret.update(ret_string)
-
-    return ret
-
+    return EscapedString(ret_string)
+    
 
 def link_string(text, url):
     if not fancy_output:
         return None
 
-    ret = EscapedString(text)
-    ret.update(f']8;;{url}\x07{text}]8;;\x07')
-    return ret
-
+    return EscapedString(f']8;;{url}\x07{text}]8;;\x07')
+    
 
 def ansi_ctrl_strip(text):
-    ansi_simple_rx = r'[78M]'
+    ansi_simple_rx = '\x1b[78M]'
     ansi_basic_terminator = 'ABCDEFGHJKLfhmn'
-    ansi_basic_rx = f'\\[[^{ansi_basic_terminator}]+[{ansi_basic_terminator}]'    
+    ansi_basic_rx = f'\x1b\\[[^{ansi_basic_terminator}]+[{ansi_basic_terminator}]'    
     ansi_link_rx = '\x1b\\]8;;([^\x07]+)\x07([^\x1b]+)\x1b\\]8;;\x07'
 
-    output = ''
-    while output != text:
-        output = text
+    output = text
+    while True:
         output = re.sub(ansi_simple_rx, '', output)
         output = re.sub(ansi_basic_rx, '', output)
 
         match = re.search(ansi_link_rx, output)
         if match:
             rpl = match.groups()[1]
-            output = output.sub(match.string, rpl, 1)
+            output = output.replace(match.group(), rpl, 1)
+        if output == text:
+            break
+        text = output
     return output
 
 
