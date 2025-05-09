@@ -18,9 +18,9 @@ try:
 
     console = Console()
     _markdown = True
-except ModuleNotFoundError:
-    _markdown = False
-    pass
+except ModuleNotFoundError:  # pragma: no cover
+    _markdown = False        # pragma: no cover
+    pass                     # pragma: no cover
 
 fancy_output = False
 color_shift = 16
@@ -52,12 +52,12 @@ class EscapedString(str):
 
     def ljust(self, width, fill=' '):
         if width <= len(self):
-            return str(self)
+            return self
         return self + (fill * (width - len(self)))
 
     def rjust(self, width, fill=' '):
         if width <= len(self):
-            return str(self)
+            return self
         return (fill * (width - len(self))) + self
 
     def __add__(self, other):
@@ -75,9 +75,9 @@ def color_string(string, color=None, bgcolor=None):
     fg_color = ''
     bg_color = ''
     if color and color in COLORS:
-        fg_color = '[38;5;{0}m'.format(COLORS[color])
+        fg_color = '\x1b[38;5;{0}m'.format(COLORS[color])
     if bgcolor and bgcolor in COLORS:
-        bg_color = '[48;5;{0}m'.format(COLORS[bgcolor])
+        bg_color = '\x1b[48;5;{0}m'.format(COLORS[bgcolor])
 
     if not fg_color and not bg_color:
         return string

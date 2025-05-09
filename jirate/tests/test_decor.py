@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString, ansi_ctrl_strip
+from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString, ansi_ctrl_strip, nym, color_string
 
 import jirate.decor
 
@@ -52,6 +52,31 @@ def test_parse_and_unparse():
 
     assert parse_params(comma_separated(list_val)) == list_val
     assert comma_separated(parse_params(str_val)) == str_val
+
+
+def test_color_string_none():
+    jirate.decor.fancy_output = True
+    assert str(color_string('abc')) == 'abc'
+
+
+def test_color_string_fancy_output_disabled():
+    jirate.decor.fancy_output = False
+    assert color_string('abc') == 'abc'
+
+
+def test_color_string_fg():
+    jirate.decor.fancy_output = True
+    assert str(color_string('abc', 'blue')) == '\x1b[38;5;12mabc\x1b[0m'
+
+
+def test_color_string_bg():
+    jirate.decor.fancy_output = True
+    assert str(color_string('abc', bgcolor='blue')) == '\x1b[48;5;12mabc\x1b[0m'
+
+
+def test_color_string_both():
+    jirate.decor.fancy_output = True
+    assert str(color_string('abc', 'blue', 'blue')) == '\x1b[38;5;12m\x1b[48;5;12mabc\x1b[0m'
 
 
 def test_link_fancy_output_disabled():
@@ -166,6 +191,12 @@ def test_add_es():
     assert result == '\x1b[0mdefabc'
 
 
+def test_lrjust_too_small():
+    text = color_string('HELLO WORLD', 'black', 'blue')
+    assert len(text.ljust(1)) == len(text.rjust(1))
+    assert len(text.rjust(1)) == len(text)
+
+
 def test_radd_es():
     text = 'abc'
     es_text = EscapedString('\x1b[0mdef')
@@ -173,3 +204,21 @@ def test_radd_es():
     result = text + es_text
     assert isinstance(result, EscapedString)
     assert result == 'abc\x1b[0mdef'
+
+
+def test_nym_basic():
+    assert nym('Hello') == 'hello'
+    assert nym('+World+') == '_world_'
+
+
+def test_nym_underscore():
+    assert nym('Hello World') == 'hello_world'
+
+
+def test_nym_custom_remove():
+    assert nym('Hello?World', remove='?') == 'helloworld'
+
+
+def test_nym_empty_input():
+    assert nym('') == ''
+    assert nym(None) == None
