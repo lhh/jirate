@@ -50,6 +50,16 @@ class EscapedString(str):
     def __len__(self):
         return len(ansi_ctrl_strip(self))
 
+    def ljust(self, width, fill=' '):
+        if width <= len(self):
+            return str(self)
+        return self + (fill * (width - len(self)))
+
+    def rjust(self, width, fill=' '):
+        if width <= len(self):
+            return str(self)
+        return (fill * (width - len(self))) + self
+
     def __add__(self, other):
         return EscapedString(self.__str__() + other.__str__())
 

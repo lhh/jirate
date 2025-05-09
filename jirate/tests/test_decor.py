@@ -131,6 +131,27 @@ def test_nested_or_malformed_ansi_codes():
     assert ansi_ctrl_strip(text) == "Unclosed \x1b]8;;malformed\x07link"
 
 
+def test_mixed_ansi_codes_len():
+    text = EscapedString("[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07[0m")
+
+    exp = "Error: View Log"
+    assert len(text) == len(exp)
+
+
+def test_mixed_ansi_codes_ljust():
+    text = EscapedString("[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07[0m")
+
+    exp = "Error: View Log"
+    assert len(text.ljust(30)) == len(exp.ljust(30))
+
+
+def test_mixed_ansi_codes_rjust():
+    text = EscapedString("[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07[0m")
+
+    exp = "Error: View Log"
+    assert len(text.rjust(30)) == len(exp.rjust(30))
+
+
 def test_empty_string():
     text = ""
     assert ansi_ctrl_strip(text) == ""
