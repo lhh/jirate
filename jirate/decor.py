@@ -117,8 +117,27 @@ def link_string(text, url):
         return None
 
     ret = EscapedString(text)
-    ret.update(f']8;;{url}\\{text}]8;;\\')
+    ret.update(f']8;;{url}\x07{text}]8;;\x07')
     return ret
+
+
+def ansi_ctrl_strip(text):
+    ansi_simple_rx = r'[78M]'
+    ansi_basic_terminator = 'ABCDEFGHJKLfhmn'
+    ansi_basic_rx = f'\\[[^{ansi_basic_terminator}]+[{ansi_basic_terminator}]'    
+    ansi_link_rx = '\x1b\\]8;;([^\x07]+)\x07([^\x1b]+)\x1b\\]8;;\x07'
+
+    output = ''
+    while output != text:
+        output = text
+        output = re.sub(ansi_simple_rx, '', output)
+        output = re.sub(ansi_basic_rx, '', output)
+
+        match = re.search(ansi_link_rx, output)
+        if match:
+            rpl = match.groups()[1]
+            output = output.sub(match.string, rpl, 1)
+    return output
 
 
 def issue_link_string(issue_key, baseurl=None):
