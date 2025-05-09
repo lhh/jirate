@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString
+from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString, ansi_ctrl_strip
 
 import jirate.decor
 
@@ -84,3 +84,44 @@ def test_link_empty_url():
     expected_string = f'\x1b]8;;{""}\x07{text}\x1b]8;;\x07'
     result = link_string(text, "")
     assert result == expected_string
+
+
+def test_no_ansi_codes():
+    text = "This is plain text."
+    assert ansi_ctrl_strip(text) == "This is plain text."
+
+def test_simple_ansi_code():
+    text = "␛[78M]This text has a simple ANSI code."
+    assert ansi_ctrl_strip(text) == "This text has a simple ANSI code."
+
+def test_basic_ansi_code():
+    text = "␛[[0mThis text has a basic ANSI code."
+    assert ansi_ctrl_strip(text) == "This text has a basic ANSI code."
+
+def test_multiple_basic_ansi_codes():
+    text = "␛[[31mRed␛[[0m and ␛[[32mGreen␛[0m"
+    assert ansi_ctrl_strip(text) == "Red and Green"
+
+def test_link_ansi_code():
+    text = "\x1b]8;;https://example.com\x07Click Here\x1b]8;;\x07"
+    assert ansi_ctrl_strip(text) == "Click Here"
+
+def test_link_ansi_code_with_surrounding_text():
+    text = "Before \x1b]8;;https://example.com\x07Link\x1b]8;;\x07 After"
+    assert ansi_ctrl_strip(text) == "Before Link After"
+
+def test_multiple_link_ansi_codes():
+    text = "\x1b]8;;url1\x07Text1\x1b]8;;\x07 and \x1b]8;;url2\x07Text2\x1b]8;;\x07"
+    assert ansi_ctrl_strip(text) == "Text1 and Text2"
+
+def test_mixed_ansi_codes():
+    text = "␛[[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07␛[[0m"
+    assert ansi_ctrl_strip(text) == "Error: View Log"
+
+def test_nested_or_malformed_ansi_codes():
+    text = "␛[[31mUnclosed \x1b]8;;malformed\x07link␛[[0m"
+    assert ansi_ctrl_strip(text) == "Unclosed link"
+
+def test_empty_string():
+    text = ""
+    assert ansi_ctrl_strip(text) == ""
