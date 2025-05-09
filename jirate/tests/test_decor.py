@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
-from jirate.decor import truncate, parse_params, comma_separated, fancy_output, link_string, EscapedString
+from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString
+
+import jirate.decor
 
 
 def test_parse_simple():
@@ -52,33 +54,33 @@ def test_parse_and_unparse():
     assert comma_separated(parse_params(str_val)) == str_val
 
 
-def test_fancy_output_disabled():
-    global fancy_output
-    original_fancy_output = fancy_output
-    fancy_output = False
+def test_link_fancy_output_disabled():
+    jirate.decor.fancy_output = False
     result = link_string("Click Here", "https://example.com")
     assert result is None
-    fancy_output = original_fancy_output # Restore the original value
 
 
-def test_fancy_output_enabled():
+def test_link_fancy_output_enabled():
+    jirate.decor.fancy_output = True
     text = "Click This Link"
     url = "https://www.test-url.org/path?param=value"
     expected_string = f'\x1b]8;;{url}\x07{text}\x1b]8;;\x07'
     result = link_string(text, url)
     assert isinstance(result, EscapedString)
-    assert result.value == expected_string
+    assert result == expected_string
 
 
-def test_empty_text():
+def test_link_empty_text():
+    jirate.decor.fancy_output = True
     url = "ftp://files.server.net"
     expected_string = f'\x1b]8;;{url}\x07\x1b]8;;\x07'
     result = link_string("", url)
-    assert result.value == expected_string
+    assert result == expected_string
 
 
-def test_empty_url():
+def test_link_empty_url():
+    jirate.decor.fancy_output = True
     text = "See more info"
     expected_string = f'\x1b]8;;{""}\x07{text}\x1b]8;;\x07'
     result = link_string(text, "")
-    assert result.value == expected_string
+    assert result == expected_string
