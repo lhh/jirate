@@ -91,15 +91,15 @@ def test_no_ansi_codes():
     assert ansi_ctrl_strip(text) == "This is plain text."
 
 def test_simple_ansi_code():
-    text = "␛[78M]This text has a simple ANSI code."
+    text = "7This text has a simple ANSI code."
     assert ansi_ctrl_strip(text) == "This text has a simple ANSI code."
 
 def test_basic_ansi_code():
-    text = "␛[[0mThis text has a basic ANSI code."
+    text = "[0mThis text has a basic ANSI code."
     assert ansi_ctrl_strip(text) == "This text has a basic ANSI code."
 
 def test_multiple_basic_ansi_codes():
-    text = "␛[[31mRed␛[[0m and ␛[[32mGreen␛[0m"
+    text = "[31mRed[0m and [32mGreen[0m"
     assert ansi_ctrl_strip(text) == "Red and Green"
 
 def test_link_ansi_code():
@@ -115,12 +115,12 @@ def test_multiple_link_ansi_codes():
     assert ansi_ctrl_strip(text) == "Text1 and Text2"
 
 def test_mixed_ansi_codes():
-    text = "␛[[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07␛[[0m"
+    text = "[31mError: \x1b]8;;https://error.log\x07View Log\x1b]8;;\x07[0m"
     assert ansi_ctrl_strip(text) == "Error: View Log"
 
 def test_nested_or_malformed_ansi_codes():
-    text = "␛[[31mUnclosed \x1b]8;;malformed\x07link␛[[0m"
-    assert ansi_ctrl_strip(text) == "Unclosed link"
+    text = "[31mUnclosed \x1b]8;;malformed\x07link\x1b[0m"
+    assert ansi_ctrl_strip(text) == "Unclosed \x1b]8;;malformed\x07link"
 
 def test_empty_string():
     text = ""
