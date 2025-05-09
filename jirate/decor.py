@@ -51,11 +51,10 @@ class EscapedString(str):
         return len(ansi_ctrl_strip(self))
 
     def __add__(self, other):
-        if (isinstance(other, EscapedString)):
-            ret = EscapedString(self + other)
-        else:
-            ret = EscapedString(self + EscapedString(other))
-        return ret
+        return EscapedString(self.__str__() + other.__str__())
+
+    def __radd__(self, other):
+        return EscapedString(other.__str__() + self.__str__())
 
 
 def color_string(string, color=None, bgcolor=None):
