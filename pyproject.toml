@@ -64,6 +64,11 @@ include = [
     "/jirate",
 ]
 
+[tool.coverage.run]
+omit = [
+    "jirate/tests/__init__.py"
+]
+
 [dependency-groups]
 dev = [
     "pytest",
