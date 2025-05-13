@@ -224,6 +224,12 @@ fake_fields = [
         'orderable': True,
         'operations': ['set'],
         'allowedValues': [
+            {'value': 'Zero',
+             'id': '0',
+             'archived': True},
+            {'value': 'Hundred',
+             'id': '100',
+             'disabled': True},
             {'value': 'One',
              'id': '1'},
             {'value': 'Two',
@@ -235,6 +241,19 @@ fake_fields = [
                    'customId': 1234578,
                    'type': 'option'},
         'searchable': True},
+    { 'clauseNames': [ 'attachments' ],
+        'id': 'attachment',
+        'name': 'Attachment',
+        'custom': False,
+        'orderable': True,
+        'navigable': False,
+        'searchable': True,
+        'schema': {
+            'type': 'array',
+                    'items': 'attachment',
+                    'system': 'attachment'
+                }
+            },
     {'clauseNames': ['cf[1234579]', 'Option and Child'],
         'custom': True,
         'id': 'customfield_1234579',
@@ -253,6 +272,46 @@ fake_fields = [
              'id': '3'}
     ],
         'searchable': True},
+    { 'clauseNames': ['cf[10390940]', 'Sprint'],
+        'id': 'customfield_10390940',
+        'name': 'Sprint',
+        'custom': True,
+        'orderable': True,
+        'navigable': True,
+        'searchable': True,
+        'schema': { 
+            'type': 'array',
+            'items': 'string',
+            'custom': 'com.pyxis.greenhopper.jira:gh-sprint',
+            'customId': 10390940
+        }
+    },
+    { 'clauseNames': [ 'cf[103949473]', 'Parent Link' ],
+        'id': 'customfield_103949473',
+        'name': 'Parent Link',
+        'custom': True,
+        'orderable': True,
+        'navigable': True,
+        'searchable': True,
+        'schema': {
+            'type': 'any',
+            'custom': 'com.atlassian.jpo:jpo-custom-field-parent',
+            'customId': 103949473
+        }
+    },
+    { 'clauseNames': [ 'cf[283949317]', 'Parent Link' ],
+        'id': 'customfield_283949317',
+        'name': 'Epic Link',
+        'custom': True,
+        'orderable': True,
+        'navigable': True,
+        'searchable': True,
+        'schema': {
+            'type': 'any',
+            'custom': 'com.pyxis.greenhopper.jira:gh-epic-link',
+            'customId': 283949317
+        }
+    },
     {'clauseNames': ['cf[1234580]', 'User Value'],
         'custom': True,
         'id': 'customfield_1234580',
