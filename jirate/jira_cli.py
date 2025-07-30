@@ -1750,9 +1750,10 @@ def create_parser():
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
     cmd.add_argument('-r', '--remove', default=False, action='store_true', help='Remove vote from issue(s)')
 
-    cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize) # no that's not a typo
-    cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
-    add_list_options(cmd)
+    if ollama:
+        cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize) # no that's not a typo
+        cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
+        add_list_options(cmd)
 
     return parser
 
