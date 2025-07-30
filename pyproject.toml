@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "jirate"
 dynamic = ["version"]
 readme = "README.md"
-license = "BSD-2-Clause"
+license = {file = 'LICENSE.txt'}
 authors = [
     { name = "Red Hat", email = "lhh@redhat.com" },
 ]
