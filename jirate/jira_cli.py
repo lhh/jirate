@@ -1465,7 +1465,15 @@ def vote(args):
 
 def summaraize(args):  # Not a typo
     issues = args.project.issues(args.issue_id)
-    # 
+    ollama_config = args.project.get_user_data('ollama')
+    if not ollama_config:
+        ollama_config = {'model': 'gemma3n:latest'}
+
+    if 'host' in ollama_config and ollama_config['host']:
+        ollama_client = ollama.Client(ollama_config['host'])
+    else:
+        ollama_client = ollama.Client()
+
     for issue in issues:
         print_issue_header(args.project, issue, allowed_fields=args.fields)
         # Aggregate description and comments into something that can be summarized
@@ -1475,12 +1483,8 @@ def summaraize(args):  # Not a typo
         for cmt in issue.raw['fields']['comment']['comments']:
             ai_question += f"On {pretty_date(cmt['updated'])}, {cmt['author']['name']} commented:\n{cmt['body']}\n\n"
         message = {'role': 'user', 'content': ai_question}
-        ret = ollama.chat('gemma3n:latest', messages=[message], stream=True)
-        ret_text = ''
-        # Might avoid this if stream = False? not sure.
-        for message in ret:
-            ret_text += message['message']['content']
-        md_print(ret_text)
+        ret = ollama_client.chat(ollama_config['model'], messages=[message], stream=False)
+        md_print(ret['message']['content'])
 
     return (0, False)
 
