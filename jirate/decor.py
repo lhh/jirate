@@ -510,7 +510,8 @@ def native_csv(matrix, header=True, header_bar=True):
     else:
         start = 1
     for row in matrix[start:]:
-        csv_out.writerow(row)
+        unrender_row = [ansi_ctrl_strip(val) for val in row]
+        csv_out.writerow(unrender_row)
         lines = lines + 1
 
     return lines
