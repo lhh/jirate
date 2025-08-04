@@ -26,6 +26,11 @@ from jirate.jira_fields import apply_field_renderers, render_issue_fields, max_f
 from jirate.template_vars import apply_values
 from jirate.rqcache import RequestCache
 
+try:
+    import ollama
+except (ImportError, ModuleNotFoundError):
+    ollama = None
+    pass
 
 # Prevent case/typos/etc.
 _subtask = 'Sub-task'
@@ -1163,7 +1168,7 @@ def print_eausm_votes(project, issue):
         print()
 
 
-def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False, allowed_fields=None):
+def print_issue_header(project, issue_obj, verbose=False, no_comments=False, no_format=False, allowed_fields=None):
     if verbose:
         # Get votes and watchers in verbose mode
         project.votes(issue_obj)
@@ -1197,7 +1202,13 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         else:
             vsep_print(None, 0, 'Next States', lsize, 'No valid transitions; cannot alter status')
 
+
+def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=False, allowed_fields=None):
+
+    print_issue_header(project, issue_obj, verbose, no_comments, no_format, allowed_fields)
     print()
+    issue = issue_obj.raw['fields']
+
     if 'description' in issue and issue['description']:
         md_print(issue['description'], no_format)
         print()
@@ -1449,6 +1460,32 @@ def vote(args):
             args.project.jira.remove_vote(issue.key)
         else:
             args.project.jira.add_vote(issue.key)
+    return (0, False)
+
+
+def summaraize(args):  # Not a typo
+    issues = args.project.issues(args.issue_id)
+    ollama_config = args.project.get_user_data('ollama')
+    if not ollama_config:
+        ollama_config = {'model': 'gemma3n:latest'}
+
+    if 'host' in ollama_config and ollama_config['host']:
+        ollama_client = ollama.Client(ollama_config['host'])
+    else:
+        ollama_client = ollama.Client()
+
+    for issue in issues:
+        print_issue_header(args.project, issue, allowed_fields=args.fields)
+        # Aggregate description and comments into something that can be summarized
+        ai_question = 'summarize the following:\n\n'
+        ai_question += 'Current status: ' + issue.field('status')['name'] + '\n'
+        ai_question += 'Description:\n' + issue.field('description') + '\n\nComments:\n\n'
+        for cmt in issue.raw['fields']['comment']['comments']:
+            ai_question += f"On {pretty_date(cmt['updated'])}, {cmt['author']['name']} commented:\n{cmt['body']}\n\n"
+        message = {'role': 'user', 'content': ai_question}
+        ret = ollama_client.chat(ollama_config['model'], messages=[message], stream=False)
+        md_print(ret['message']['content'])
+
     return (0, False)
 
 
@@ -1713,6 +1750,11 @@ def create_parser():
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
     cmd.add_argument('-r', '--remove', default=False, action='store_true', help='Remove vote from issue(s)')
 
+    if ollama:
+        cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize) # no that's not a typo
+        cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
+        add_list_options(cmd)
+
     return parser
 
 
@@ -1758,7 +1800,7 @@ def main():
             project.request_cache.debug_dump()
         sys.exit(1)
     except Exception as err:
-        print(err)
+        raise
         sys.exit(1)
     if rc:
         ret = rc[0]
