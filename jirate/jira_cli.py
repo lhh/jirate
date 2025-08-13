@@ -1520,6 +1520,10 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
         jirate.decor.fancy_output = True
         if 'color_shift' in jconfig:
             jirate.decor.color_shift = int(jconfig['color_shift'])
+        if 'color_tint' in jconfig:
+            jirate.decor.color_tint = jconfig['color_tint']
+        if 'color_bg' in jconfig:
+            jirate.decor.color_bg= jconfig['color_bg']
 
     if not project:
         # Not sure why I used an array here

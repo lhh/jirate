@@ -24,6 +24,8 @@ except ModuleNotFoundError:  # pragma: no cover
 
 fancy_output = False
 color_shift = 16
+color_bg = None
+color_tint = None
 HILIGHT = '[1m'
 NORMAL = '[0m'
 
@@ -365,6 +367,11 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 def get_colors():
     if not fancy_output:
         return None
+    # Set these if you don't want Jirate to consume your keyboard interactions
+    # python doesn't have a putch() equivalent; it's needless complexity to add
+    # it.
+    if color_tint and color_bg:
+        return None
     if not color_shift:
         return None
     if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -426,6 +433,7 @@ def set_color(fg=None, bg=None, erase=False):
 
 def pretty_matrix(matrix, header=True, header_bar=True):
     global color_shift
+    global color_tint
 
     # Range test color_shift
     if not isinstance(color_shift, int):
@@ -442,6 +450,10 @@ def pretty_matrix(matrix, header=True, header_bar=True):
                 tint[idx] = bgcolor[idx] - color_shift
             else:
                 tint[idx] = bgcolor[idx] + color_shift
+    elif color_bg and color_tint:
+        colors = True
+        bgcolor = color_bg
+        tint = color_tint
 
     # total # of printed lines less header
     lines = 0
