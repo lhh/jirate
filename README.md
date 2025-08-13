@@ -35,6 +35,7 @@ Configuration is one of:
 - `cache_file` (Optional) - Where to store cached JIRA configuration data (default: `~/.jirate.cache`)
 - `fancy_output` (Optional) - If set to true, render some things as links and enable per-line visual separation for tables
 - `color_shift` (Optional) - Tune color separation when using `fancy_output`. (0..128; default=16)
+- `color_bg` and `color_tint` (Optional) - When both are set, uses these values as the background color and alternate background color when displaying matrices with `fancy_output`. (3-integer arrays `[0, 0, 0]` .. `[255, 255, 255]`)
 
 ### JIRA Custom field display configuration
 Each field in `custom_fields` is a dictionary. Jirate only cares about a few fields when defining custom rendering; most fields it automatically discerns by asking the server for the `/field` data:
