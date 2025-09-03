@@ -445,7 +445,6 @@ def set_color(fg=None, bg=None, erase=False):
 
 def pretty_matrix(matrix, header=True, header_bar=True):
     global color_shift
-    global color_tint
 
     try:
         screen_width = termios.tcgetwinsize(sys.stdout)[1]
