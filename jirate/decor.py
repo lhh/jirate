@@ -70,6 +70,7 @@ class EscapedString(str):
 
 
 def enable_fancy_output():
+    global fancy_output
     try:
         termios.tcgetwinsize(sys.stdout)
         fancy_output = True
