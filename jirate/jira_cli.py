@@ -1517,9 +1517,13 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     # Configure fancy output rendering if specified
     if 'fancy_output' in jconfig and jconfig['fancy_output']:
         import jirate.decor  # NOQA
-        jirate.decor.fancy_output = True
+        jirate.decor.enable_fancy_output()
         if 'color_shift' in jconfig:
             jirate.decor.color_shift = int(jconfig['color_shift'])
+        if 'color_tint' in jconfig:
+            jirate.decor.color_tint = jconfig['color_tint']
+        if 'color_bg' in jconfig:
+            jirate.decor.color_bg= jconfig['color_bg']
 
     if not project:
         # Not sure why I used an array here
@@ -1772,6 +1776,7 @@ def update_args(args):
 def main():
     parser = create_parser()
     args = update_args(sys.argv)
+    cmd = os.path.basename(sys.argv[0])
     ns = parser.parse_args(args=args[1:])
 
     field = None
@@ -1796,6 +1801,12 @@ def main():
         rc = parser.finalize(ns)
     except JIRAError as err:
         print(err)
+        if hasattr(err, 'status_code'):
+            if err.status_code == 401:
+                print(f'{cmd}: Authentication failure')
+            if err.status_code == 404:
+                print(f'{cmd}: HTTP 404 (not found)')
+                print(f'{cmd}: Hint: Jira sometimes returns 404 when a valid, but expired, token is used')
         if ns.debug:
             project.request_cache.debug_dump()
         sys.exit(1)

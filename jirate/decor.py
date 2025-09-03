@@ -24,6 +24,8 @@ except ModuleNotFoundError:  # pragma: no cover
 
 fancy_output = False
 color_shift = 16
+color_bg = None
+color_tint = None
 HILIGHT = '[1m'
 NORMAL = '[0m'
 
@@ -65,6 +67,14 @@ class EscapedString(str):
 
     def __radd__(self, other):
         return EscapedString(other.__str__() + self.__str__())
+
+
+def enable_fancy_output():
+    try:
+        termios.tcgetwinsize(sys.stdout)
+        fancy_output = True
+    except termios.error:
+        fancy_output = False
 
 
 def color_string(string, color=None, bgcolor=None):
@@ -274,7 +284,11 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
     consumed = 0
 
     if not screen_width:
-        screen_width = termios.tcgetwinsize(sys.stdout)[1]
+        try:
+            screen_width = termios.tcgetwinsize(sys.stdout)[1]
+        except termios.error:
+            screen_width = 1024
+
     args = list(vals)
 
     if not args:
@@ -365,6 +379,11 @@ def vsep_print(linesplit=None, screen_width=0, *vals):
 def get_colors():
     if not fancy_output:
         return None
+    # Set these if you don't want Jirate to consume your keyboard interactions
+    # python doesn't have a putch() equivalent; it's needless complexity to add
+    # it.
+    if color_tint and color_bg:
+        return None
     if not color_shift:
         return None
     if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -427,6 +446,11 @@ def set_color(fg=None, bg=None, erase=False):
 def pretty_matrix(matrix, header=True, header_bar=True):
     global color_shift
 
+    try:
+        screen_width = termios.tcgetwinsize(sys.stdout)[1]
+    except termios.error:
+        screen_width = 1024
+
     # Range test color_shift
     if not isinstance(color_shift, int):
         color_shift = 0
@@ -442,11 +466,14 @@ def pretty_matrix(matrix, header=True, header_bar=True):
                 tint[idx] = bgcolor[idx] - color_shift
             else:
                 tint[idx] = bgcolor[idx] + color_shift
+    elif color_bg and color_tint and fancy_output:
+        colors = True
+        bgcolor = color_bg
+        tint = color_tint
 
     # total # of printed lines less header
     lines = 0
     even = False
-    screen_width = termios.tcgetwinsize(sys.stdout)[1]
     # Renders a table with the right-most field truncated/wrapped if needed.
     # Undefined if the screen width is too wide to accommodate all but the
     # last field
