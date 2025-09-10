@@ -1430,6 +1430,7 @@ def sprint_info(args):
         board_by_id[board.id] = board
 
     matrix = [['name', 'id', 'status', 'start', 'end', 'board']]
+    active_sprint_ids = []
     for sprint in info['sprints']:
         sprint = info['sprints'][sprint]
         if sprint.state not in ('active', 'future') and not args.closed:
@@ -1438,10 +1439,18 @@ def sprint_info(args):
             board_name = board_by_id[sprint.originBoardId]
         except KeyError:
             board_name = '???'
+        if sprint.state in ('active'):
+            active_sprint_ids.append(sprint.id)
         matrix.append([sprint.name, sprint.id, sprint.state, pretty_date(sprint.startDate), pretty_date(sprint.endDate), board_name])
-    if len(info) > 1:
+
+    if args.list or len(active_sprint_ids) > 1:
+        if len(active_sprint_ids) > 1:
+            print('More than one active sprint found; listing sprints')
         header = not (args.format in ['csv'])
         render_matrix(matrix, fmt=args.format, header=header)
+    elif len(active_sprint_ids) == 1:
+        args.sprint_id = active_sprint_ids[0]
+        return sprint_info(args)
 
     return (0, False)
 
@@ -1740,6 +1749,7 @@ def create_parser():
 
     cmd = parser.command('sprint', help='Get Sprint information', handler=sprint_info)
     cmd.add_argument('sprint_id', help='If present, display issues in specific sprint', type=int, nargs='?')
+    cmd.add_argument('--list', '-l', help='List active and future sprints', action='store_true', default=False)
     cmd.add_argument('--all-types', '-A', help='When displaying sprint issues, include subtasks', action='store_true', default=False)
     cmd.add_argument('--new', help='When displaying issues, only list issues not in progress', default=False, action='store_true')
     cmd.add_argument('--raw', '-r', help='When displaying issues, include this additional JQL snippet')
