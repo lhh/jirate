@@ -164,7 +164,7 @@ class RequestCache(object):
             pass
         return False
 
-    def flush(self):
+    def flush(self, clean_all=False):
         for method in self.cached_reqs:
             if method == 'magic':
                 continue
@@ -172,7 +172,7 @@ class RequestCache(object):
             for url in self.cached_reqs[method]:
                 nuke = []
                 for item in self.cached_reqs[method][url]:
-                    if time.gmtime(item['expire']) <= time.gmtime():
+                    if clean_all or time.gmtime(item['expire']) <= time.gmtime():
                         # Expired
                         nuke.append(item)
                 for item in nuke:

@@ -1441,7 +1441,15 @@ def sprint_info(args):
             board_name = '???'
         if sprint.state in ('active'):
             active_sprint_ids.append(sprint.id)
-        matrix.append([sprint.name, sprint.id, sprint.state, pretty_date(sprint.startDate), pretty_date(sprint.endDate), board_name])
+        if hasattr(sprint, 'startDate'):
+            start_date = pretty_date(sprint.startDate)
+        else:
+            start_date = 'N/A'
+        if hasattr(sprint, 'endDate'):
+            end_date = pretty_date(sprint.endDate)
+        else:
+            end_date = 'N/A'
+        matrix.append([sprint.name, sprint.id, sprint.state, start_date, end_date, board_name])
 
     if args.list or len(active_sprint_ids) > 1:
         if len(active_sprint_ids) > 1:
@@ -1495,6 +1503,11 @@ def summaraize(args):  # Not a typo
         ret = ollama_client.chat(ollama_config['model'], messages=[message], stream=False)
         md_print(ret['message']['content'])
 
+    return (0, False)
+
+
+def clean_cache(args):
+    args.project.request_cache.flush(clean_all=True)
     return (0, False)
 
 
@@ -1763,6 +1776,8 @@ def create_parser():
     cmd = parser.command('vote', help='Apply your vote to an issue', handler=vote)
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
     cmd.add_argument('-r', '--remove', default=False, action='store_true', help='Remove vote from issue(s)')
+
+    cmd = parser.command('clean', help='Clear cache', handler=clean_cache)
 
     if ollama:
         cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize) # no that's not a typo
