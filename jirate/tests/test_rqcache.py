@@ -90,6 +90,23 @@ def test_rqcache_purge_expired():
     assert cache.cached_reqs == baseline
 
 
+def test_rqcache_purge_all():
+    session = TestSession()
+    cache = RequestCache(session, filename=None, expire=86400)
+    # Here, our baseline has no requests
+    baseline = copy.deepcopy(cache.cached_reqs)
+    session.get('https://whatever/rest/api/2/field')
+    # Now our cache has one request, which expires in 1 day
+    # Flushing the cache should not matter
+    cache.flush()
+    assert cache.cached_reqs != baseline
+
+    # Now purge everything
+    cache.flush(clean_all=True)
+    # Now, we should be back to baseline
+    assert cache.cached_reqs == baseline
+
+
 def test_rqcache_load_none(tmp_path):
     session = TestSession()
     cache = RequestCache(session, filename=None, expire=1)
