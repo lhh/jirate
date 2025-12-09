@@ -698,8 +698,11 @@ def create_issue(args):
 
     values['issuetype'] = metadata['name']
     values['project'] = args.project.project_name
+    (create_fields, update_fields) = split_fields(metadata['fields'], values)
 
-    issue = args.project.create(metadata['fields'], **values)
+    issue = args.project.create(metadata['fields'], **create_fields)
+    if update_fields:
+        issue.update(**update_fields)
     if args.quiet:
         print(issue.raw['key'])
     else:
@@ -779,6 +782,13 @@ def create_from_template(args):
     return (0, True)
 
 
+# Separate data fields which are not in the metadata into two dicts
+def split_fields(metadata, data, reserved=['project']):
+    out_fields = {x: data[x] for x in set(data.keys() - (metadata.keys() | set(reserved)))}
+    in_fields = {x: data[x] for x in data if x not in out_fields}
+    return (in_fields, out_fields)
+
+
 def _create_from_template(args, template):
     # Cache for issue createmeta information
     metadata_by_type = {}
@@ -831,7 +841,10 @@ def _create_from_template(args, template):
             existing_issue.update(**creation_fields)
             parent = existing_issue
         else:
-            parent = projects[pname].create(metadata['fields'], **creation_fields)
+            (create_fields, update_fields) = split_fields(metadata['fields'], creation_fields)
+            parent = projects[pname].create(metadata['fields'], **create_fields)
+            if update_fields:
+                parent.update(**update_fields)
         filed['parent'] = parent.key
 
         # Apply subtasks - but only to a parent which does not already have any
@@ -847,7 +860,10 @@ def _create_from_template(args, template):
                 start_fields['parent'] = parent.key
                 creation_fields = _parse_creation_args(subtask, required_fields, reserved_fields, start_vals=start_fields)
 
-                child = projects[pname].create(metadata['fields'], **creation_fields)
+                (create_fields, update_fields) = split_fields(metadata['fields'], creation_fields)
+                child = projects[pname].create(metadata['fields'], **create_fields)
+                if update_fields:
+                    child.update(**update_fields)
                 filed['subtasks'].append(child.key)
         all_filed.append(filed)
 
