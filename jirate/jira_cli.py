@@ -717,7 +717,9 @@ def create_from_template(args):
 
 
 # Separate data fields which are not in the metadata into two dicts
-def split_fields(metadata, data, reserved=['project']):
+# reserved fields are fields which are available during creation but
+# not be reported in createmeta for the issue type.
+def split_fields(metadata, data, reserved=['project', 'parent', 'issuetype']):
     out_fields = {x: data[x] for x in set(data.keys() - (metadata.keys() | set(reserved)))}
     in_fields = {x: data[x] for x in data if x not in out_fields}
     return (in_fields, out_fields)
@@ -1561,7 +1563,7 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
         if 'color_tint' in jconfig:
             jirate.decor.color_tint = jconfig['color_tint']
         if 'color_bg' in jconfig:
-            jirate.decor.color_bg= jconfig['color_bg']
+            jirate.decor.color_bg = jconfig['color_bg']
 
     if not project:
         # Not sure why I used an array here
@@ -1796,7 +1798,7 @@ def create_parser():
     cmd = parser.command('clean', help='Clear cache', handler=clean_cache)
 
     if ollama:
-        cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize) # no that's not a typo
+        cmd = parser.command('summarize', help='Summarize using Ollama', handler=summaraize)  # no that's not a typo
         cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
         add_list_options(cmd)
 
@@ -1851,7 +1853,7 @@ def main():
         if ns.debug:
             project.request_cache.debug_dump()
         sys.exit(1)
-    except Exception as err:
+    except Exception as err:  # NOQA
         raise
         sys.exit(1)
     if rc:
