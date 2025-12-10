@@ -783,7 +783,9 @@ def create_from_template(args):
 
 
 # Separate data fields which are not in the metadata into two dicts
-def split_fields(metadata, data, reserved=['project']):
+# reserved fields are fields which are available during creation but
+# not be reported in createmeta for the issue type.
+def split_fields(metadata, data, reserved=['project', 'parent', 'issuetype']):
     out_fields = {x: data[x] for x in set(data.keys() - (metadata.keys() | set(reserved)))}
     in_fields = {x: data[x] for x in data if x not in out_fields}
     return (in_fields, out_fields)
