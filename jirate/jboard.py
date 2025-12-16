@@ -545,16 +545,16 @@ class Jirate(object):
         (new_args, extra) = transmogrify_input(field_definitions, **args)
         issue = self.jira.create_issue(**new_args)
         if extra:
-            # XXX DEBUG / TEST ONLY; REMOVE BEFORE MERGE
-            print(f'Note: passing {extra} as update')
             # We had fields that weren't resolved on creation, so
             # perform an immediate update to resolve them
             update_fields = self.fields(issue)
             (update_args, unused) = transmogrify_input(update_fields, **extra)
-            issue.update(update_args)
-            # XXX DEBUG / TEST ONLY; REMOVE BEFORE MERGE
-            if new_extra:
-                print(f'Warning: {unused} unresolved')
+            # If there's no actual fields to update, don't call it.
+            # XXX: What if the issue is created but the extra field(s) are
+            #      not part of update metadata?
+            #      What is correct error course here?
+            if update_args:
+                issue.update(update_args)
         return issue
 
     def update_issue(self, issue_alias, field_definitions=None, **kwargs):
