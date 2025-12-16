@@ -215,6 +215,7 @@ def transmogrify_input(field_definitions, **args):
     drop_fields = ['attachment', 'reporter', 'issuelinks']  # These are not set during create/update
     simple_fields = ['project', 'issuetype', 'summary', 'description']                # Don't process these fields at all
     output = {}
+    unused = {}
     def_map = {}
 
     for field in field_definitions:
@@ -229,9 +230,10 @@ def transmogrify_input(field_definitions, **args):
             output[field] = value
             continue
         if field not in def_map:
+            unused[field] = value
             continue
         field_id = def_map[field]
         if field_id in drop_fields:
             continue
         output[field_id] = transmogrify_value(value, field_definitions[field_id])
-    return output
+    return (output, unused)
