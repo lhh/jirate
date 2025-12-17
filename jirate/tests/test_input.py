@@ -169,11 +169,11 @@ def test_trans_missing_option():
         transmogrify_input(fake_metadata, **{'option_value': 'Four'})
 
 
-def test_trans_missing_field():
+def test_trans_empty_out():
     inp = {'not_a_real_field': 'one'}
     out = {}
 
-    assert transmogrify_input(fake_metadata, **inp) == (out, {})
+    assert transmogrify_input(fake_metadata, **inp) == (out, inp)
 
 
 def test_trans_user_value():
