@@ -18,7 +18,7 @@ def test_trans_string_reflective():
     inp = {'description': 'This is a description'}
     out = {'description': 'This is a description'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_string_nym():
@@ -26,35 +26,43 @@ def test_trans_string_nym():
     inp = {'Description': 'This is a description'}
     out = {'description': 'This is a description'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_priority():
     inp = {'Priority': 'blocker'}
     out = {'priority': {'name': 'Blocker'}}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
+
+
+def test_trans_extra():
+    inp = {'Priority': 'blocker', 'pUmPeRnIcKeL': 'bread'}
+    out = {'priority': {'name': 'Blocker'}}
+    extra = {'pUmPeRnIcKeL': 'bread'}
+
+    assert transmogrify_input(fake_metadata, **inp) == (out, extra)
 
 
 def test_trans_custom_basic():
     inp = {'fixed_in_build': 'build123'}
     out = {'customfield_1234567': 'build123'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_number():
     inp = {'score': '1'}
     out = {'customfield_1234568': 1.0}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_options():
     inp = {'array_of_options': 'One,Two'}
     out = {'customfield_1234569': [{'value': 'One'}, {'value': 'Two'}]}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_missing_option():
@@ -66,77 +74,77 @@ def test_trans_array_versions():
     inp = {'array_of_versions': '1.0.1,1.0.2'}
     out = {'customfield_1234570': [{'name': '1.0.1'}, {'name': '1.0.2'}]}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_users():
     inp = {'array_of_users': 'user1,user2'}
     out = {'customfield_1234571': [{'name': 'user1'}, {'name': 'user2'}]}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_strings():
     inp = {'array_of_strings': '"string one","string 2"'}
     out = {'customfield_1234572': ['string one', 'string 2']}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_groups():
     inp = {'array_of_groups': 'group1,group2'}
     out = {'customfield_1234573': [{'name': 'group1'}, {'name': 'group2'}]}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_array_any():
     inp = {'any_value': 'one,2'}
     out = {'customfield_1234574': 'one,2'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_sprint():
     inp = {'sprint': '12345'}
     out = {'customfield_10390940': 12345}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_sprint_list():
     inp = {'sprint': [12345, 23456]}
     out = {'customfield_10390940': 12345}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_parent():
     inp = {'parent_link': 'what-123'}
     out = {'customfield_103949473': 'WHAT-123'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_parent_list():
     inp = {'parent_link': ['what-123', 'what-234']}
     out = {'customfield_103949473': 'WHAT-123'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_epic():
     inp = {'epic_link': 'what-123'}
     out = {'customfield_283949317': 'WHAT-123'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_epic_drop():
     inp = {'epic_link': 'what-123', 'attachment': 'hello'}
     out = {'customfield_283949317': 'WHAT-123'}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 
@@ -153,7 +161,7 @@ def test_trans_option():
     inp = {'option_value': 'one'}
     out = {'customfield_1234578': {'value': 'One'}}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_missing_option():
@@ -161,25 +169,25 @@ def test_trans_missing_option():
         transmogrify_input(fake_metadata, **{'option_value': 'Four'})
 
 
-def test_trans_missing_field():
+def test_trans_empty_out():
     inp = {'not_a_real_field': 'one'}
     out = {}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, inp)
 
 
 def test_trans_user_value():
     inp = {'User Value': 'user1'}
     out = {'customfield_1234580': {'name': 'user1'}}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_version_value():
     inp = {'version_value': '1.0.1'}
     out = {'customfield_1234581': {'name': '1.0.1'}}
 
-    assert transmogrify_input(fake_metadata, **inp) == out
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_missing_version():

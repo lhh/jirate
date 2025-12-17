@@ -67,7 +67,7 @@ def _update_field(issue, field_name_human, value_human, operation='set', fields=
 
     # TODO multi-field sets?
     field_args = {field_name_human: value_human}
-    output_args = transmogrify_input(fields, **field_args)
+    output_args = transmogrify_input(fields, **field_args)[0]
 
     if not output_args:
         raise AttributeError(f'No field like \'{field_name_human}\' in {issue.key}')
@@ -542,8 +542,20 @@ class Jirate(object):
             args['project'] = project
 
         # Transmogrify other fields
-        new_args = transmogrify_input(field_definitions, **args)
-        return self.jira.create_issue(**new_args)
+        (new_args, extra) = transmogrify_input(field_definitions, **args)
+        issue = self.jira.create_issue(**new_args)
+        if extra:
+            # We had fields that weren't resolved on creation, so
+            # perform an immediate update to resolve them
+            update_fields = self.fields(issue)
+            (update_args, unused) = transmogrify_input(update_fields, **extra)
+            # If there's no actual fields to update, don't call it.
+            # XXX: What if the issue is created but the extra field(s) are
+            #      not part of update metadata?
+            #      What is correct error course here?
+            if update_args:
+                issue.update(update_args)
+        return issue
 
     def update_issue(self, issue_alias, field_definitions=None, **kwargs):
         """Update an issue using key/value pairs
@@ -779,7 +791,7 @@ class Jirate(object):
 
             data = {'transition': {'id': transition['id']}}
             if args and 'fields' in transition:
-                new_args = transmogrify_input(transition['fields'], **args)
+                new_args = transmogrify_input(transition['fields'], **args)[0]
                 data['fields'] = new_args
                 if new_args == {}:
                     oops = [args.keys()]
