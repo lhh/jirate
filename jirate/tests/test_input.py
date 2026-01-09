@@ -147,14 +147,15 @@ def test_trans_epic_drop():
     assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
-
 # TODO: Fixup date and datetime; these should take various input formats
 # but are strings
 
 
 def test_trans_issuelink():
     inp = {'related_issue': 'TEST-2'}
-    out = {'customfield_1234577': {'name': 'TEST-2'}}
+    out = {'customfield_1234577': 'TEST-2'}
+
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
 def test_trans_option():
