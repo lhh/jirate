@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-from jirate.tests import fake_jira, fake_user, fake_transitions, fake_metadata, fake_fields
+from jirate.tests import fake_jira, fake_metadata, fake_fields
 from jirate.args import GenericArgs
-from jirate.jira_cli import _parse_creation_args, _create_from_template, _serialize_issue, _generate_template, \
+from jirate.jira_cli import _parse_creation_args, _create_from_template, _generate_template, \
     validate_template
 from jirate.jboard import JiraProject
 from jirate.jira_fields import apply_field_renderers
@@ -209,10 +209,9 @@ def test_create_from_template_multiple_types():
 def test_generate_template_simple():
     # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
     actual = {'issues': [
-                {'summary': 'Test 1',
-                 'issue_type': 'Bug',
-                 'description': 'Test Description 1'}
-                ]}
+              {'summary': 'Test 1',
+               'issue_type': 'Bug',
+               'description': 'Test Description 1'}]}
     allow_fields = list(actual['issues'][0].keys())
     generated = _generate_template(fake_jira().issue('TEST-1').raw['fields'],
                                    fake_jirate.field_to_alias,
@@ -225,11 +224,10 @@ def test_generate_template_simple():
 def test_generate_template_customfield():
     # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
     actual = {'issues': [
-                {'summary': 'Test 1',
-                 'issue_type': 'Bug',
-                 'description': 'Test Description 1',
-                 'fixed_in_build': 'test-build-1'}
-                ]}
+              {'summary': 'Test 1',
+               'issue_type': 'Bug',
+               'description': 'Test Description 1',
+               'fixed_in_build': 'test-build-1'}]}
     allow_fields = list(actual['issues'][0].keys())
 
     generated = _generate_template(fake_jira().issue('TEST-1').raw['fields'],
@@ -242,12 +240,11 @@ def test_generate_template_customfield():
 def test_generate_template_subtasks():
     # Note this uses the fake_issues found in __init__.py, not from the create_from_template tests
     actual = {'issues': [
-                {'summary': 'Test 3 (parent task)',
-                 'issue_type': 'Bug',
-                 'sub_tasks': [
-                     {'summary': 'Test 4 (subtask of Test 3)',
-                      'issue_type': 'Sub-task'}
-                 ]}]}
+              {'summary': 'Test 3 (parent task)',
+               'issue_type': 'Bug',
+               'sub_tasks': [
+                   {'summary': 'Test 4 (subtask of Test 3)',
+                    'issue_type': 'Sub-task'}]}]}
     allow_fields = list(actual['issues'][0].keys())
 
     generated = _generate_template(fake_jira().issue('TEST-3').raw['fields'],
