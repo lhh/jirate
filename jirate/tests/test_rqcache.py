@@ -180,4 +180,3 @@ def test_user_break(tmp_path):
     cache.user_breaks = {'GET': [url]}
     with pytest.raises(Exception):
         session.get(url)
-
