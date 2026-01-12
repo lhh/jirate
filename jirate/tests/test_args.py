@@ -62,7 +62,7 @@ def test_second_command(args):
     args.command('test-two', help='Test command', handler=handler_two)
     parsed_args = args.parse_args(args=['test-two'])
     result = args.finalize(parsed_args)
-    assert result == None
+    assert result is None
 
 
 def test_command_duplicate(args):

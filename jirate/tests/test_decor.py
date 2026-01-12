@@ -221,4 +221,4 @@ def test_nym_custom_remove():
 
 def test_nym_empty_input():
     assert nym('') == ''
-    assert nym(None) == None
+    assert nym(None) is None
