@@ -6,10 +6,8 @@ Comprehensive unit tests for ComplicatedArgs and GenericArgs classes
 import unittest
 import argparse
 
-# Add the project root to Python path so we can import jirate modules
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from jirate.args import ComplicatedArgs, GenericArgs
 
@@ -25,7 +23,7 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test that ComplicatedArgs initializes correctly"""
         # Check that parser is an ArgumentParser instance
         self.assertIsInstance(self.args.parser(), argparse.ArgumentParser)
-        
+
         # Check internal state
         self.assertEqual(self.args._commands, {})
         self.assertEqual(self.args._handlers, {})
@@ -37,7 +35,7 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test adding arguments to the parser"""
         # Add an argument
         self.args.add_argument('--test', type=int, help='Test argument')
-        
+
         # Parse arguments
         parsed_args = self.args.parse_args(args=['--test', '10'])
         self.assertEqual(parsed_args.test, 10)
@@ -46,11 +44,11 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test adding additional arguments to namespace"""
         # Add an argument to the internal args dict
         self.args.add_arg('extra', 'value')
-        
+
         # Create a namespace and finalize it
         ns = argparse.Namespace()
         self.args.finalize(ns)
-        
+
         # Check that the extra argument was added to namespace
         self.assertTrue(hasattr(ns, 'extra'))
         self.assertEqual(ns.extra, 'value')
@@ -59,11 +57,11 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test creating commands with subparsers"""
         # Create a command
         parser = self.args.command('test', help='Test command')
-        
+
         # Verify the command was added
         self.assertIn('test', self.args._commands)
         self.assertIsNotNone(self.args._subparsers)
-        
+
         # Verify parser is an ArgumentParser instance
         self.assertIsInstance(parser, argparse.ArgumentParser)
 
@@ -72,14 +70,14 @@ class TestComplicatedArgs(unittest.TestCase):
         # Define a mock handler function
         def mock_handler(ns):
             return "handler_result"
-        
+
         # Create command with handler
         self.args.command('test', help='Test command', handler=mock_handler)
-        
+
         # Parse and finalize
         parsed_args = self.args.parse_args(args=['test'])
         result = self.args.finalize(parsed_args)
-        
+
         # Verify handler was called
         self.assertEqual(result, "handler_result")
 
@@ -88,18 +86,18 @@ class TestComplicatedArgs(unittest.TestCase):
         # Create two commands with different handlers
         def handler_one(ns):
             return "first_result"
-        
+
         def handler_two(ns):
             return "second_result"
-        
+
         self.args.command('first', help='First command', handler=handler_one)
         self.args.command('second', help='Second command', handler=handler_two)
-        
+
         # Test first command
         parsed_args = self.args.parse_args(args=['first'])
         result = self.args.finalize(parsed_args)
         self.assertEqual(result, "first_result")
-        
+
         # Test second command
         parsed_args = self.args.parse_args(args=['second'])
         result = self.args.finalize(parsed_args)
@@ -109,7 +107,7 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test that duplicate commands raise ValueError"""
         # Create first command
         self.args.command('test')
-        
+
         # Try to create duplicate - should raise ValueError
         with self.assertRaises(ValueError):
             self.args.command('test')
@@ -125,22 +123,22 @@ class TestComplicatedArgs(unittest.TestCase):
         # Define mock handler
         def mock_handler(ns):
             return "handler_result"
-        
+
         # Create command with handler
         self.args.command('test', handler=mock_handler)
-        
+
         # Verify handler exists
         parsed_args = self.args.parse_args(args=['test'])
         result = self.args.finalize(parsed_args)
         self.assertEqual(result, "handler_result")
-        
+
         # Delete the handler
         self.args.delete_handler('test')
-        
+
         # Handler should no longer be called
         result = self.args.finalize(parsed_args)
         self.assertIsNone(result)
-        
+
         # Try to delete non-existent handler
         with self.assertRaises(ValueError):
             self.args.delete_handler('nonexistent')
@@ -149,7 +147,7 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test parsing arguments"""
         # Add argument
         self.args.add_argument('--value', type=int)
-        
+
         # Parse arguments
         parsed_args = self.args.parse_args(args=['--value', '5'])
         self.assertEqual(parsed_args.value, 5)
@@ -165,11 +163,11 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test accessing the parsed namespace"""
         # Add argument
         self.args.add_argument('--value', type=int)
-        
+
         # Parse and finalize
         parsed_args = self.args.parse_args(args=['--value', '5'])
         self.args.finalize(parsed_args)
-        
+
         # Access namespace through method
         ns = self.args.namespace()
         self.assertTrue(hasattr(ns, 'value'))
@@ -180,15 +178,15 @@ class TestComplicatedArgs(unittest.TestCase):
         # Define a handler that uses parsed arguments
         def complex_handler(ns):
             return f"Command: {ns.command}, Value: {getattr(ns, 'value', 'not_set')}"
-        
+
         # Create command with arguments
-        cmd_parser = self.args.command('complex', help='Complex command')
+        cmd_parser = self.args.command('complex', help='Complex command', handler=complex_handler)
         cmd_parser.add_argument('--value', type=str, default='default_value')
-        
+
         # Parse and finalize
         parsed_args = self.args.parse_args(args=['complex', '--value', 'test_value'])
         result = self.args.finalize(parsed_args)
-        
+
         # Verify result contains expected values
         self.assertIn("Command: complex", result)
         self.assertIn("Value: test_value", result)
@@ -198,7 +196,7 @@ class TestComplicatedArgs(unittest.TestCase):
         # Create empty namespace and finalize
         ns = argparse.Namespace()
         result = self.args.finalize(ns)
-        
+
         # Should return None since no command was specified
         self.assertIsNone(result)
 
@@ -206,10 +204,10 @@ class TestComplicatedArgs(unittest.TestCase):
         """Test handling of attribute errors in finalize"""
         # Create namespace without command attribute
         ns = argparse.Namespace()
-        
+
         # This should not raise an exception due to the try/except block
         result = self.args.finalize(ns)
-        
+
         # Should return None since no command was specified
         self.assertIsNone(result)
 
@@ -257,9 +255,9 @@ class TestGenericArgs(unittest.TestCase):
         generic_args = GenericArgs()
 
         # Set multiple attributes
-        generic_args.name = "test"
-        generic_args.count = 42
-        generic_args.active = True
+        generic_args['name'] = "test"
+        generic_args['count'] = 42
+        generic_args['active'] = True
 
         # Verify all can be accessed
         self.assertEqual(generic_args.name, "test")
