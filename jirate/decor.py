@@ -96,19 +96,38 @@ def color_string(string, color=None, bgcolor=None):
     ret_string = '{0}{1}{2}[0m'.format(fg_color, bg_color, string)
 
     return EscapedString(ret_string)
-    
+
 
 def link_string(text, url):
     if not fancy_output:
         return None
 
     return EscapedString(f']8;;{url}\x07{text}]8;;\x07')
-    
+
 
 def ansi_ctrl_strip(text):
+    """
+    Removes ANSI control sequences and formatting codes from a string.
+
+    This function strips out various types of ANSI escape sequences that are
+    commonly used for terminal formatting, including:
+    - Simple control sequences like \x1b[78M]
+    - Basic ANSI escape codes that end with specific terminators
+    - Hyperlink escape sequences (e.g., \x1b]8;;url\x07text\x1b]8;;\x07)
+
+    It iteratively removes these sequences until no more can be found,
+    ensuring that all formatting codes are stripped out and only the
+    plain text content remains.
+
+    Args:
+        text (str): The input string potentially containing ANSI control codes.
+
+    Returns:
+        str: The input string with all ANSI control sequences removed.
+    """
     ansi_simple_rx = '\x1b[78M]'
     ansi_basic_terminator = 'ABCDEFGHJKLfhmn'
-    ansi_basic_rx = f'\x1b\\[[^{ansi_basic_terminator}]+[{ansi_basic_terminator}]'    
+    ansi_basic_rx = f'\x1b\\[[^{ansi_basic_terminator}]+[{ansi_basic_terminator}]'
     ansi_link_rx = '\x1b\\]8;;([^\x07]+)\x07([^\x1b]+)\x1b\\]8;;\x07'
 
     output = text
@@ -127,6 +146,22 @@ def ansi_ctrl_strip(text):
 
 
 def issue_link_string(issue_key, baseurl=None):
+    """
+    Generate a formatted link string for an issue key.
+
+    This function creates a clickable hyperlink to the issue in a web interface
+    if fancy output is enabled and a base URL is provided. Otherwise, it returns
+    the issue key as a plain string.
+
+    Args:
+        issue_key (str): The identifier for the issue (e.g., "PROJ-123").
+        baseurl (str, optional): The base URL of the issue tracking system.
+                                 If not provided or fancy output is disabled,
+                                 the function returns the issue key as-is.
+
+    Returns:
+        str: A formatted string containing either a hyperlink or the plain issue key.
+    """
     if not baseurl or not fancy_output:
         return issue_key
 
@@ -134,6 +169,23 @@ def issue_link_string(issue_key, baseurl=None):
 
 
 def parse_params(arg):
+    """
+    Parse a parameter string into a list of individual parameters.
+
+    This function takes an argument that may be a list or a string, and
+    processes it to return a list of parameters. If the argument is already
+    a list, it is returned as-is. If it's a string, it is parsed using CSV
+    reader to handle cases where parameters might be quoted or contain commas.
+
+    Args:
+        arg (list or str): The input argument to parse. Can be a list of
+                           parameters or a string containing comma-separated
+                           parameters.
+
+    Returns:
+        list: A list of parsed parameter strings.
+    """
+    # If the argument is already a list, return it directly
     if isinstance(arg, list):
         return arg
 
@@ -194,6 +246,24 @@ def pretty_date(date_str):
 
 
 def hbar(tl, widths=None, separator='╋'):
+    """
+    Generate a horizontal bar string with optional column separators.
+
+    This function creates a horizontal line made of Unicode characters,
+    useful for formatting tables or dividing sections in terminal output.
+    The length and structure of the bar can be customized based on input
+    parameters.
+
+    Args:
+        tl (int): The total length of the horizontal bar to generate.
+        widths (list of int, optional): A list of column widths used to
+                                        determine where to place separators.
+        separator (str): The character to use for column separators.
+                         Defaults to '╋'.
+
+    Returns:
+        None: This function prints the generated bar directly to stdout.
+    """
     if tl == 1:
         val = '┄'
     elif tl == 2:

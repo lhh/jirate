@@ -126,7 +126,7 @@ def test_rqcache_load_bad(tmp_path):
     # Bad magic # Note: doing this to your cache then
     # reading it, your object's behavior is undefined
     del cache.cached_reqs['magic']
-    assert cache.save() == None  # pickle.dump returns None
+    assert cache.save() is None  # pickle.dump returns None
     # This will wipe the file
     cache.load()
 
@@ -136,7 +136,7 @@ def test_rqcache_load_bad(tmp_path):
 
     # No save
     cache._cache_file = None
-    assert cache.save() == None
+    assert cache.save() is None
 
 
 def test_rqcache_persist(tmp_path):
@@ -180,4 +180,3 @@ def test_user_break(tmp_path):
     cache.user_breaks = {'GET': [url]}
     with pytest.raises(Exception):
         session.get(url)
-
