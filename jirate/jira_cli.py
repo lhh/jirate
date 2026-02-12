@@ -442,6 +442,7 @@ def issue_fields(args):
 
     if display:
         matrix = [['Field', 'Allowed Values']]
+        field_info = {}
         for field in fields:
             if field.startswith('customfield_'):
                 fname = nym(fields[field]['name'])
@@ -460,6 +461,9 @@ def issue_fields(args):
                     else:
                         values.append(val['id'])
                 fvalue = comma_separated(values)
+            field_info[fname] = fvalue
+        for fname in sorted([key for key in field_info]):
+            fvalue = field_info[fname]
             matrix.append([fname, fvalue])
         render_matrix(matrix)
         return (0, False)
