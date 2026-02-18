@@ -264,17 +264,22 @@ class Jirate(object):
         Returns:
           list of jira.resources.Issue
         """
-        index = 0
-        chunk_len = 50      # So we can detect end
-        ret = []
-        while True:
-            issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
-            if not len(issues):
+        # Don't chunk in cloud.
+        if self.jira._is_cloud:
+            ret = self.jira.search_issues(search_query)
+        else:
+            index = 0
+            chunk_len = 50      # So we can detect end
+            ret = []
+            while True:
+                issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
                 break
-            ret.extend(issues)
-            index = index + len(issues)
-            if len(issues) < chunk_len:
-                break
+                if not len(issues):
+                    break
+                ret.extend(issues)
+                index = index + len(issues)
+                if len(issues) < chunk_len:
+                    break
         for issue in ret:
             _resolve_field_setup(self, issue)
         return ret
