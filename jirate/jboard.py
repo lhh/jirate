@@ -273,7 +273,6 @@ class Jirate(object):
             ret = []
             while True:
                 issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
-                break
                 if not len(issues):
                     break
                 ret.extend(issues)
