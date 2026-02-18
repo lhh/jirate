@@ -281,10 +281,10 @@ def print_issues(issue_list, args=None, exclude_fields=[]):
 
 
 def print_users(users):
-    matrix = [['Name', 'User Name', 'Email Address']]
+    matrix = [['Name', 'Email Address']]
 
     for user in users:
-        matrix.append([user.displayName, user.name, user.emailAddress])
+        matrix.append([user.displayName, user.emailAddress])
     render_matrix(matrix)
 
 

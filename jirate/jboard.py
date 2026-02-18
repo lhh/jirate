@@ -162,7 +162,7 @@ class Jirate(object):
         # Search userlist for a username.  This is provided like this
         # so we can expand functionality later. Max is 50 by default;
         # we'll start with that
-        users = self.jira.search_users(username)
+        users = self.jira.search_users(query=username)
         return users
 
     def field_to_id(self, alias_or_human):
@@ -359,7 +359,7 @@ class Jirate(object):
             return None
         if username == 'me':
             return self.user['emailAddress']
-        users = self.jira.search_users(username)
+        users = self.jira.search_users(query=username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
         elif not users:
