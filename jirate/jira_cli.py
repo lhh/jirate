@@ -281,10 +281,19 @@ def print_issues(issue_list, args=None, exclude_fields=[]):
 
 
 def print_users(users):
-    matrix = [['Name', 'Email Address']]
+    if hasattr(users[0], 'name'):
+        matrix = [['Name', 'Email Address', 'Username']]
+        for user in users:
+            matrix.append([user.displayName, user.emailAddress, user.name])
+    else:
+        matrix = [['Name', 'Email Address', 'User ID']]
+        for user in users:
+            if hasattr(user, 'emailAddress'):
+                em = user.emailAddress
+            else:
+                em = ''
+            matrix.append([user.displayName, em, user.accountId])
 
-    for user in users:
-        matrix.append([user.displayName, user.emailAddress])
     render_matrix(matrix)
 
 
