@@ -458,6 +458,8 @@ def issue_fields(args):
                         values.append(val['name'])
                     elif 'value' in val:
                         values.append(val['value'])
+                    elif 'displayName' in val:
+                        values.append(val['displayName'])
                     else:
                         values.append(val['id'])
                 fvalue = comma_separated(values)
