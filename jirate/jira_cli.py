@@ -1067,7 +1067,7 @@ def comment(args):
 
 def display_comment(server_url, comment, verbose, no_format):
     # Let's get fancy
-    commentator_url = f"{server_url}/secure/ViewProfile.jspa?name={comment['updateAuthor']['key']}"
+    commentator_url = comment['updateAuthor']['self']
     commentator = link_string(comment['updateAuthor']['displayName'], commentator_url)
     print(commentator, '-', pretty_date(comment['updated']), '• ID:', comment['id'])
     if 'visibility' in comment:
