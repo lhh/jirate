@@ -67,7 +67,15 @@ def name(field, fields, as_object=False):
 
 
 def user(field, fields, as_object=False):
-    return field['displayName'] + ' - ' + field['emailAddress']
+    # Jira Cloud allows accounts without email addresses
+    if 'emailAddress' in field and 'displayName' in field:
+        return field['displayName'] + ' - ' + field['emailAddress']
+    elif 'displayName' in field:
+        return field['displayName']
+    elif 'accountId' in field:
+        return field['accountId']
+    else:
+        return field
 
 
 def user_list(field, fields, as_object=False):
@@ -244,6 +252,11 @@ _base_fields = [
     },
     {
         'id': 'status',
+        'name': 'Status',
+        'display': 'name'
+    },
+    {
+        'id': 'statusCategory',
         'name': 'Status',
         'display': 'name'
     },
