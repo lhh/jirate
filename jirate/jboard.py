@@ -358,14 +358,20 @@ class Jirate(object):
         if not username or username.lower() == 'none':
             return None
         if username == 'me':
-            return self.user['emailAddress']
+            if 'name' in self.user:
+                return self.user['name']
+            return self.user['accountId']
         users = self.jira.search_users(query=username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
         elif not users:
             raise ValueError(f'No matching users for \'{username}\'')
 
-        return users[0].name
+        try:
+            return users[0].name
+        except:
+            pass
+        return users[0].accountId
 
     def api_call(self, uri, raw=False):
         url = self.jira._get_url(uri)
@@ -392,6 +398,7 @@ class Jirate(object):
         if isinstance(users, str):
             users = [users]
         issues = self.issues(issue_aliases)
+        print (issues)
 
         for issue in issues:
             user_ids = []
@@ -404,7 +411,10 @@ class Jirate(object):
                         user_ids.append(uid)
             else:
                 # Just me
-                user = self.user['name']
+                if 'name' in self.user:
+                    user = self.user['name']
+                elif 'accountId' in self.user:
+                    user = self.user['accountId']
                 user_ids = [user]
                 # user_ids = [user['id']]
 
@@ -412,7 +422,7 @@ class Jirate(object):
                 return
 
             user = user_ids.pop(0)
-            issue.update(assignee=user)
+            self.jira.assign_issue(issue.key, user)
 
     def sprint_info(self, project_key, states=['active', 'future']):
         """Retrieve all sprints and boards for a project.
