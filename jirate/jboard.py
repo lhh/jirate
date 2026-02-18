@@ -353,7 +353,7 @@ class Jirate(object):
         if not username or username.lower() == 'none':
             return None
         if username == 'me':
-            return self.user['name']
+            return self.user['emailAddress']
         users = self.jira.search_users(username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
@@ -1185,4 +1185,12 @@ def get_jira(jconfig):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
+    if 'username' in jconfig:
+        try:
+            ret = JIRA(jconfig['url'], basic_auth=(jconfig['username'], jconfig['token']), proxies=jconfig['proxies'])
+            return ret
+        except:
+            pass
+
+    # Pass #2: token auth
     return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])
