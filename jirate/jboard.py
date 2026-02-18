@@ -1145,6 +1145,7 @@ class JiraProject(Jirate):
         if not project_key:
             project_key = self.project_name
         itype = None
+        # BUG: This should get the issue types for the project if not None
         for issuetype in self.issue_types:
             if issuetype.id == issue_type_or_id or nym(issuetype.name) == nym(issue_type_or_id):
                 itype = issuetype
@@ -1154,13 +1155,21 @@ class JiraProject(Jirate):
         fields = []
         start = 0
         chunk_len = 50
-        while True:
-            new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
-            for field in new_fields:
-                fields.append(field.raw)
-            if new_fields.isLast:
-                break
-            start = start + chunk_len
+
+        # Work around pyjira bug. This API is the current documented way, but the return JSON now uses
+        # 'fields' instead of 'values'. The project_issue_fields() call would look at 'values' now.
+        if self.jira._is_cloud:
+            # BUG: not paginated
+            fields_raw = self.api_call(f'issue/createmeta/{project_key}/issuetypes/{itype.id}')
+            fields = fields_raw['fields']
+        else:
+            while True:
+                new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
+                for field in new_fields:
+                    fields.append(field.raw)
+                if new_fields.isLast:
+                    break
+                start = start + chunk_len
 
         field_dict = {val['fieldId']: val for val in fields}
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
