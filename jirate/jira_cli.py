@@ -1481,7 +1481,9 @@ def sprint_info(args):
 def eausm_vote(args):
     issues = args.project.issues(args.issue_id)
     for issue in issues:
-        args.project.eausm_vote_issue(issue, args.vote)
+        if not args.project.eausm_vote_issue(issue, args.vote):
+            print('EAUSM Vote APIs seem to be disabled')
+            return (1, False)
     return (0, False)
 
 

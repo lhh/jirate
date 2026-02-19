@@ -712,7 +712,10 @@ class Jirate(object):
 
         EAUSM_url = f"{self.jira.server_url}/rest/eausm/latest/planningPoker/vote"
         payload = {"issueId": issue.id, "vote": vote}
-        ret = self.jira._session.put(EAUSM_url, data=payload)
+        try:
+            ret = self.jira._session.put(EAUSM_url, data=payload)
+        except JIRAError:
+            return False
         if not ret:
             return False
         return True
@@ -1047,7 +1050,11 @@ class JiraProject(Jirate):
     def eausm_vote_issue(self, issue_alias, votes):
         if 'eausm' in self._config and not self._config['eausm']:
             return False
-        return super().eausm_vote_issue(issue_alias, votes)
+        ret = super().eausm_vote_issue(issue_alias, votes)
+        if ret is False:
+            self._config['eausm'] = False
+            return None
+        return ret
 
     def states(self):
         return copy.copy(self._config['states'])
