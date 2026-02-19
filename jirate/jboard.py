@@ -1165,6 +1165,7 @@ class JiraProject(Jirate):
 
         # Work around pyjira bug. This API is the current documented way, but the return JSON now uses
         # 'fields' instead of 'values'. The project_issue_fields() call would look at 'values' now.
+        # https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-createmeta-projectidorkey-issuetypes-get
         if self.jira._is_cloud:
             # BUG: not paginated
             fields_raw = self.api_call(f'issue/createmeta/{project_key}/issuetypes/{itype.id}')
@@ -1174,7 +1175,7 @@ class JiraProject(Jirate):
                 new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
                 for field in new_fields:
                     fields.append(field.raw)
-                if new_fields.isLast:
+                if new_fields.isLast or len(new_fields) < chunk_len:
                     break
                 start = start + chunk_len
 
