@@ -1452,10 +1452,10 @@ def sprint_info(args):
             continue
         try:
             board_name = board_by_id[sprint.originBoardId]
+            if sprint.state in ('active'):
+                active_sprint_ids.append(sprint.id)
         except KeyError:
             board_name = '???'
-        if sprint.state in ('active'):
-            active_sprint_ids.append(sprint.id)
         if hasattr(sprint, 'startDate'):
             start_date = pretty_date(sprint.startDate)
         else:
