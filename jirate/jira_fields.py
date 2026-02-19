@@ -10,10 +10,18 @@ from jirate.jira_custom import custom_field_renderers
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
 #
-def _list_of_key(field, key, as_object=False):
+def _list_of_key(field, keys, as_object=False):
+    if not isinstance(keys, list) and not isinstance(keys, tuple):
+        keys = [keys]
+    ret = []
+    for item in field:
+        for key in keys:
+            if key in item:
+                ret.append(item[key])
+                break
     if as_object:
-        return list([item[key] for item in field])
-    return comma_separated([item[key] for item in field])
+        return ret
+    return comma_separated(ret)
 
 
 def string(field, fields, as_object=False):
@@ -81,7 +89,7 @@ def user(field, fields, as_object=False):
 def user_list(field, fields, as_object=False):
     # Until we take email addresses as input, we should use
     # user names only when presenting lists of users
-    return _list_of_key(field, 'name', as_object)
+    return _list_of_key(field, ['name', 'displayName'], as_object)
 
 
 def array(field, fields, as_object=False):
