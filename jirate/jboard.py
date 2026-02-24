@@ -403,7 +403,6 @@ class Jirate(object):
         if isinstance(users, str):
             users = [users]
         issues = self.issues(issue_aliases)
-        print (issues)
 
         for issue in issues:
             user_ids = []
