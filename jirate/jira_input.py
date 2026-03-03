@@ -142,7 +142,7 @@ def allowed_value_validate(field_name, values, allowed_values=None):
                 continue
 
             # Not sure why we care about name vs. value; value only is fine
-            for key in ['name', 'value']:
+            for key in ['name', 'value', 'displayName']:
                 if key not in av:
                     continue
                 cv = check_value(val, av[key])

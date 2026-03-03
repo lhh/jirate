@@ -68,5 +68,5 @@ def test_parser_name():
 def test_parser_user():
     assert jirate.jira_fields.user(singleton_value, fields) == 'Rory Obert - robert@thepie.com'
 
-    with pytest.raises(KeyError):
-        jirate.jira_fields.user({}, fields)
+    # The new jira API has different fields, and we allow them all to be empty
+    assert jirate.jira_fields.user({}, fields) == {}

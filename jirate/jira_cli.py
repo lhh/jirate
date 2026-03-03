@@ -281,10 +281,19 @@ def print_issues(issue_list, args=None, exclude_fields=[]):
 
 
 def print_users(users):
-    matrix = [['Name', 'User Name', 'Email Address']]
+    if hasattr(users[0], 'name'):
+        matrix = [['Name', 'Email Address', 'Username']]
+        for user in users:
+            matrix.append([user.displayName, user.emailAddress, user.name])
+    else:
+        matrix = [['Name', 'Email Address', 'User ID']]
+        for user in users:
+            if hasattr(user, 'emailAddress'):
+                em = user.emailAddress
+            else:
+                em = ''
+            matrix.append([user.displayName, em, user.accountId])
 
-    for user in users:
-        matrix.append([user.displayName, user.name, user.emailAddress])
     render_matrix(matrix)
 
 
@@ -458,6 +467,8 @@ def issue_fields(args):
                         values.append(val['name'])
                     elif 'value' in val:
                         values.append(val['value'])
+                    elif 'displayName' in val:
+                        values.append(val['displayName'])
                     else:
                         values.append(val['id'])
                 fvalue = comma_separated(values)
@@ -1067,7 +1078,7 @@ def comment(args):
 
 def display_comment(server_url, comment, verbose, no_format):
     # Let's get fancy
-    commentator_url = f"{server_url}/secure/ViewProfile.jspa?name={comment['updateAuthor']['key']}"
+    commentator_url = comment['updateAuthor']['self']
     commentator = link_string(comment['updateAuthor']['displayName'], commentator_url)
     print(commentator, '-', pretty_date(comment['updated']), '• ID:', comment['id'])
     if 'visibility' in comment:
@@ -1441,10 +1452,10 @@ def sprint_info(args):
             continue
         try:
             board_name = board_by_id[sprint.originBoardId]
+            if sprint.state in ('active'):
+                active_sprint_ids.append(sprint.id)
         except KeyError:
             board_name = '???'
-        if sprint.state in ('active'):
-            active_sprint_ids.append(sprint.id)
         if hasattr(sprint, 'startDate'):
             start_date = pretty_date(sprint.startDate)
         else:
@@ -1470,7 +1481,9 @@ def sprint_info(args):
 def eausm_vote(args):
     issues = args.project.issues(args.issue_id)
     for issue in issues:
-        args.project.eausm_vote_issue(issue, args.vote)
+        if not args.project.eausm_vote_issue(issue, args.vote):
+            print('EAUSM Vote APIs seem to be disabled')
+            return (1, False)
     return (0, False)
 
 

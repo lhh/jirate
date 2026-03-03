@@ -162,7 +162,10 @@ class Jirate(object):
         # Search userlist for a username.  This is provided like this
         # so we can expand functionality later. Max is 50 by default;
         # we'll start with that
-        users = self.jira.search_users(username)
+        if self.jira._is_cloud:
+            users = self.jira.search_users(query=username)
+        else:
+            users = self.jira.search_users(username)
         return users
 
     def field_to_id(self, alias_or_human):
@@ -264,17 +267,21 @@ class Jirate(object):
         Returns:
           list of jira.resources.Issue
         """
-        index = 0
-        chunk_len = 50      # So we can detect end
-        ret = []
-        while True:
-            issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
-            if not len(issues):
-                break
-            ret.extend(issues)
-            index = index + len(issues)
-            if len(issues) < chunk_len:
-                break
+        # Don't chunk in cloud.
+        if self.jira._is_cloud:
+            ret = self.jira.search_issues(search_query)
+        else:
+            index = 0
+            chunk_len = 50      # So we can detect end
+            ret = []
+            while True:
+                issues = self.jira.search_issues(search_query, startAt=index, maxResults=chunk_len)
+                if not len(issues):
+                    break
+                ret.extend(issues)
+                index = index + len(issues)
+                if len(issues) < chunk_len:
+                    break
         for issue in ret:
             _resolve_field_setup(self, issue)
         return ret
@@ -353,14 +360,23 @@ class Jirate(object):
         if not username or username.lower() == 'none':
             return None
         if username == 'me':
-            return self.user['name']
-        users = self.jira.search_users(username)
+            if 'name' in self.user:
+                return self.user['name']
+            return self.user['accountId']
+        if self.jira._is_cloud:
+            users = self.jira.search_users(query=username)
+        else:
+            users = self.jira.search_users(username)
         if len(users) > 1:
             raise ValueError(f'Multiple matching users for \'{username}\'')
         elif not users:
             raise ValueError(f'No matching users for \'{username}\'')
 
-        return users[0].name
+        try:
+            return users[0].name
+        except:
+            pass
+        return users[0].accountId
 
     def api_call(self, uri, raw=False):
         url = self.jira._get_url(uri)
@@ -399,7 +415,10 @@ class Jirate(object):
                         user_ids.append(uid)
             else:
                 # Just me
-                user = self.user['name']
+                if 'name' in self.user:
+                    user = self.user['name']
+                elif 'accountId' in self.user:
+                    user = self.user['accountId']
                 user_ids = [user]
                 # user_ids = [user['id']]
 
@@ -407,7 +426,7 @@ class Jirate(object):
                 return
 
             user = user_ids.pop(0)
-            issue.update(assignee=user)
+            self.jira.assign_issue(issue.key, user)
 
     def sprint_info(self, project_key, states=['active', 'future']):
         """Retrieve all sprints and boards for a project.
@@ -692,7 +711,10 @@ class Jirate(object):
 
         EAUSM_url = f"{self.jira.server_url}/rest/eausm/latest/planningPoker/vote"
         payload = {"issueId": issue.id, "vote": vote}
-        ret = self.jira._session.put(EAUSM_url, data=payload)
+        try:
+            ret = self.jira._session.put(EAUSM_url, data=payload)
+        except JIRAError:
+            return False
         if not ret:
             return False
         return True
@@ -1027,7 +1049,11 @@ class JiraProject(Jirate):
     def eausm_vote_issue(self, issue_alias, votes):
         if 'eausm' in self._config and not self._config['eausm']:
             return False
-        return super().eausm_vote_issue(issue_alias, votes)
+        ret = super().eausm_vote_issue(issue_alias, votes)
+        if ret is False:
+            self._config['eausm'] = False
+            return None
+        return ret
 
     def states(self):
         return copy.copy(self._config['states'])
@@ -1125,6 +1151,7 @@ class JiraProject(Jirate):
         if not project_key:
             project_key = self.project_name
         itype = None
+        # BUG: This should get the issue types for the project if not None
         for issuetype in self.issue_types:
             if issuetype.id == issue_type_or_id or nym(issuetype.name) == nym(issue_type_or_id):
                 itype = issuetype
@@ -1134,13 +1161,22 @@ class JiraProject(Jirate):
         fields = []
         start = 0
         chunk_len = 50
-        while True:
-            new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
-            for field in new_fields:
-                fields.append(field.raw)
-            if new_fields.isLast:
-                break
-            start = start + chunk_len
+
+        # Work around pyjira bug. This API is the current documented way, but the return JSON now uses
+        # 'fields' instead of 'values'. The project_issue_fields() call would look at 'values' now.
+        # https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-createmeta-projectidorkey-issuetypes-get
+        if self.jira._is_cloud:
+            # BUG: not paginated
+            fields_raw = self.api_call(f'issue/createmeta/{project_key}/issuetypes/{itype.id}')
+            fields = fields_raw['fields']
+        else:
+            while True:
+                new_fields = self.jira.project_issue_fields(project_key, itype.id, startAt=start, maxResults=chunk_len)
+                for field in new_fields:
+                    fields.append(field.raw)
+                if new_fields.isLast or len(new_fields) < chunk_len:
+                    break
+                start = start + chunk_len
 
         field_dict = {val['fieldId']: val for val in fields}
         metadata = {'self': itype.self, 'name': itype.name, 'id': itype.id, 'description': itype.description, 'subtask': itype.subtask, 'iconUrl': itype.iconUrl, 'fields': field_dict}
@@ -1185,4 +1221,12 @@ def get_jira(jconfig):
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
+    if 'username' in jconfig:
+        try:
+            ret = JIRA(jconfig['url'], basic_auth=(jconfig['username'], jconfig['token']), proxies=jconfig['proxies'])
+            return ret
+        except:
+            pass
+
+    # Pass #2: token auth
     return JIRA(jconfig['url'], token_auth=jconfig['token'], proxies=jconfig['proxies'])

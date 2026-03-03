@@ -33,6 +33,11 @@ def sprint_content_to_py(sprint_info):
     if isinstance(sprint_info, str):
         sprint_info = [sprint_info]
 
+    if isinstance(sprint_info[0], dict):
+        # Jira cloud just works...
+        return sprint_info
+
+    # Jira on-prem uses a different format; sprints are an addon
     for sprint in sprint_info:
         match = re.match(r'com.atlassian.greenhopper.service.sprint.Sprint@([a-z0-9]+)\[([^\]]+)\]', sprint)
         if not match:
@@ -56,7 +61,7 @@ def sprint_field(data, fields, as_object=False):
     sprints = sprint_content_to_py(data)
     active_sprints = []
     for sprint in sprints:
-        if sprint['state'] == 'ACTIVE':
+        if sprint['state'].upper() == 'ACTIVE':
             active_sprints.append(f"{sprint['name']} (ID: {sprint['id']})")
 
     if active_sprints:
@@ -74,9 +79,14 @@ def no_display(data, fields, as_object=False):
     return None
 
 
+def simple(value):
+    return lambda data, fields=None, as_object=False: data[value]
+
+
 # Used by jira_fields
 custom_field_renderers = {
     'com.atlassian.jira.plugins.jira-development-integration-plugin:devsummary': no_display,
+    'com.atlassian.jira.plugin.system.customfieldtypes:atlassian-team': simple('name'),
     'com.onresolve.jira.groovy.groovyrunner:scripted-field': no_display,
     'com.pyxis.greenhopper.jira:gh-epic-color': no_display,
     'com.pyxis.greenhopper.jira:gh-global-rank': no_display,
