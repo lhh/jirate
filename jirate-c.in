@@ -1,3 +1,9 @@
 #!/bin/bash
+if [ "$(uname -o)" == "Darwin" ]; then
+	container image ls | grep -q '^localhost/jirate' || exit 1
+	container run -it --rm --mount type=bind,src=$HOME,dst=/root localhost/jirate:latest $*
+	exit 0
+fi
+
 podman images | grep -q '^localhost/jirate' || exit 1
 podman run -it --rm --mount type=bind,src=$HOME/.jirate.json,dst=/root/.jirate.json,ro,relabel=shared jirate $*
