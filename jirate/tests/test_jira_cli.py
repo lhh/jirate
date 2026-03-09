@@ -3,7 +3,7 @@
 from jirate.tests import fake_jira, fake_metadata, fake_fields
 from jirate.args import GenericArgs
 from jirate.jira_cli import _parse_creation_args, _create_from_template, _generate_template, \
-    validate_template
+    _sort_template_fields, validate_template
 from jirate.jboard import JiraProject
 from jirate.jira_fields import apply_field_renderers
 
@@ -254,6 +254,46 @@ def test_generate_template_subtasks():
     generated = {'issues': [generated]}
 
     assert actual == generated
+
+
+def test_sort_template_fields_parent():
+    actual = {'issue_type': 'Bug',
+              'summary': 'Test 4 (parent task)',
+              'sub_tasks': [
+                  {'issue_type': 'Sub-task',
+                   'summary': 'Test 5 (subtask of Test 4)'},
+                  {'issue_type': 'Sub-task',
+                   'description': 'Description of Test 6',
+                   'summary': 'Test 6 (subtask of Test 4)'}],
+              'description': 'Description of test 4 (parent task)'}
+    first_fields = ['summary']
+    last_fields = ['description', 'sub_tasks']
+
+    sorted_template = _sort_template_fields(actual, first_fields, last_fields)
+    parent_fields_actual = list(sorted_template.keys())
+    parent_fields_expected = ['summary', 'issue_type', 'description', 'sub_tasks']
+
+    assert parent_fields_actual == parent_fields_expected
+
+
+def test_sort_template_fields_subtask():
+    actual = {'issue_type': 'Bug',
+              'summary': 'Test 4 (parent task)',
+              'sub_tasks': [
+                  {'issue_type': 'Sub-task',
+                   'summary': 'Test 5 (subtask of Test 4)'},
+                  {'issue_type': 'Sub-task',
+                   'description': 'Description of Test 6',
+                   'summary': 'Test 6 (subtask of Test 4)'}],
+              'description': 'Description of test 4 (parent task)'}
+    first_fields = ['summary']
+    last_fields = ['description', 'sub_tasks']
+
+    sorted_template = _sort_template_fields(actual, first_fields, last_fields)
+    subtask_fields_actual = list(sorted_template['sub_tasks'][1].keys())
+    subtask_fields_expected = ['summary', 'issue_type', 'description']
+
+    assert subtask_fields_actual == subtask_fields_expected
 
 
 def test_validate_templates_good():

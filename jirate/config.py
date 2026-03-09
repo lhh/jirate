@@ -21,9 +21,9 @@ def _str_presenter(dumper, data):
     return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
 
-def yaml_dump(info):
+def yaml_dump(info, **kwargs):
     yaml.representer.SafeRepresenter.add_representer(str, _str_presenter)
-    return yaml.safe_dump(info, allow_unicode=True)
+    return yaml.safe_dump(info, allow_unicode=True, **kwargs)
 
 
 # Allow YAML or JSON

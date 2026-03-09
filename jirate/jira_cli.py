@@ -842,7 +842,7 @@ def generate_template(args):
     # TODO: allow customizing allow_fields in the config
     template = _generate_template(issue.raw['fields'], args.project.field_to_alias, args.project.issue, args.all_fields)
 
-    print(yaml_dump({'issues': [template]}))
+    print(yaml_dump({'issues': [template]}, sort_keys=False))
     return (0, True)
 
 
@@ -853,7 +853,7 @@ def _generate_template(raw_issue, translate_fields, fetch_issue=None, all_fields
         if allow_fields is not None:
             # Ensure these are in alias form, if set. Makes writing configs easier.
             allow_fields = [translate_fields(field) for field in allow_fields]
-        template = _trim_template(template, allow_fields)
+        template = _sort_template_fields(_trim_template(template, allow_fields))
     return template
 
 
@@ -923,6 +923,45 @@ def _trim_template(template, allow_fields=None):
         else:
             trimmed_fields[field] = value
     return trimmed_fields
+
+
+def _sort_template_fields(template, first_fields=None, last_fields=None):
+    """
+    Returns an identical template with fields sorted in a more human-accessible way
+    """
+    _subtasks = 'sub_tasks'
+    if first_fields is None:
+        # These fields, if present, will be first in the template, in this order
+        first_fields = [
+            'summary',
+            'issue_type',
+            'story_points',
+            ]
+    if last_fields is None:
+        # These fields, if present, will be last in the template, in this order
+        last_fields = [
+            'description',
+            _subtasks,
+            ]
+
+    # Use OrderedDict for the convenience of move_to_end()
+    template = OrderedDict(template)
+
+    for field in reversed(first_fields):
+        if field in template:
+            template.move_to_end(field, last=False)
+    for field in last_fields:
+        if field in template:
+            template.move_to_end(field, last=True)
+
+    # Each subtask's fields also need to be sorted
+    if _subtasks in template:
+        for i,subtask in enumerate(template[_subtasks]):
+            template[_subtasks][i] = _sort_template_fields(subtask, first_fields, last_fields)
+
+    # PyYAML refuses to take OrderedDicts, so turn this back into a regular dict
+    # (it will still preserve order)
+    return dict(template)
 
 
 def new_subtask(args):
