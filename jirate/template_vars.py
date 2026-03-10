@@ -8,7 +8,7 @@ import datetime
 from jinja2 import Environment, BaseLoader, meta, nodes
 
 
-def update_values_interactive(values, cli_values):
+def update_values_interactive(values, cli_values, raw_template):
     """
     Grab input from the user for all values that do not already have one
     as input from the CLI.
@@ -21,6 +21,8 @@ def update_values_interactive(values, cli_values):
         Variable names and defaults values from the Jinja2 template
     cli_values : dict
         Variable names and values provided from the command line
+    raw_template : str
+        Original full template, used to provide var hints to user
 
     Returns
     -------
@@ -28,11 +30,19 @@ def update_values_interactive(values, cli_values):
         Variable name and value pairs
     """
     ret = {}
+    template_lines = raw_template.splitlines()
     for key in values:
         # If provided via CLI, move on
         if key in cli_values:
             ret[key] = cli_values[key]
             continue
+
+        # Print first instance of the variable in the template in the
+        # hopes there's a helpful in-line comment
+        for line in template_lines:
+            if key in line:
+                print(line)
+                break
 
         # If a default was set in the jinja2 template, start with that
         if values[key]:
@@ -235,7 +245,7 @@ def apply_values(inp, values={}, interactive=False):
             template_values[key] = ''
 
     if interactive:
-        values = update_values_interactive(template_values, values)
+        values = update_values_interactive(template_values, values, inp)
 
     extra = []
     for key in values:
