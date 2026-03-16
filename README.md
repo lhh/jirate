@@ -18,6 +18,7 @@ Configuration is one of:
 - a YAML document stored as `~/.jirate.yaml` - an example can be found in the `contrib/jirate.yaml` file in this repository.
 ### JIRA configuration fields
 - `url` (Required) - URL to your JIRA instance
+- `username` (Optional; required for Cloud) - Your email address as configured in Jira Cloud.
 - `token` (Required) - A valid personal access token for your account
 - `default_project` (Required) - Default project to use when interacting with JIRA
 - `eausm` (Optional) - Set to `false` to disable EZ Agile Planning voting
