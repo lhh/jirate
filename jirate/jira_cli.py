@@ -280,19 +280,45 @@ def print_issues(issue_list, args=None, exclude_fields=[]):
     return True
 
 
-def print_users(users):
-    if hasattr(users[0], 'name'):
-        matrix = [['Name', 'Email Address', 'Username']]
+def print_users(users, args):
+
+    if hasattr(args, 'quiet') and args.quiet:
         for user in users:
-            matrix.append([user.displayName, user.emailAddress, user.name])
+            print(user.raw['displayName'])
+        return
+
+    r_fields = {'displayName': 0, 'emailAddress': 0, 'accountId': 0}
+    if hasattr(args, 'fields') and args.fields:
+        r_fields = parse_field_widths(args.fields)
+
+    if 'name' in users[0].raw:
+        account_uid = 'name'
     else:
-        matrix = [['Name', 'Email Address', 'User ID']]
-        for user in users:
-            if hasattr(user, 'emailAddress'):
-                em = user.emailAddress
+        account_uid = 'accountId'
+
+    # resolve field keys to actual
+    fields = OrderedDict()
+    for key in r_fields:
+        if key.lower() in ('accountid', 'id', 'userid', 'username'):
+            fields[account_uid] = r_fields[key]
+        if key.lower() in ('emailaddress', 'email', 'email_address'):
+            fields['emailAddress'] = r_fields[key]
+        if key.lower() in ('displayname', 'name'):
+            fields['displayName'] = r_fields[key]
+
+    map_dict = {'displayName': 'Name', 'emailAddress': 'Email Address', account_uid: 'User ID'}
+    header = []
+    for key in fields:
+        header.append(truncate(map_dict[key], fields[key]))
+    matrix = [header]
+    for user in users:
+        user_line = []
+        for key in fields:
+            if key in user.raw:
+                user_line.append(truncate(user.raw[key], fields[key]))
             else:
-                em = ''
-            matrix.append([user.displayName, em, user.accountId])
+                user_line.append('')
+        matrix.append(user_line)
 
     render_matrix(matrix)
 
@@ -313,14 +339,39 @@ def find_search(name, search_info):
     return (item['query'], fields)
 
 
+def parse_user_glyph(user):
+    ret = user
+    if ret.startswith('[~') and ret.endswith(']'):
+        # [~username] (DC) or
+        # [~emailAddress] or
+        # [~accountid:xxxxxxxx] (cloud)
+        ret = ret[2:-1]
+    elif user.startswith('~'):
+        ret = ret[1:]
+
+    # We didn't parse as above; move on
+    if ret == user:
+        return ret
+
+    # for: [~accountid:xxxxxxxx] (cloud)
+    if ':' in ret:
+        ret = ':'.join(ret.split(':')[1:])
+    return ret
+
+
+def search_users(args):
+    # parse whole account user info out
+    users = args.project.search_users(parse_user_glyph(args.user))
+    if not users:
+        print(f'No users match "{args.user}"')
+        return (1, False)
+    print_users(users, args)
+    return (0, False)
+
+
 def search_jira(args):
     if args.user:
-        users = args.project.search_users(args.user)
-        if not users:
-            print(f'No users match "{args.user}"')
-            return (1, False)
-        print_users(users)
-        return (0, False)
+        return search_users(args)
 
     named = args.named_search
     fields = None
@@ -1380,8 +1431,10 @@ def unassign_issue(args):
 
 
 def user_info(args):
-    user_info = [GenericArgs(args.project.user)]
-    print_users(user_info)
+    # print_users expects User; transmogrify
+    user_item = GenericArgs()
+    user_item.raw = args.project.user
+    print_users([user_item], args)
     return (0, False)
 
 
@@ -1695,7 +1748,7 @@ def create_parser():
     cmd.add_argument('status', nargs='?', default=None, help='Restrict to issues in this state')
 
     cmd = parser.command('search', help='Search issue(s)/user(s) with matching text', handler=search_jira)
-    cmd.add_argument('-u', '--user', help='Search for user(s) (max)')
+    cmd.add_argument('-u', '--user', help='Search for user(s)')
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('--prune-regex', nargs=2, help='Prune results by checking named field against regular expression, removing any that do not match')

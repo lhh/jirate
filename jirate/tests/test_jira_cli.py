@@ -3,7 +3,7 @@
 from jirate.tests import fake_jira, fake_metadata, fake_fields
 from jirate.args import GenericArgs
 from jirate.jira_cli import _parse_creation_args, _create_from_template, _generate_template, \
-    _sort_template_fields, validate_template
+    _sort_template_fields, validate_template, parse_user_glyph
 from jirate.jboard import JiraProject
 from jirate.jira_fields import apply_field_renderers
 
@@ -307,3 +307,17 @@ def test_validate_templates_bad():
     args.template_file = f"{TEMPLATE_DIR / 'bad-template.yaml'}"
     with pytest.raises(ValidationError):
         validate_template(args)
+
+
+def test_parse_user_glyph_ident():
+    assert parse_user_glyph('abc') == 'abc'
+
+
+def test_parse_user_glyph_dc():
+    assert parse_user_glyph('~abc') == 'abc'
+    assert parse_user_glyph('[~abc]') == 'abc'
+
+
+def test_parse_user_glyph_cloud():
+    assert parse_user_glyph('~accoundid:abcde:uuid') == 'abcde:uuid'
+    assert parse_user_glyph('[~accountid:abcde:uuid]') == 'abcde:uuid'
