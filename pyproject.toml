@@ -32,7 +32,7 @@ classifiers = [
 dependencies = [
     "editor>=1.2.1",
     "Jinja2>=3.0.0",
-    "jira>=3.8.0",
+    "jira>=3.10.4",
     "jsonschema>=4.18.0a1",
     "prettytable",
     "python-dateutil",
@@ -44,7 +44,7 @@ dependencies = [
     "trollo>=0.2.4",
 ]
 
-requires-python = '>=3.9'
+requires-python = '>=3.10'
 
 [project.scripts]
 jirate = "jirate.jira_cli:main"
