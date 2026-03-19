@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
+from jirate.args import GenericArgs
 from jirate.tests import fake_metadata, fake_fields
-from jirate.jira_input import transmogrify_input
+from jirate.jira_input import transmogrify_input, setup_input
 from jirate.jira_input import check_value, allowed_value_validate, in_owc
 
 import os
@@ -77,9 +78,23 @@ def test_trans_array_versions():
     assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
 
-def test_trans_array_users():
+def test_trans_array_users_dc():
+    arg = GenericArgs()
+    arg._is_cloud = False
+    setup_input(arg)
+
     inp = {'array_of_users': 'user1,user2'}
     out = {'customfield_1234571': [{'name': 'user1'}, {'name': 'user2'}]}
+
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
+
+    arg._is_cloud = True
+    setup_input(arg)
+
+
+def test_trans_array_users_cloud():
+    inp = {'array_of_users': 'user1,user2'}
+    out = {'customfield_1234571': [{'accountId': 'user1'}, {'accountId': 'user2'}]}
 
     assert transmogrify_input(fake_metadata, **inp) == (out, {})
 
@@ -177,9 +192,24 @@ def test_trans_empty_out():
     assert transmogrify_input(fake_metadata, **inp) == (out, inp)
 
 
-def test_trans_user_value():
+def test_trans_user_value_dc():
+    arg = GenericArgs()
+    arg._is_cloud = False
+    setup_input(arg)
+
     inp = {'User Value': 'user1'}
     out = {'customfield_1234580': {'name': 'user1'}}
+
+    assert transmogrify_input(fake_metadata, **inp) == (out, {})
+
+    # Back to default
+    arg._is_cloud = True
+    setup_input(arg)
+
+
+def test_trans_user_value_cloud():
+    inp = {'User Value': 'user1'}
+    out = {'customfield_1234580': {'accountId': 'user1'}}
 
     assert transmogrify_input(fake_metadata, **inp) == (out, {})
 

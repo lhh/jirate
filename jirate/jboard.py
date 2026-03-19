@@ -13,7 +13,7 @@ from jira.utils import json_loads as _json_loads
 from jira.resources import Issue, User
 
 from jirate.decor import nym
-from jirate.jira_input import transmogrify_input
+from jirate.jira_input import transmogrify_input, setup_input
 
 
 # lhh - seems python 3.12.4 doesn't let us simply replace
@@ -124,6 +124,7 @@ class Jirate(object):
         self._field_to_human = None
         jira.user = types.MethodType(_user_fix, jira)
         jira.user_by_key = types.MethodType(_user_by_key, jira)
+        setup_input(jira)  # Need to make input more object-private
 
     def _issue_key(self, alias):
         if isinstance(alias, str):
