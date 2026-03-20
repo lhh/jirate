@@ -22,6 +22,10 @@ def in_name(value):
     return {'name': value}
 
 
+def in_account_id(value):
+    return {'accountId': value}
+
+
 def in_value(value):
     return {'value': value}
 
@@ -48,7 +52,7 @@ _input_renderers = {
     'option-with-child': in_owc,
     'issuelink': in_key,
     'resolution': in_name,
-    'user': in_name
+    'user': in_account_id
 }
 
 
@@ -56,8 +60,11 @@ def _input_list(vals, attrib):
     return [{attrib: val} for val in vals]
 
 
+def in_account_id_list(vals):
+    return _input_list(vals, 'accountId')
+
+
 def in_user_list(vals):
-    # Could be key, which is why it's separate
     return _input_list(vals, 'name')
 
 
@@ -74,7 +81,7 @@ def in_string_list(vals):
 
 
 _input_array_renderers = {
-    'user': in_user_list,
+    'user': in_account_id_list,
     'option': in_value_list,
     'version': in_name_list,
     'group': in_name_list,
@@ -99,6 +106,26 @@ _custom_field_input = {
     'com.pyxis.greenhopper.jira:gh-sprint': in_sprint_field,
     'com.atlassian.jpo:jpo-custom-field-parent': in_issue_key,
     'com.pyxis.greenhopper.jira:gh-epic-link': in_issue_key
+}
+
+
+_dc_field_input_basic = {
+    'user': in_name
+}
+
+
+_dc_field_input_array = {
+    'user': in_user_list
+}
+
+
+_cloud_field_input_basic = {
+    'user': in_account_id
+}
+
+
+_cloud_field_input_array = {
+    'user': in_account_id_list
 }
 
 
@@ -237,3 +264,17 @@ def transmogrify_input(field_definitions, **args):
             continue
         output[field_id] = transmogrify_value(value, field_definitions[field_id])
     return (output, unused)
+
+
+def setup_input(jira):
+    if jira._is_cloud:
+        for field in _cloud_field_input_basic:
+            _input_renderers[field] = _cloud_field_input_basic[field]
+        for field in _cloud_field_input_array:
+            _input_array_renderers[field] = _cloud_field_input_array[field]
+        return
+
+    for field in _dc_field_input_basic:
+        _input_renderers[field] = _dc_field_input_basic[field]
+    for field in _dc_field_input_array:
+        _input_array_renderers[field] = _dc_field_input_array[field]
