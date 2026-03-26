@@ -5,6 +5,7 @@
 
 import copy
 import csv
+import os
 import re
 import sys
 import termios
@@ -459,10 +460,16 @@ def get_colors():
         return None
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
+    if os.getenv('TERM', default='dumb') == 'dumb':
+        return None
     curr_attrs = termios.tcgetattr(sys.stdin)
     new_attrs = copy.deepcopy(curr_attrs)
     new_attrs[3] = curr_attrs[3] & ~(termios.ICANON | termios.ECHO)
     termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, new_attrs)
+
+    # XXX Can we query sys.stdout to see if this is likely to work?
+
+    # Write the query-background-color ANSI to the terminal
     sys.stdout.write(']10;?')
     sys.stdout.flush()
     fg = ''
