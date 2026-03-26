@@ -281,12 +281,6 @@ def print_issues(issue_list, args=None, exclude_fields=[]):
 
 
 def print_users(users, args):
-
-    if hasattr(args, 'quiet') and args.quiet:
-        for user in users:
-            print(user.raw['displayName'])
-        return
-
     r_fields = {'displayName': 0, 'emailAddress': 0, 'accountId': 0}
     if hasattr(args, 'fields') and args.fields:
         r_fields = parse_field_widths(args.fields)
@@ -306,6 +300,12 @@ def print_users(users, args):
         if key.lower() in ('displayname', 'name'):
             fields['displayName'] = r_fields[key]
 
+    if hasattr(args, 'quiet') and args.quiet:
+        key = [item for item in fields][0]
+        for user in users:
+            print(user.raw[key])
+        return
+
     map_dict = {'displayName': 'Name', 'emailAddress': 'Email Address', account_uid: 'User ID'}
     header = []
     for key in fields:
@@ -320,7 +320,7 @@ def print_users(users, args):
                 user_line.append('')
         matrix.append(user_line)
 
-    render_matrix(matrix)
+    render_matrix(matrix, fmt=args.format, header=(args.format in ('default')))
 
 
 # Returns the search name and fields if provided
@@ -1752,7 +1752,7 @@ def create_parser():
     cmd.add_argument('-n', '--named-search', help='Perform preconfigured named search for issues')
     cmd.add_argument('-r', '--raw', action='store_true', help='Perform raw JQL query')
     cmd.add_argument('--prune-regex', nargs=2, help='Prune results by checking named field against regular expression, removing any that do not match')
-    add_list_options(cmd)
+    add_list_options(cmd, quiet_help='Only print issue IDs (issue search) / first specified field (user search)')
     cmd.add_argument('text', nargs='*', help='Search text')
 
     cmd = parser.command('cat', help='Print issue(s)', handler=cat)
