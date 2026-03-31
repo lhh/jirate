@@ -410,13 +410,18 @@ def search_jira(args):
         fid = args.project.field_to_id(field)
         regex = args.prune_regex[1]
         for issue in ret:
-            val = issue.field(field)
+            if field == 'key':
+                # Keys are strings
+                val = issue.key
+            else:
+                val = issue.field(field)
             try:
                 if val and re.search(regex, val):
                     stripped.append(issue)
                 continue
             except TypeError:
                 pass
+            # Try rendering it to a string
             (_, val) = render_field_data(fid, issue.raw['fields'], True, args.project.allow_code)
             if val and re.search(regex, val):
                 stripped.append(issue)
