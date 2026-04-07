@@ -270,7 +270,7 @@ class Jirate(object):
         """
         # Don't chunk in cloud.
         if self.jira._is_cloud:
-            ret = self.jira.search_issues(search_query)
+            ret = self.jira.enhanced_search_issues(search_query, maxResults=0)
         else:
             index = 0
             chunk_len = 50      # So we can detect end
