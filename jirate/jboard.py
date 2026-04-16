@@ -10,7 +10,7 @@ from toolchest.strutil import list_or_splitstr
 
 from jira import JIRA, JIRAError
 from jira.utils import json_loads as _json_loads
-from jira.resources import Issue, User
+from jira.resources import Issue, User, Filter
 
 from jirate.decor import nym
 from jirate.jira_input import transmogrify_input, setup_input
@@ -286,6 +286,44 @@ class Jirate(object):
         for issue in ret:
             _resolve_field_setup(self, issue)
         return ret
+
+    def filter(self, name_or_id=None):
+        """When name_or_id is not set, return the list of favorite filters.
+        When it is an integer, return a singleton list of filters with the
+        sole filter inside being the filter ID specified. When it is a non-
+        integer string, search filters and return all filters with the
+        matching name"""
+
+        # XXX should this be "my filters" ?
+        if not name_or_id:
+            return self.jira.favourite_filters()
+
+        # Try singleton
+        try:
+            if str(int(name_or_id)) == str(name_or_id):
+                return [self.jira.filter(str(name_or_id))]
+        except ValueError:
+            pass
+
+        # GET using data=x gives a 403 for this endpoint, so we have to do it
+        # the hard way. The isSubstringMatch doesn't seem to have much of an
+        # effect with double-quoting. Double-quoting is case-insensitive but
+        # must match the whole thing; without double-quotes the API seems to
+        # slice up on spaces and return every filter matching any component in
+        # the query after slicing.  Contrary to the docs, jql is not in the
+        # results by default, so make sure we tack on the expansion for that.
+        # data = {'filterName': f'"name_or_id"', 'expand': 'jql'}
+        url = self.jira._get_url(f'filter/search?filterName="{name_or_id}"&expand=jql,favourite')
+        ret = json_loads(self.jira._session.get(url))
+
+        filters = [
+            Filter(self.jira._options, self.jira._session, raw_filter_json)
+            for raw_filter_json in ret['values']
+        ]
+
+        if not filters:
+            return None
+        return filters
 
     def _field(self, issue, field_name):
         """Reconcile a field in an issue with custom field defs
