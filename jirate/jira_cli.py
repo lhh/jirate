@@ -535,9 +535,16 @@ def issue_fields(args):
         render_matrix(matrix)
         return (0, False)
 
-    # Update a field
     field_name = args.name
     field_id = args.project.field_to_id(field_name)
+    if not field_id:
+        raise ValueError(f'Could not resolve {field_name} to an ID - typo?')
+    if args.operation == 'get':
+        (_, orig_value) = render_field_data(field_id, issue.raw['fields'], True, args.project.allow_code)
+        print(orig_value)
+        return (0, False)
+
+    # Update a field
     if field_id not in fields:
         raise ValueError(f'Update to {field_name} ({field_id}) is not allowed at this point')
 
@@ -553,7 +560,6 @@ def issue_fields(args):
     else:
         value = ' '.join(args.values)
 
-    op = args.operation
     # Substitution only works on 'set' capable fields for now
     if args.operation == 'sub':
         op = 'set'
@@ -1831,7 +1837,7 @@ def create_parser():
 
     cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
     cmd.add_argument('issue', help='Issue')
-    cmd.add_argument('operation', help='Operation', choices=['add', 'set', 'remove', 'sub'])
+    cmd.add_argument('operation', help='Operation', choices=['add', 'get', 'set', 'remove', 'sub'])
     cmd.add_argument('name', help='Name of field to update')
     cmd.add_argument('values', help='Value(s) to update', nargs='*')
 
