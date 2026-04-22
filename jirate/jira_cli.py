@@ -1730,6 +1730,40 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
     return proj
 
 
+def filter_issues(args):
+    display = False
+    fid = None
+    if hasattr(args, 'filter_id') and args.filter_id:
+        fid = args.filter_id
+
+    filters = args.project.filter(fid)
+    if args.list:
+        display = True
+
+    if not display:
+        if not filters:
+            print(f'Error: No filter matches {args.filter_id}')
+            return (1, False)
+        if len(filters) > 1:
+            print(f'Error: More than one filter matching {args.filter_id}; try -l')
+            return (1, False)
+        # okay, just flip to a search
+        args.named_search = None
+        args.user = None
+        args.raw = True
+        args.text = [filters[0].jql]
+        return search_jira(args)
+
+    if display and filters:
+        header = ['Name', 'ID', 'JQL']
+        matrix = [header]
+        for fl in filters:
+            matrix.append([fl.name, fl.id, fl.jql])
+        render_matrix(matrix, fmt=args.format)
+
+    return (0, False)
+
+
 def add_list_options(cmd,
                      fields_help='Display these fields in a table',
                      quiet_help='Only print issue IDs'):
@@ -1896,6 +1930,12 @@ def create_parser():
     cmd = parser.command('vote', help='Apply your vote to an issue', handler=vote)
     cmd.add_argument('issue_id', nargs='+', help='Target issue(s)', type=str.upper)
     cmd.add_argument('-r', '--remove', default=False, action='store_true', help='Remove vote from issue(s)')
+
+    cmd = parser.command('filter', help='Filter utilities', handler=filter_issues)
+    cmd.add_argument('filter_id', help='If present (and not listing), run the specific filter. If this is an integer, it\'s assumed to be the filter ID, otherwise it will execute a search for the filter by name. If more than one are found, an error is reported.  If combined with --list, search for matching filters', nargs='?')
+    cmd.add_argument('--list', '-l', help='List favorite filters', action='store_true', default=False)
+    cmd.add_argument('--prune-regex', nargs=2, help='Prune issue results by checking named field against regular expression, removing any that do not match')
+    add_list_options(cmd)
 
     cmd = parser.command('clean', help='Clear cache', handler=clean_cache)
 
