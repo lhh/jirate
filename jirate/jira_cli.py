@@ -560,6 +560,7 @@ def issue_fields(args):
     else:
         value = ' '.join(args.values)
 
+    op = args.operation
     # Substitution only works on 'set' capable fields for now
     if args.operation == 'sub':
         op = 'set'
