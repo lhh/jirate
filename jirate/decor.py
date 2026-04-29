@@ -5,6 +5,7 @@
 
 import copy
 import csv
+import io
 import os
 import re
 import sys
@@ -609,14 +610,28 @@ def pretty_matrix(matrix, header=True, header_bar=True):
 def native_csv(matrix, header=True, header_bar=True):
     lines = 0
     # header_bar currently unused
-    csv_out = csv.writer(sys.stdout)
+    #
+    # I tried a couple different ways to try to get the CSV
+    # writer to not append a random newline character, but failed.
+    #   Methods tried:
+    #     sys.stdout.reconfigure (reset newline to '' or None)
+    #     Use a stringio and write that directly
+    # So, this is the most brute-force: Create a stringio to
+    # satisfy what csv.writer() wants, then zap it iteration and
+    # strip() it before printing. In this way, the newline being
+    # rendered by csv.writer() is banished.
+    output = io.StringIO()
+    csv_out = csv.writer(output)
     if header:
         start = 0
     else:
         start = 1
     for row in matrix[start:]:
+        output.seek(0)
+        output.truncate(0)
         unrender_row = [ansi_ctrl_strip(val) for val in row]
         csv_out.writerow(unrender_row)
+        print(output.getvalue().rstrip('\r\n'))
         lines = lines + 1
 
     return lines
