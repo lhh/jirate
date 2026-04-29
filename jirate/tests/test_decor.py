@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString, ansi_ctrl_strip, nym, color_string
+from jirate.decor import truncate, parse_params, comma_separated, link_string, EscapedString, ansi_ctrl_strip, nym, color_string, _csv_string
 
 import jirate.decor
 
@@ -222,3 +222,15 @@ def test_nym_custom_remove():
 def test_nym_empty_input():
     assert nym('') == ''
     assert nym(None) is None
+
+
+def test_csv_string():
+    assert _csv_string(['Hello',' world!']) == 'Hello, world!'
+
+
+def test_csv_string_quoted_carriage_returns():
+    assert _csv_string(['Hello',' world!\r']) == 'Hello," world!\r"'
+
+
+def test_csv_string_quoted_newlines():
+    assert _csv_string(['Hello',' world!\n']) == 'Hello," world!\n"'

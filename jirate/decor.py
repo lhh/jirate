@@ -607,9 +607,7 @@ def pretty_matrix(matrix, header=True, header_bar=True):
     return lines
 
 
-def native_csv(matrix, header=True, header_bar=True):
-    lines = 0
-    # header_bar currently unused
+def _csv_string(items: list):
     #
     # I tried a couple different ways to try to get the CSV
     # writer to not append a random newline character, but failed.
@@ -620,18 +618,25 @@ def native_csv(matrix, header=True, header_bar=True):
     # satisfy what csv.writer() wants, then zap it iteration and
     # strip() it before printing. In this way, the newline being
     # rendered by csv.writer() is banished.
+    #
+    # This is heavy-handed, but we can at least build unit tests
+    # that work correctly
     output = io.StringIO()
     csv_out = csv.writer(output)
+    csv_out.writerow(items)
+    return output.getvalue().rstrip('\r\n')
+
+
+def native_csv(matrix, header=True, header_bar=True):
+    lines = 0
+    # header_bar currently unused
     if header:
         start = 0
     else:
         start = 1
     for row in matrix[start:]:
-        output.seek(0)
-        output.truncate(0)
         unrender_row = [ansi_ctrl_strip(val) for val in row]
-        csv_out.writerow(unrender_row)
-        print(output.getvalue().rstrip('\r\n'))
+        print(_csv_string(unrender_row))
         lines = lines + 1
 
     return lines
