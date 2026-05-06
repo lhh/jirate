@@ -999,13 +999,13 @@ def _sort_template_fields(template, first_fields=None, last_fields=None):
             'summary',
             'issue_type',
             'story_points',
-            ]
+        ]
     if last_fields is None:
         # These fields, if present, will be last in the template, in this order
         last_fields = [
             'description',
             _subtasks,
-            ]
+        ]
 
     # Use OrderedDict for the convenience of move_to_end()
     template = OrderedDict(template)
@@ -1019,7 +1019,7 @@ def _sort_template_fields(template, first_fields=None, last_fields=None):
 
     # Each subtask's fields also need to be sorted
     if _subtasks in template:
-        for i,subtask in enumerate(template[_subtasks]):
+        for i, subtask in enumerate(template[_subtasks]):
             template[_subtasks][i] = _sort_template_fields(subtask, first_fields, last_fields)
 
     # PyYAML refuses to take OrderedDicts, so turn this back into a regular dict

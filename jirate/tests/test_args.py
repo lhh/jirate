@@ -6,9 +6,6 @@ Comprehensive unit tests for ComplicatedArgs and GenericArgs classes
 import unittest
 import argparse
 
-import sys
-import os
-
 from jirate.args import ComplicatedArgs, GenericArgs
 
 

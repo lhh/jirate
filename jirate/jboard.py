@@ -375,7 +375,7 @@ class Jirate(object):
 
         try:
             return users[0].name
-        except:
+        except Exception:
             pass
         return users[0].accountId
 
@@ -1226,7 +1226,7 @@ def get_jira(jconfig):
         try:
             ret = JIRA(jconfig['url'], basic_auth=(jconfig['username'], jconfig['token']), proxies=jconfig['proxies'])
             return ret
-        except:
+        except Exception:
             pass
 
     # Pass #2: token auth

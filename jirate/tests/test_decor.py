@@ -225,12 +225,12 @@ def test_nym_empty_input():
 
 
 def test_csv_string():
-    assert _csv_string(['Hello',' world!']) == 'Hello, world!'
+    assert _csv_string(['Hello', ' world!']) == 'Hello, world!'
 
 
 def test_csv_string_quoted_carriage_returns():
-    assert _csv_string(['Hello',' world!\r']) == 'Hello," world!\r"'
+    assert _csv_string(['Hello', ' world!\r']) == 'Hello," world!\r"'
 
 
 def test_csv_string_quoted_newlines():
-    assert _csv_string(['Hello',' world!\n']) == 'Hello," world!\n"'
+    assert _csv_string(['Hello', ' world!\n']) == 'Hello," world!\n"'
