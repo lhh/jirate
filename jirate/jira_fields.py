@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json as _json
 import re  # NOQA
 from collections import OrderedDict
 from jirate.decor import pretty_date, vsep_print, comma_separated
@@ -10,6 +11,14 @@ from jirate.jira_custom import custom_field_renderers
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
 #
+def json(field, fields=None, as_object=False):
+    if as_object:
+        return field
+    if isinstance(field, str):
+        return field
+    return _json.dumps(field)
+
+
 def _list_of_key(field, keys, as_object=False):
     if not isinstance(keys, list) and not isinstance(keys, tuple):
         keys = [keys]
@@ -572,7 +581,8 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False, as_obj
       value: Rendered field value (string)
     """
     if field_key not in _fields:
-        return field_key, fields[field_key]
+        # Ignored fields should be parseable as JSON
+        return field_key, json(fields[field_key], as_object=as_object)
     field_name = _fields[field_key]['name']
     if field_key not in fields and field_key not in _jirate_fields:
         return field_name, None
