@@ -543,6 +543,10 @@ def issue_fields(args):
         (_, orig_value) = render_field_data(field_id, issue.raw['fields'], True, args.project.allow_code)
         print(orig_value)
         return (0, False)
+    if args.operation == 'get-json':
+        (_, orig_value) = render_field_data(field_id, issue.raw['fields'], True, as_json=True)
+        print(orig_value)
+        return (0, False)
 
     # Update a field
     if field_id not in fields:
@@ -1838,7 +1842,7 @@ def create_parser():
 
     cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
     cmd.add_argument('issue', help='Issue')
-    cmd.add_argument('operation', help='Operation', choices=['add', 'get', 'set', 'remove', 'sub'])
+    cmd.add_argument('operation', help='Operation', choices=['add', 'get', 'get-json', 'set', 'remove', 'sub'])
     cmd.add_argument('name', help='Name of field to update')
     cmd.add_argument('values', help='Value(s) to update', nargs='*')
 

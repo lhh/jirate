@@ -564,7 +564,7 @@ def jirate_field(field_key):
     return None
 
 
-def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False):
+def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False, as_json=False):
     """Render the field using custom-renderers or user-supplied code
     Note: you must first configure the rendering engine using apply_field_renderers()
 
@@ -578,11 +578,12 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False, as_obj
 
     Returns:
       field_name: Human-readable field name (string)
-      value: Rendered field value (string)
+      value: Rendered field value (string, object, or json data as string)
     """
+    if field_key in fields and as_json:
+        return field_key, json(fields[field_key])
     if field_key not in _fields:
-        # Ignored fields should be parseable as JSON
-        return field_key, json(fields[field_key], as_object=as_object)
+        return field_key, fields[field_key]
     field_name = _fields[field_key]['name']
     if field_key not in fields and field_key not in _jirate_fields:
         return field_name, None
