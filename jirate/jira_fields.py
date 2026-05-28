@@ -14,8 +14,6 @@ from jirate.jira_custom import custom_field_renderers
 def json(field, fields=None, as_object=False):
     if as_object:
         return field
-    if isinstance(field, str):
-        return field
     return _json.dumps(field)
 
 
