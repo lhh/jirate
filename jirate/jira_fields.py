@@ -578,8 +578,11 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False, as_obj
       field_name: Human-readable field name (string)
       value: Rendered field value (string, object, or json data as string)
     """
-    if field_key in fields and as_json:
-        return field_key, json(fields[field_key])
+    if as_json:
+        if field_key in fields:
+            return field_key, json(fields[field_key])
+        else:
+            raise ValueError(f'{field_key} not in issue fields')
     if field_key not in _fields:
         return field_key, fields[field_key]
     field_name = _fields[field_key]['name']
