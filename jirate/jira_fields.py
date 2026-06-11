@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json as _json
 import re  # NOQA
 from collections import OrderedDict
 from jirate.decor import pretty_date, vsep_print, comma_separated
@@ -10,6 +11,12 @@ from jirate.jira_custom import custom_field_renderers
 # Field rendering functions. Return a string, or None if you want the field
 # suppressed.
 #
+def json(field, fields=None, as_object=False):
+    if as_object:
+        return field
+    return _json.dumps(field)
+
+
 def _list_of_key(field, keys, as_object=False):
     if not isinstance(keys, list) and not isinstance(keys, tuple):
         keys = [keys]
@@ -555,7 +562,7 @@ def jirate_field(field_key):
     return None
 
 
-def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False):
+def render_field_data(field_key, fields, verbose=False, allow_code=False, as_object=False, as_json=False):
     """Render the field using custom-renderers or user-supplied code
     Note: you must first configure the rendering engine using apply_field_renderers()
 
@@ -569,8 +576,13 @@ def render_field_data(field_key, fields, verbose=False, allow_code=False, as_obj
 
     Returns:
       field_name: Human-readable field name (string)
-      value: Rendered field value (string)
+      value: Rendered field value (string, object, or json data as string)
     """
+    if as_json:
+        if field_key in fields:
+            return field_key, json(fields[field_key])
+        else:
+            raise ValueError(f'{field_key} not in issue fields')
     if field_key not in _fields:
         return field_key, fields[field_key]
     field_name = _fields[field_key]['name']
