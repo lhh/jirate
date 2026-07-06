@@ -1407,9 +1407,18 @@ def edit_issue(args):
     issue_obj = args.project.issue(issue_idx)
     issue = issue_obj.raw['fields']
     issue_text = join_issue_text(issue['summary'], issue['description'])
+
+    if args.export:
+        with open(args.export, "w") as fp:
+            fp.write(issue_text)
+        return (0, False)
+    if args.file:
+        with open(args.file, "r") as fp:
+            new_text = fp.read()
+
     if args.text:
         new_text = ' '.join(args.text)
-    else:
+    elif not args.file:
         new_text = editor(issue_text)
     if not new_text:
         print('Canceled')
@@ -1838,6 +1847,8 @@ def create_parser():
 
     cmd = parser.command('edit', help='Edit issue description or summary', handler=edit_issue)
     cmd.add_argument('issue', help='Issue')
+    cmd.add_argument('-x', '--export', default=None, help='Export summary and description to a file')
+    cmd.add_argument('-f', '--file', default=None, help='Update summary and description from a file')
     cmd.add_argument('text', nargs='*', help='New text')
 
     cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
