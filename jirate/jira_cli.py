@@ -1136,16 +1136,27 @@ def comment(args):
         comment.delete()
         return (0, False)
 
+    # TODO: edit and --file? maybe we should error out
+    if args.file:
+        with open(args.file, "r") as fp:
+            new_text = fp.read()
+
     if args.edit:
         comment_id = args.edit
         comment = args.project.get_comment(issue_id, comment_id)
+        if args.export:
+            with open(args.export, "w") as fp:
+                fp.write(comment.body)
+            return (0, False)
+
         if args.text:
             new_text = ' '.join(args.text)
-        else:
+        elif not args.file:
             new_text = editor(comment.body)
-            if not new_text:
-                print('Canceled')
-                return (0, False)
+
+        if not new_text:
+            print('Canceled')
+            return (0, False)
 
         update_args = {'body': new_text}
         update_anyway = False
@@ -1171,6 +1182,8 @@ def comment(args):
 
     if args.text:
         text = ' '.join(args.text)
+    elif args.file:
+        text = new_text
     else:
         text = editor()
 
@@ -1839,6 +1852,8 @@ def create_parser():
 
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
+    cmd.add_argument('-x', '--export', help='When used with --edit, export comment contents to the specified file')
+    cmd.add_argument('-f', '--file', help='Source the comment content from the specified file (when used with --edit, replace the contents of the comment with the file contents)')
     cmd.add_argument('-r', '--remove', help='Comment ID to remove')
     cmd.add_argument('-q', '--reply', nargs='?', help='Comment ID to quote and reply', default=False, const=True)
     cmd.add_argument('-g', '--group', help='Specify comment group visibility')
