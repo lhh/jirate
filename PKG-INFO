@@ -1,10 +1,10 @@
 Metadata-Version: 1.1
 Name: jirate
-Version: 0.9.1
+Version: 0.9.2
 Summary: Python CLI for JIRA and Trello
 Author: Lon Hohberger
 Author-email: lon@metamorphism.com
-License: Copyright (c) 2021-2024, Red Hat
+License: Copyright (c) 2021-2026, Red Hat
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
