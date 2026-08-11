@@ -557,9 +557,13 @@ class Jirate(object):
         # a subtask. Also resolve parent issue.
         if 'parent' in args and isinstance(args['parent'], str):
             parent_issue = self.issue(args['parent'])
-            project = parent_issue.raw['fields']['project']['key']
             args['parent'] = parent_issue.key
-            args['project'] = project
+            # Only inherit the parent's project if no explicit project was specified.
+            # Jira supports cross-project parent links, so unconditionally overriding
+            # the project here breaks creation of issues whose parent is in a different
+            # project (e.g. an OSPRH Epic parented to a RHOSSTRAT Initiative).
+            if 'project' not in args:
+                args['project'] = parent_issue.raw['fields']['project']['key']
 
         # Transmogrify other fields
         (new_args, extra) = transmogrify_input(field_definitions, **args)
