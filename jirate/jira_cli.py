@@ -1366,10 +1366,12 @@ def print_issue(project, issue_obj, verbose=False, no_comments=False, no_format=
         print_subtasks(issue, project.jira.server_url)
 
     if 'issuetype' in issue:
-        for megalith in ('Epic', 'Feature'):
-            if issue['issuetype']['name'] == megalith:
+        megaliths = {'Epic': None, 'Feature': None, 'Initiative': 'Parent', 'Outcome': 'Parent'}
+        for item in megaliths.keys():
+            if issue['issuetype']['name'] == item:
+                megalith = megaliths[item] if megaliths[item] else item
                 ret = project.search_issues(f'"{megalith} Link" = "' + issue_obj.raw['key'] + '"')
-                _print_issue_list(f'Issues in {megalith}', ret, project.jira.server_url)
+                _print_issue_list(f'Issues in {item}', ret, project.jira.server_url)
 
     if no_comments or 'comment' not in issue:
         return
