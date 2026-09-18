@@ -1124,6 +1124,14 @@ def quote_reply(args):
     return (0, False)
 
 
+def read_file_or_stdin(path):
+    # A path of '-' reads from standard input instead of a file
+    if path == '-':
+        return sys.stdin.read()
+    with open(path, "r") as fp:
+        return fp.read()
+
+
 def comment(args):
     if args.reply:
         return quote_reply(args)
@@ -1138,8 +1146,7 @@ def comment(args):
 
     # TODO: edit and --file? maybe we should error out
     if args.file:
-        with open(args.file, "r") as fp:
-            new_text = fp.read()
+        new_text = read_file_or_stdin(args.file)
 
     if args.edit:
         comment_id = args.edit
@@ -1428,8 +1435,7 @@ def edit_issue(args):
             fp.write(issue_text)
         return (0, False)
     if args.file:
-        with open(args.file, "r") as fp:
-            new_text = fp.read()
+        new_text = read_file_or_stdin(args.file)
 
     if args.text:
         new_text = ' '.join(args.text)
@@ -1889,7 +1895,7 @@ def create_parser():
     cmd = parser.command('comment', help='Comment (or remove) on an issue', handler=comment)
     cmd.add_argument('-e', '--edit', help='Comment ID to edit')
     cmd.add_argument('-x', '--export', help='When used with --edit, export comment contents to the specified file')
-    cmd.add_argument('-f', '--file', help='Source the comment content from the specified file (when used with --edit, replace the contents of the comment with the file contents)')
+    cmd.add_argument('-f', '--file', help='Source the comment content from the specified file, or from standard input if the filename is - (when used with --edit, replace the contents of the comment with the file contents)')
     cmd.add_argument('-r', '--remove', help='Comment ID to remove')
     cmd.add_argument('-q', '--reply', nargs='?', help='Comment ID to quote and reply', default=False, const=True)
     cmd.add_argument('-g', '--group', help='Specify comment group visibility')
@@ -1899,7 +1905,7 @@ def create_parser():
     cmd = parser.command('edit', help='Edit issue description or summary', handler=edit_issue)
     cmd.add_argument('issue', help='Issue')
     cmd.add_argument('-x', '--export', default=None, help='Export summary and description to a file')
-    cmd.add_argument('-f', '--file', default=None, help='Update summary and description from a file')
+    cmd.add_argument('-f', '--file', default=None, help='Update summary and description from a file, or from standard input if the filename is -')
     cmd.add_argument('text', nargs='*', help='New text')
 
     cmd = parser.command('field', help='Update field values for an issue', handler=issue_fields)
