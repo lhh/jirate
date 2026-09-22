@@ -700,7 +700,7 @@ class Jirate(object):
             if ret:
                 issue_alias.raw['fields']['watches'] = ret.raw
         else:
-            ret = self.jira.votes(issue_alias)
+            ret = self.jira.watchers(issue_alias)
         return ret
 
     def eausm_issue_votes(self, issue_alias):
