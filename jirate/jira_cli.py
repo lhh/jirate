@@ -536,8 +536,26 @@ def issue_fields(args):
         return (0, False)
 
     field_name = args.name
+
     field_id = args.project.field_to_id(field_name)
     if not field_id:
+        # Special field handling: these are fields that require
+        # additional APIs to retrieve; no custom rendering
+        while args.operation in ('get', 'get-json') and field_name.startswith('__'):
+            field_name = field_name[2:]
+            data = None
+            if field_name == 'links':
+                data = json.dumps([rl.raw for rl in args.project.remote_links(issue)], indent=2)
+            elif field_name == 'watchers':
+                data = json.dumps(args.project.watchers(issue).raw, indent=2)
+            elif field_name == 'votes':
+                data = json.dumps(args.project.votes(issue).raw, indent=2)
+            else:
+                # Not handled
+                break
+            print(data)
+            return (0, False)
+
         raise ValueError(f'Could not resolve {field_name} to an ID - typo?')
     if args.operation == 'get':
         (_, orig_value) = render_field_data(field_id, issue.raw['fields'], True, args.project.allow_code)
@@ -1311,7 +1329,7 @@ def print_eausm_votes(project, issue):
 
 def print_issue_header(project, issue_obj, verbose=False, no_comments=False, no_format=False, allowed_fields=None):
     if verbose:
-        # Get votes and watchers in verbose mode
+        # Get votes/watchers in verbose mode. These are cached in the object.
         project.votes(issue_obj)
         project.watchers(issue_obj)
 
