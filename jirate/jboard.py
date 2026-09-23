@@ -698,7 +698,7 @@ class Jirate(object):
         if isinstance(issue_alias, Issue):
             ret = self.jira.watchers(issue_alias.key)
             if ret:
-                issue_alias.raw['fields']['watches'] = ret.raw
+                issue_alias.raw['fields']['watchers'] = ret.raw
         else:
             ret = self.jira.watchers(issue_alias)
         return ret
