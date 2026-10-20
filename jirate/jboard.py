@@ -57,7 +57,7 @@ def _resolve_field(obj, field_name):
 
 
 # Intelligent field update for Issue
-def _update_field(issue, field_name_human, value_human, operation='set', fields=None):
+def _update_field(issue, field_name_human, value_human='', operation='set', fields=None):
     if not fields:
         # TODO use native python-jira issue.fields instead of raw json
         # (Except operations are not captured, which we need)
@@ -88,6 +88,12 @@ def _update_field(issue, field_name_human, value_human, operation='set', fields=
         update_args = {field_id: [{operation: val} for val in send_val]}
     else:
         update_args = {field_id: [{operation: send_val}]}
+
+    # If the human gave us '', passing [] is supposed to clear the field:
+    #  https://developer.atlassian.com/server/jira/platform/updating-an-issue-via-the-jira-rest-apis-6848604/#operation--verb--based-update--explicit-verb-via--update--
+    # Except the docs are wrong. Using None -> null, which works
+    if value_human == '':
+        update_args = {field_id: None}
 
     return issue.update(**update_args)
 
