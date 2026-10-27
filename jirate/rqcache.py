@@ -19,6 +19,7 @@
 #   an issue might have a 1 minute, while fetching /field might be 30 days.
 # - Allow a user to purge cache from CLI (besides removing the file)
 #
+import copy
 import os
 import re
 import time
@@ -30,19 +31,23 @@ from .decor import hbar_over, hbar_under
 from .localstate import pickle_write, pickle_read
 
 default_cache_expire = 43200
+default_short_expire = 90
 
 default_cache_patterns = {
-    'GET': [r'/rest/api/[0-9]+/myself$',
-            r'/rest/api/[0-9]+/field$',
-            r'/rest/api/[0-9]+/user/search',
-            r'/rest/agile/[0-9]+(\.[0-9]+)?/board$',
-            r'/rest/agile/[0-9]+(\.[0-9]+)?/board/[0-9]+/sprint$',
-            r'/rest/api/[0-9]+/project/[A-Z]+/statuses$',
-            r'/rest/api/[0-9]+/project/[A-Z]+$',
-            r'/rest/api/[0-9]+/issue/[0-9]+/transitions',
-            r'/rest/api/[0-9]+/issue/createmeta/[A-Z]+/issuetypes',
-            r'/rest/api/[0-9]+/issue/[0-9]+/editmeta',
-            r'/rest/api/[0-9]+/user\?(username|key)=']
+    'GET': {r'/rest/api/[0-9]+/myself$': default_cache_expire,
+            r'/rest/api/[0-9]+/field$': default_cache_expire,
+            r'/rest/api/[0-9]+/user/search': default_cache_expire,
+            r'/rest/agile/[0-9]+(\.[0-9]+)?/board$': default_cache_expire,
+            r'/rest/agile/[0-9]+(\.[0-9]+)?/board/[0-9]+/sprint$': default_cache_expire,
+            r'/rest/api/[0-9]+/project/[A-Z]+/statuses$': default_cache_expire,
+            r'/rest/api/[0-9]+/project/[A-Z]+$': default_cache_expire,
+            r'/rest/api/[0-9]+/issue/[0-9]+/transitions': default_cache_expire,
+            r'/rest/api/[0-9]+/issue/createmeta/[A-Z]+/issuetypes': default_cache_expire,
+            r'/rest/api/[0-9]+/issue/[0-9]+/editmeta': default_cache_expire,
+            r'/rest/api/[0-9]+/user\?(username|key)=': default_cache_expire,
+            r'/rest/api/[0-9]+/filter/[0-9]+': default_short_expire,
+            #r'/rest/api/[0-9]+/search/jql': default_short_expire
+    }
 }
 
 
@@ -69,7 +74,14 @@ class RequestCache(object):
         self._cache_hits = 0
         self._cache_file = filename
         self.cached_reqs = {'magic': self.__req_magic__, 'GET': {}}
-        self.cache_patterns = default_cache_patterns
+        self.cache_patterns = copy.deepcopy(default_cache_patterns)
+
+        # If we have an explicit global timeout set, use that
+        if expire is not None:
+            for method in self.cache_patterns:
+                for pattern in self.cache_patterns[method]:
+                    self.cache_patterns[method][pattern] = expire
+
         self.debug_reqs = {}
         self.user_breaks = {}
 
@@ -123,18 +135,32 @@ class RequestCache(object):
         if method not in self.cache_patterns:
             return
         urlmatch = False
+        exp = float(self._expire_time)
         for line in self.cache_patterns[method]:
+            exp = float(self.cache_patterns[method][line])
             if re.search(line, url):
                 urlmatch = True
                 break
         if not urlmatch:
             return
-        expire = time.time() + float(self._expire_time)
+        expire = time.time() + float(exp)
         if url not in self.cached_reqs[method]:
             self.cached_reqs[method][url] = []
         self.cached_reqs[method][url].append({'args': args_dict,
                                               'expire': expire,
                                               'value': value})
+
+    def cache(self, method, regex, expire=None):
+        if method not in ('GET'):
+            raise ValueError(f'Method invalid: {method}')
+        if method not in self.cache_patterns:
+            self.cache_patterns[method] = method
+        exptime = float(expire) if expire is not None else self._expire_time
+        if exptime <= 0:
+            if regex in self.cache_patterns[method]:
+                del self.cache_patterns[method][regex]
+        else:
+            self.cache_patterns[method][regex] = expire
 
     def load(self, filename=None):
         if filename is None:
