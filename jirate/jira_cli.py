@@ -255,7 +255,7 @@ def print_keys(issue_list):
 
 
 def print_issues(issue_list, args=None, exclude_fields=[]):
-    footer = (args.format in ('default'))
+    footer = args is None or (args.format in ('default'))
     total = len(issue_list)
 
     if not issue_list:
@@ -1698,10 +1698,9 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
 
     if not project:
         if 'default_project' in jconfig and not project:
-            project = jconfig['default_project']
+            project = jconfig['default_project'].upper()
         else:
-            print('No JIRA project specified')
-            return None
+            raise ValueError('No JIRA project specified')
 
     # Allows users to represent custom fields in output.
     # Not recommended to enable.
@@ -1720,9 +1719,6 @@ def get_jira_project(project=None, config=None, config_file=None, **kwargs):
         if 'color_bg' in jconfig:
             jirate.decor.color_bg = jconfig['color_bg']
 
-    if not project:
-        # Not sure why I used an array here
-        project = jconfig['default_project']
     if 'proxies' not in jconfig:
         jconfig['proxies'] = {"http": "", "https": ""}
 
