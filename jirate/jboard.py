@@ -57,7 +57,7 @@ def _resolve_field(obj, field_name):
 
 
 # Intelligent field update for Issue
-def _update_field(issue, field_name_human, value_human, operation='set', fields=None):
+def _update_field(issue, field_name_human, value_human='', operation='set', fields=None):
     if not fields:
         # TODO use native python-jira issue.fields instead of raw json
         # (Except operations are not captured, which we need)
@@ -89,10 +89,19 @@ def _update_field(issue, field_name_human, value_human, operation='set', fields=
     else:
         update_args = {field_id: [{operation: send_val}]}
 
+    # If the human gave us '', passing [] is supposed to clear the field:
+    #  https://developer.atlassian.com/server/jira/platform/updating-an-issue-via-the-jira-rest-apis-6848604/#operation--verb--based-update--explicit-verb-via--update--
+    # Except the docs are wrong. Using None -> null, which works
+    if value_human == '':
+        update_args = {field_id: None}
+
     return issue.update(**update_args)
 
 
 def _resolve_field_setup(jirate_obj, issue_obj):
+    if hasattr(issue_obj, '_jirate'):
+        # Already configured
+        return
     # Do NOT trample future python JIRA objects' field function.
     if hasattr(issue_obj, 'field'):
         raise Exception('API BREAK: \'field\' is now part of jira.resources.Issue. Please file a bug against Jirate!')
@@ -663,30 +672,23 @@ class Jirate(object):
     def issue(self, issue_alias, verbose=False):
         """Retrieve an issue from JIRA
 
-        XXX Cleanup vs. JiraProject
-
         Parameters:
           issue_alias: key or issue ID (string)
 
         Returns:
           jira.resources.Issue
         """
+        # Already our datatype
         if isinstance(issue_alias, Issue):
             return issue_alias
-        issue_aliases = [issue_alias]
-        if isinstance(issue_alias, int):
-            issue_alias = str(issue_alias)
-        if issue_alias.upper() != issue_alias:
-            issue_aliases.append(issue_alias.upper())
-        for alias in issue_aliases:
-            try:
-                issue = self.jira.issue(alias)
-                if not issue:
-                    continue
+        alias = self._issue_key(issue_alias)
+        try:
+            issue = self.jira.issue(alias)
+            if issue:
                 _resolve_field_setup(self, issue)
                 return issue
-            except JIRAError:
-                pass
+        except JIRAError:
+            pass
         return None
 
     def votes(self, issue_alias):
@@ -702,9 +704,9 @@ class Jirate(object):
         if isinstance(issue_alias, Issue):
             ret = self.jira.watchers(issue_alias.key)
             if ret:
-                issue_alias.raw['fields']['watches'] = ret.raw
+                issue_alias.raw['fields']['watchers'] = ret.raw
         else:
-            ret = self.jira.votes(issue_alias)
+            ret = self.jira.watchers(issue_alias)
         return ret
 
     def eausm_issue_votes(self, issue_alias):
@@ -1023,8 +1025,7 @@ class JiraProject(Jirate):
 
     def _index_issue(self, issue):
         if issue.key not in self._config['issue_map']:
-            if not hasattr(issue, '_jirate'):
-                _resolve_field_setup(self, issue)
+            _resolve_field_setup(self, issue)
             self._config['issue_map'][issue.key] = issue
 
     def _index_issues(self, issues):
@@ -1064,7 +1065,7 @@ class JiraProject(Jirate):
             return issue_alias
         issue_aliases = [issue_alias]
         if issue_alias.upper() != issue_alias:
-            issue_aliases.append(issue_alias.upper())
+            issue_aliases.insert(0, issue_alias.upper())
         if '-' not in issue_alias:
             issue_aliases.insert(0, self.project_name.upper() + f'-{issue_alias}')
         for alias in issue_aliases:

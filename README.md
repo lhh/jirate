@@ -139,6 +139,10 @@ Each field in `custom_fields` is a dictionary. Jirate only cares about a few fie
   - `jirate field 123 set contributors user1,user2,user3`
 - Add (or remove) several Jira usernames to (or from) the Contributors field:
   - `jirate field MYISSUE-123 add|remove contributors user1,user2`
+- Display a field as a JSON object
+  - `jirate field MYISSUE-123 get-json contributors`
+- Display a secondary API field as a JSON object (Jirate extension)
+  - `jirate field MYISSUE-123 get-json [__links|__votes|__watchers]`
 
 ## Components
 - List components:
