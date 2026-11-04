@@ -9,6 +9,40 @@ class ParseError(Exception):
     pass
 
 
+class EnvConfig(dict):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__basestr = 'JIRATE'
+
+    def __getitem__(self, item):
+        # Prefer envvars over config variables
+        ret = os.getenv(f'{self.__basestr}_{item.upper()}')
+        if ret:
+            return ret
+        return super().__getitem__(item)
+
+    def __setitem__(self, item, value):
+        if isinstance(value, EnvConfig):
+            value.__basestr = f'{self.__basestr}_{item.upper()}'
+        return super().__setitem__(item, value)
+
+    def __hasitem__(self, item):
+        # Prefer envvars over config variables
+        ret = os.getenv(f'{self.__basestr}_{item.upper()}')
+        if ret:
+            return True
+        return super().__hasitem__(item)
+
+    def __contains__(self, item):
+        # Prefer envvars over config variables
+        ret = os.getenv(f'{self.__basestr}_{item.upper()}')
+        if ret:
+            return True
+        return super().__contains__(item)
+
+
+
 def _str_presenter(dumper, data):
     """
     Makes PyYAML print multiline strings in a sensible way
@@ -41,12 +75,18 @@ def _auto_parse(config_data):
     raise ParseError('Could not parse configuration file')
 
 
+def empty_config():
+    ret = EnvConfig()
+    ret['jira'] = EnvConfig()
+    return ret
+
+
 def get_config(filename=None):
     config_file = None
     if not filename:
-        for filename in ['~/.jirate.json', '~/.jirate.yaml', '~/.trolly.json']:
+        for cfg in ['~/.jirate.json', '~/.jirate.yaml', '~/.trolly.json']:
             try:
-                config_file = open(os.path.expanduser(filename))
+                config_file = open(os.path.expanduser(cfg))
                 break
             except FileNotFoundError:
                 continue
@@ -56,11 +96,19 @@ def get_config(filename=None):
         except FileNotFoundError:
             raise
 
+    # If no file specified and no default config, maybe it's envvars?
     if not config_file:
-        raise FileNotFoundError('No valid configuration file found')
+        return empty_config()
 
     config_data = config_file.read()
     config_file.close()
-    config = _auto_parse(config_data)
+    if not config_data:
+        return empty_config()
+    config = EnvConfig(_auto_parse(config_data))
+
+    if 'jira' in config:
+        config['jira'] = EnvConfig(config['jira'])
+    if 'trello' in config:
+        config['trello'] = EnvConfig(config['trello'])
 
     return config

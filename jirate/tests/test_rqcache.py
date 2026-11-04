@@ -161,7 +161,7 @@ def test_rqcache_persist_expire(tmp_path):
     cache = RequestCache(session, filename=filename, expire=1)
     ret1 = session.get('https://whatever/rest/api/2/field')
     cache.save()
-    time.sleep(1.1)
+    time.sleep(2)
 
     # Load our cache from disk
     session2 = TestSession()  # NOQA
