@@ -487,6 +487,9 @@ def issue_fields(args):
         else:
             print(f'No metadata for {args.type}')
             return (1, False)
+    else:
+        print(f'No issue or type specified; nothing to do')
+        return (1, False)
 
     # Remove things we set elsewhere
     for field in ('assignee', 'issuelinks', 'comment'):
